@@ -377,6 +377,16 @@ async def update_daily_entry(date: str, input_data: DailyEntryUpdate, user: dict
 
     updates["updated_at"] = datetime.now(timezone.utc).isoformat()
 
+    # Sync top_action with top_priority_completed
+    if 'five_item_statuses' in updates:
+        five = updates['five_item_statuses']
+        if 'top_action' in five:
+            updates['top_priority_completed'] = five['top_action']
+    if 'top_priority_completed' in updates:
+        if 'five_item_statuses' not in updates:
+            updates['five_item_statuses'] = {}
+        updates.setdefault('five_item_statuses', {})['top_action'] = updates['top_priority_completed']
+
     await db.daily_entries.update_one(
         {"user_id": user['id'], "date": date},
         {"$set": updates}
