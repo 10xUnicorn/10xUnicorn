@@ -1,0 +1,263 @@
+{
+  "identity": {
+    "name": "10x Unicorn",
+    "mission": "Turn ambitious individuals into consistent high-performers through behavioral transformation.",
+    "tone": "Electric, High-Performance, Minimalist, Dark, Focused",
+    "keywords": ["Momentum", "Clarity", "Execution", "Compound", "Wormhole"]
+  },
+  "typography": {
+    "primary_font": "System",
+    "secondary_font": "SpaceMono",
+    "scale": {
+      "xs": 12,
+      "sm": 14,
+      "base": 16,
+      "lg": 18,
+      "xl": 20,
+      "2xl": 24,
+      "3xl": 30,
+      "4xl": 36,
+      "5xl": 48
+    },
+    "weights": {
+      "light": "300",
+      "regular": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700",
+      "black": "900"
+    },
+    "usage": {
+      "headings": {
+        "family": "System",
+        "weight": "800",
+        "letterSpacing": -0.5
+      },
+      "body": {
+        "family": "System",
+        "weight": "400",
+        "lineHeight": 24
+      },
+      "data": {
+        "family": "SpaceMono",
+        "weight": "400"
+      }
+    }
+  },
+  "colors": {
+    "background": {
+      "default": "#050505",
+      "card": "#121212",
+      "overlay": "rgba(0,0,0,0.8)",
+      "input": "#1A1A1A"
+    },
+    "text": {
+      "primary": "#FFFFFF",
+      "secondary": "#A1A1AA",
+      "tertiary": "#52525B",
+      "inverse": "#000000"
+    },
+    "brand": {
+      "primary": "#7F00FF",
+      "secondary": "#9D00FF",
+      "accent": "#B915CC",
+      "glow": "rgba(127, 0, 255, 0.4)"
+    },
+    "status": {
+      "success": "#00FF9D",
+      "warning": "#FFD600",
+      "error": "#FF0055",
+      "info": "#00B2FF"
+    },
+    "gradients": {
+      "primary": ["#7F00FF", "#B915CC"],
+      "dark": ["#121212", "#000000"],
+      "success_glow": ["rgba(0,255,157,0.2)", "rgba(0,0,0,0)"]
+    }
+  },
+  "spacing": {
+    "xs": 4,
+    "sm": 8,
+    "md": 16,
+    "lg": 24,
+    "xl": 32,
+    "2xl": 48,
+    "3xl": 64,
+    "safe_area_x": 20,
+    "safe_area_y": 60
+  },
+  "borders": {
+    "radius": {
+      "sm": 8,
+      "md": 12,
+      "lg": 16,
+      "xl": 24,
+      "full": 9999
+    },
+    "width": {
+      "thin": 0.5,
+      "normal": 1,
+      "thick": 2
+    },
+    "color": {
+      "default": "#27272A",
+      "active": "#7F00FF"
+    }
+  },
+  "shadows": {
+    "sm": {
+      "shadowColor": "#000",
+      "shadowOffset": { "width": 0, "height": 1 },
+      "shadowOpacity": 0.18,
+      "shadowRadius": 1.0,
+      "elevation": 1
+    },
+    "md": {
+      "shadowColor": "#000",
+      "shadowOffset": { "width": 0, "height": 2 },
+      "shadowOpacity": 0.25,
+      "shadowRadius": 3.84,
+      "elevation": 5
+    },
+    "glow": {
+      "shadowColor": "#7F00FF",
+      "shadowOffset": { "width": 0, "height": 0 },
+      "shadowOpacity": 0.6,
+      "shadowRadius": 10,
+      "elevation": 10
+    }
+  },
+  "layout_patterns": {
+    "container": {
+      "flex": 1,
+      "backgroundColor": "#050505",
+      "paddingHorizontal": 20
+    },
+    "safe_area": {
+      "flex": 1,
+      "backgroundColor": "#050505"
+    },
+    "card": {
+      "backgroundColor": "#121212",
+      "borderRadius": 16,
+      "padding": 16,
+      "marginBottom": 16,
+      "borderWidth": 1,
+      "borderColor": "#27272A"
+    },
+    "row_between": {
+      "flexDirection": "row",
+      "justifyContent": "space-between",
+      "alignItems": "center"
+    },
+    "center": {
+      "justifyContent": "center",
+      "alignItems": "center"
+    }
+  },
+  "components": {
+    "Button": {
+      "variants": ["primary", "secondary", "ghost", "destructive"],
+      "sizes": ["sm", "md", "lg"],
+      "base_style": {
+        "borderRadius": 12,
+        "flexDirection": "row",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "paddingVertical": 12,
+        "paddingHorizontal": 24
+      },
+      "instructions": "Use LinearGradient for primary variant. Add activeOpacity={0.8}. MUST use Scale animation on press."
+    },
+    "Input": {
+      "base_style": {
+        "backgroundColor": "#1A1A1A",
+        "borderRadius": 12,
+        "padding": 16,
+        "color": "#FFFFFF",
+        "fontSize": 16,
+        "borderWidth": 1,
+        "borderColor": "#27272A"
+      },
+      "focus_style": {
+        "borderColor": "#7F00FF",
+        "shadowColor": "#7F00FF",
+        "shadowOpacity": 0.2,
+        "shadowRadius": 4
+      }
+    },
+    "DeterminationSlider": {
+      "description": "Custom slider component with emoji feedback based on value.",
+      "emojis": ["😴", "😐", "😤", "🔥", "🦄"],
+      "instructions": "Map slider value (0-10) to emoji array index. Animate emoji scale on change."
+    },
+    "WormholeItem": {
+      "description": "Contact item in list.",
+      "style": {
+        "flexDirection": "row",
+        "alignItems": "center",
+        "padding": 16,
+        "backgroundColor": "#121212",
+        "borderBottomWidth": 1,
+        "borderBottomColor": "#27272A"
+      }
+    },
+    "Checkbox": {
+      "description": "Custom animated checkbox for habits.",
+      "style": {
+        "width": 24,
+        "height": 24,
+        "borderRadius": 6,
+        "borderWidth": 2,
+        "borderColor": "#7F00FF",
+        "justifyContent": "center",
+        "alignItems": "center"
+      },
+      "checked_style": {
+        "backgroundColor": "#7F00FF"
+      }
+    }
+  },
+  "motion": {
+    "durations": {
+      "fast": 200,
+      "normal": 300,
+      "slow": 500
+    },
+    "easings": {
+      "default": "cubic-bezier(0.25, 0.1, 0.25, 1)",
+      "bounce": "cubic-bezier(0.175, 0.885, 0.32, 1.275)"
+    },
+    "instructions": "Use react-native-reanimated for all complex animations. Use LayoutAnimation for list updates. Add haptic feedback (expo-haptics) on success actions."
+  },
+  "assets": {
+    "images": {
+      "hero_bg": "https://images.pexels.com/photos/9197509/pexels-photo-9197509.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "auth_bg": "https://images.pexels.com/photos/29832998/pexels-photo-29832998.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"
+    },
+    "icons": {
+      "library": "Ionicons",
+      "usage": "Use @expo/vector-icons/Ionicons for standard icons. Use Feather for minimal UI elements."
+    }
+  },
+  "accessibility": {
+    "instructions": "Ensure all TouchableOpacity/Pressable have accessibilityLabel and accessibilityRole. Text contrast must be >= 4.5:1. Support dynamic type scaling where possible."
+  },
+  "instructions_to_main_agent": [
+    "Use StyleSheet.create for all styles. DO NOT use inline styles for complex objects.",
+    "Use 'expo-router' for navigation. Create app/_layout.tsx immediately.",
+    "Implement 'Today' screen as index.tsx.",
+    "Use Context API for global state (User, Habits) if Redux is overkill, but prefer simple state for MVP.",
+    "Ensure 'data-testid' is added to ALL interactive elements (e.g., testID='login-button').",
+    "For Dark Mode: Hardcode dark styles as default. Do not implement complex theme toggling unless requested.",
+    "Use 'SafeAreaView' from 'react-native-safe-area-context' instead of 'react-native'.",
+    "Install 'expo-linear-gradient' and 'expo-haptics' if not present."
+  ],
+  "universal_guidelines": [
+    "Don't make generic centered layouts.",
+    "Use 2-3x more spacing than feels comfortable.",
+    "Every interaction needs micro-animations.",
+    "All interactive elements MUST include data-testid.",
+    "Never use AI assistant Emoji characters in UI."
+  ]
+}
