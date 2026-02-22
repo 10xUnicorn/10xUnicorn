@@ -676,7 +676,11 @@ async def ai_session_message(session_id: str, input_data: AIChatMessage, user: d
         ai_sessions_cache[session_id] = chat
 
     user_msg = UserMessage(text=input_data.message)
-    response = await chat.send_message(user_msg)
+    try:
+        response = await chat.send_message(user_msg)
+    except Exception as e:
+        logger.error(f"AI error in message: {e}")
+        response = "I'm having trouble connecting right now. Please check your Emergent LLM key balance."
 
     await db.ai_sessions.update_one(
         {"id": session_id},
