@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api } from '../utils/api';
+import { api, setApiToken } from '../utils/api';
 
 type User = {
   id: string;
