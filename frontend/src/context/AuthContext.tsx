@@ -41,12 +41,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const stored = await AsyncStorage.getItem('auth_token');
       if (stored) {
         setToken(stored);
+        setApiToken(stored);
         const me = await api.get('/auth/me', stored);
         setUser(me);
       }
     } catch {
       await AsyncStorage.removeItem('auth_token');
       setToken(null);
+      setApiToken(null);
       setUser(null);
     } finally {
       setLoading(false);
