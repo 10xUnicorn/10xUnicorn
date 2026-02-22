@@ -79,7 +79,12 @@ export default function TodayScreen() {
   const toggleFiveItem = (key: string) => {
     const current = entry?.five_item_statuses || {};
     const newStatuses = { ...current, [key]: !current[key] };
-    updateEntry({ five_item_statuses: newStatuses });
+    const updates: any = { five_item_statuses: newStatuses };
+    // Sync top_action with top_priority
+    if (key === 'top_action') {
+      updates.top_priority_completed = !current[key];
+    }
+    updateEntry(updates);
   };
 
   const navigateDate = (dir: number) => {
