@@ -26,7 +26,12 @@ export default function LoginScreen() {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim().toLowerCase(), password);
+      const me = await login(email.trim().toLowerCase(), password);
+      if (!me.onboarded) {
+        router.replace('/onboarding');
+      } else {
+        router.replace('/(tabs)/today');
+      }
     } catch (e: any) {
       setError(e.message || 'Login failed');
     } finally {
