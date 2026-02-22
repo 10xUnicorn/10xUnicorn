@@ -2,8 +2,22 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
+// In-memory token for immediate availability after login/register
+let memoryToken: string | null = null;
+
+export function setApiToken(token: string | null) {
+  memoryToken = token;
+}
+
 async function getToken(): Promise<string | null> {
-  return AsyncStorage.getItem('auth_token');
+  if (memoryToken) return memoryToken;
+  try {
+    const stored = await AsyncStorage.getItem('auth_token');
+    if (stored) memoryToken = stored;
+    return stored;
+  } catch {
+    return null;
+  }
 }
 
 async function request(method: string, path: string, body?: any, customToken?: string) {
