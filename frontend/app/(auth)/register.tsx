@@ -36,6 +36,7 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await register(email.trim().toLowerCase(), password);
+      router.replace('/onboarding');
     } catch (e: any) {
       setError(e.message || 'Registration failed');
     } finally {
