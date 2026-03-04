@@ -1,0 +1,127 @@
+{
+  "summary": "Testing iteration 8 - Update mode. Frontend features verified: compound count up/down caret buttons, CRM Signals tab with New Signal button (showing signal types: 10x_action, revenue, wormhole), determination slider always visible with motivational quote, social link helpers (openSocialLink, openPhone, openEmail). CRITICAL BUG: Backend POST /api/signals does not save signal_type field - the field is accepted but not stored in the database.",
+  "mode": "update",
+  "baseline_commit": "240ce4e09ccee5e3ac77f2c6d0525b4d3cb6b2ca",
+  "head_commit": "21c34fcb3a5c68b55224aa62a24849c279969b05",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/signals",
+        "issue": "signal_type field is NOT saved when creating a signal. SignalInput model has signal_type field but create_signal endpoint does not include it in the signal document being saved to database (line 1607-1618 in server.py). The field should be added: 'signal_type': input_data.signal_type,",
+        "priority": "CRITICAL",
+        "location": "/app/backend/server.py lines 1607-1618",
+        "fix": "Add 'signal_type': input_data.signal_type or 'signal_type': '10x_action', to the signal dict"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "PUT /api/wormhole-contacts/{id}",
+        "issue": "engagement_strength field not being persisted on update (pre-existing)",
+        "priority": "LOW"
+      },
+      {
+        "endpoint": "POST /api/signals/{signal_id}/complete",
+        "issue": "planned_ahead bonus not being calculated correctly (pre-existing)",
+        "priority": "LOW"
+      },
+      {
+        "endpoint": "POST /api/signals with is_top_10x_action",
+        "issue": "Creating top 10x action returns 400 - duplicate check may be date format issue (pre-existing)",
+        "priority": "MEDIUM"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "All screens",
+        "issues": ["Console warning: shadow* style props are deprecated. Use boxShadow. (non-blocking)"]
+      }
+    ]
+  },
+  "features_tested": {
+    "compound_count_carets": {
+      "component": "today.tsx",
+      "status": "PASS",
+      "testIDs": ["compound-decrease", "compound-count-display", "compound-increase"],
+      "notes": "Up/down caret buttons working correctly, updates compound_count via API"
+    },
+    "signal_types_constant": {
+      "component": "crm.tsx",
+      "status": "PASS",
+      "values": ["10x_action", "revenue", "wormhole"],
+      "notes": "SIGNAL_TYPES constant defined with correct values and colors"
+    },
+    "crm_signals_tab": {
+      "component": "crm.tsx",
+      "status": "PASS",
+      "testID": "crm-tab-signals",
+      "notes": "Signals tab is now default in CRM, shows New Signal button with signal type options"
+    },
+    "social_link_helpers": {
+      "component": "community.tsx",
+      "status": "PASS",
+      "functions": ["openSocialLink", "openPhone", "openEmail"],
+      "notes": "Email has subject 'Connecting from the 10xUNICORN community'"
+    },
+    "determination_slider": {
+      "component": "DeterminationSlider.tsx",
+      "status": "PASS",
+      "notes": "Always visible with motivational quote, no collapse behavior"
+    },
+    "signal_type_backend": {
+      "endpoint": "POST /api/signals",
+      "status": "FAIL",
+      "notes": "CRITICAL: signal_type field is not being saved to database"
+    }
+  },
+  "regression_results": {
+    "frontend_specs": {
+      "total": 21,
+      "passed": 21,
+      "failed": 0
+    },
+    "backend_tests_iteration8": {
+      "total": 19,
+      "passed": 13,
+      "failed": 6,
+      "note": "6 failures are due to signal_type backend bug"
+    }
+  },
+  "specs_created": [
+    "/app/backend/tests/test_14_iteration_8_features.py"
+  ],
+  "specs_updated": [
+    "/app/tests/e2e/today-page.spec.ts",
+    "/app/tests/e2e/crm-community.spec.ts"
+  ],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/backend/tests/test_14_iteration_8_features.py",
+    "/app/tests/e2e/today-page.spec.ts",
+    "/app/tests/e2e/crm-community.spec.ts"
+  ],
+  "action_items": [
+    "CRITICAL: Fix POST /api/signals to save signal_type field - add 'signal_type': input_data.signal_type to signal dict in server.py line 1607-1618",
+    "Pre-existing: Fix engagement_strength not being persisted in wormhole contact update",
+    "Pre-existing: Fix planned_ahead bonus calculation in signal completion",
+    "Pre-existing: Fix top 10x action creation - date format mismatch in duplicate check"
+  ],
+  "updated_files": [
+    "/app/tests/e2e/today-page.spec.ts",
+    "/app/tests/e2e/crm-community.spec.ts",
+    "/app/backend/tests/test_14_iteration_8_features.py"
+  ],
+  "success_rate": {
+    "backend_new_tests": "68% (13/19)",
+    "frontend": "100% (21/21)"
+  },
+  "seed_data_creation": "None - using existing test user from previous iterations",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 8 update mode testing complete. All frontend features pass - compound count carets, CRM Signals tab, signal types UI, social link helpers, determination slider always visible. CRITICAL BACKEND BUG: signal_type field not saved on POST /api/signals. The fix is simple: add 'signal_type': input_data.signal_type to the signal dict at line 1607 in server.py. After fix, 6 tests should pass.",
+  "rca_of_issue": "Bug Location: /app/backend/server.py line 1607-1618\nRoot Cause: SignalInput model has signal_type field (line 356) with default '10x_action', but the create_signal function does not include this field when building the signal document to insert into MongoDB.\nReproduction: POST /api/signals with {name: 'test', signal_type: 'revenue'} returns the signal but signal_type is None.\nMitigation: Add 'signal_type': input_data.signal_type or 'signal_type': input_data.signal_type or '10x_action', to the signal dict."
+}

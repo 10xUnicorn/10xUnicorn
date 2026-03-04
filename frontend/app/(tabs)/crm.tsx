@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
+import { Linking } from 'react-native';
 
 const STAGES = [
   { key: 'lead', label: 'Lead', color: Colors.text.tertiary },
@@ -17,6 +18,13 @@ const STAGES = [
   { key: 'negotiation', label: 'Negotiation', color: Colors.brand.primary },
   { key: 'closed_won', label: 'Won', color: Colors.status.success },
   { key: 'closed_lost', label: 'Lost', color: Colors.status.error },
+];
+
+// Signal types
+const SIGNAL_TYPES = [
+  { key: '10x_action', label: '10x Action Item', color: '#A855F7' },
+  { key: 'revenue', label: 'Revenue Generating Activity', color: '#10B981' },
+  { key: 'wormhole', label: 'Wormhole Activity', color: '#3B82F6' },
 ];
 
 const CONTACT_LABELS = [
@@ -77,8 +85,10 @@ export default function CRMScreen() {
   const [refreshing, setRefreshing] = useState(false);
   
   // Signal state
+  const [showAddSignal, setShowAddSignal] = useState(false);
   const [showEditSignal, setShowEditSignal] = useState<any>(null);
-  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '' });
+  const [signalForm, setSignalForm] = useState<any>({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', signal_type: '10x_action' });
+  const [signalFormLoading, setSignalFormLoading] = useState(false);
   
   // Deal state
   const [showAddDeal, setShowAddDeal] = useState(false);
@@ -141,6 +151,49 @@ export default function CRMScreen() {
   }, []);
 
   useEffect(() => { loadData(); }, []);
+
+  // Signal handlers
+  const saveSignal = async (isNew = true) => {
+    if (!signalForm.name?.trim()) return;
+    setSignalFormLoading(true);
+    try {
+      const payload = {
+        ...signalForm,
+        impact_rating: signalForm.impact_rating || 5,
+      };
+      if (isNew) {
+        await api.post('/signals', payload);
+      } else {
+        await api.put(`/signals/${showEditSignal.id}`, payload);
+      }
+      loadData();
+      setShowAddSignal(false);
+      setShowEditSignal(null);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSignalFormLoading(false);
+    }
+  };
+
+  const deleteSignal = async (signalId: string) => {
+    Alert.alert('Delete Signal', 'Are you sure?', [
+      { text: 'Cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await api.delete(`/signals/${signalId}`);
+            loadData();
+            setShowEditSignal(null);
+          } catch (e: any) {
+            Alert.alert('Error', e.message);
+          }
+        },
+      },
+    ]);
+  };
 
   // Load wormhole logs when detail view opens
   const loadWormholeLogs = async (contactId: string) => {
@@ -349,7 +402,10 @@ export default function CRMScreen() {
           testID="add-crm-btn" 
           style={styles.addBtn} 
           onPress={() => {
-            if (activeTab === 'deals') {
+            if (activeTab === 'signals') {
+              setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', signal_type: '10x_action' });
+              setShowAddSignal(true);
+            } else if (activeTab === 'deals') {
               resetDealForm();
               setShowAddDeal(true);
             } else {
@@ -1025,6 +1081,119 @@ export default function CRMScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* Add/Edit Signal Modal */}
+      <Modal visible={showAddSignal || !!showEditSignal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
+            <View style={styles.modal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{showEditSignal ? 'Edit Signal' : 'New Signal'}</Text>
+                <TouchableOpacity onPress={() => { setShowAddSignal(false); setShowEditSignal(null); }}>
+                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <Text style={styles.inputLabel}>Signal Name *</Text>
+                <TextInput
+                  testID="signal-name-input"
+                  style={styles.input}
+                  value={signalForm.name}
+                  onChangeText={t => setSignalForm({ ...signalForm, name: t })}
+                  placeholder="e.g., Follow up with John"
+                  placeholderTextColor={Colors.text.tertiary}
+                />
+
+                <Text style={styles.inputLabel}>Signal Type</Text>
+                <View style={styles.optionRow}>
+                  {SIGNAL_TYPES.map(type => (
+                    <TouchableOpacity
+                      key={type.key}
+                      style={[
+                        styles.optionBtn,
+                        signalForm.signal_type === type.key && { backgroundColor: type.color + '30', borderColor: type.color }
+                      ]}
+                      onPress={() => setSignalForm({ ...signalForm, signal_type: type.key })}
+                    >
+                      <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: type.color }} />
+                      <Text style={[styles.optionText, signalForm.signal_type === type.key && { color: type.color }]}>
+                        {type.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.inputLabel}>Impact Rating (1-10)</Text>
+                <View style={styles.optionRow}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                    <TouchableOpacity
+                      key={n}
+                      style={[
+                        styles.ratingBtn,
+                        signalForm.impact_rating === n && styles.ratingBtnActive
+                      ]}
+                      onPress={() => setSignalForm({ ...signalForm, impact_rating: n })}
+                    >
+                      <Text style={[styles.ratingText, signalForm.impact_rating === n && styles.ratingTextActive]}>{n}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <Text style={styles.inputLabel}>Assign to Deal (optional)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 8 }}>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity
+                      style={[styles.contactChip, !signalForm.deal_id && styles.contactChipActive]}
+                      onPress={() => setSignalForm({ ...signalForm, deal_id: '' })}
+                    >
+                      <Text style={[styles.contactChipText, !signalForm.deal_id && styles.contactChipTextActive]}>None</Text>
+                    </TouchableOpacity>
+                    {deals.map(d => (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={[styles.contactChip, signalForm.deal_id === d.id && styles.contactChipActive]}
+                        onPress={() => setSignalForm({ ...signalForm, deal_id: d.id })}
+                      >
+                        <Text style={[styles.contactChipText, signalForm.deal_id === d.id && styles.contactChipTextActive]}>{d.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+
+                <Text style={styles.inputLabel}>Notes</Text>
+                <TextInput
+                  testID="signal-notes-input"
+                  style={[styles.input, { minHeight: 80, textAlignVertical: 'top' }]}
+                  value={signalForm.notes}
+                  onChangeText={t => setSignalForm({ ...signalForm, notes: t })}
+                  placeholder="Additional details..."
+                  placeholderTextColor={Colors.text.tertiary}
+                  multiline
+                />
+
+                <TouchableOpacity
+                  testID="save-signal-btn"
+                  style={[styles.saveBtn, (!signalForm.name?.trim() || signalFormLoading) && styles.saveBtnDisabled]}
+                  onPress={() => saveSignal(!showEditSignal)}
+                  disabled={!signalForm.name?.trim() || signalFormLoading}
+                >
+                  <Text style={styles.saveBtnText}>{signalFormLoading ? 'Saving...' : (showEditSignal ? 'Update Signal' : 'Create Signal')}</Text>
+                </TouchableOpacity>
+
+                {showEditSignal && (
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteSignal(showEditSignal.id)}>
+                    <Ionicons name="trash-outline" size={18} color={Colors.status.error} />
+                    <Text style={styles.deleteBtnText}>Delete Signal</Text>
+                  </TouchableOpacity>
+                )}
+
+                <View style={{ height: 40 }} />
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1207,4 +1376,13 @@ const styles = StyleSheet.create({
   signalDue: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2 },
   signalTop10x: { color: Colors.status.warning, fontSize: FontSize.xs, fontWeight: '600', marginTop: 2 },
   signalCompletedBadge: { padding: 4 },
+  
+  // Rating buttons
+  ratingBtn: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.bg.input,
+    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.border.default,
+  },
+  ratingBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  ratingText: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
+  ratingTextActive: { color: Colors.text.primary },
 });

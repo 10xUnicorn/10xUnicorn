@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, FlatList, Modal,
-  RefreshControl, Image,
+  RefreshControl, Image, Linking, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,6 +12,30 @@ import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 
 type TabType = 'leaderboard' | 'feed' | 'directory';
+
+// Social link handlers
+const openSocialLink = (url: string) => {
+  if (!url) return;
+  // Add https if not present
+  const fullUrl = url.startsWith('http') ? url : `https://${url}`;
+  Linking.openURL(fullUrl).catch(err => console.error('Error opening link:', err));
+};
+
+const openPhone = (phone: string) => {
+  if (!phone) return;
+  Alert.alert('Contact', 'How would you like to reach out?', [
+    { text: 'Call', onPress: () => Linking.openURL(`tel:${phone}`) },
+    { text: 'Message', onPress: () => Linking.openURL(`sms:${phone}`) },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+};
+
+const openEmail = (email: string, displayName?: string) => {
+  if (!email) return;
+  const subject = encodeURIComponent('Connecting from the 10xUNICORN community');
+  const body = encodeURIComponent(`Hi${displayName ? ` ${displayName}` : ''},\n\n`);
+  Linking.openURL(`mailto:${email}?subject=${subject}&body=${body}`);
+};
 
 // Status ring colors based on goal progress
 const RING_COLORS: Record<string, [string, string]> = {
@@ -438,12 +462,38 @@ export default function CommunityScreen() {
                   </View>
                 )}
 
-                {(memberDetail.linkedin || memberDetail.twitter || memberDetail.instagram) && (
+                {(memberDetail.linkedin || memberDetail.twitter || memberDetail.instagram || memberDetail.phone || memberDetail.email) && (
                   <View style={styles.socialRow}>
-                    {memberDetail.linkedin && <Ionicons name="logo-linkedin" size={28} color={Colors.brand.accent} />}
-                    {memberDetail.twitter && <Ionicons name="logo-twitter" size={28} color={Colors.brand.accent} />}
-                    {memberDetail.instagram && <Ionicons name="logo-instagram" size={28} color={Colors.brand.accent} />}
-                    {memberDetail.youtube && <Ionicons name="logo-youtube" size={28} color={Colors.brand.accent} />}
+                    {memberDetail.linkedin && (
+                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.linkedin)}>
+                        <Ionicons name="logo-linkedin" size={28} color={Colors.brand.accent} />
+                      </TouchableOpacity>
+                    )}
+                    {memberDetail.twitter && (
+                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.twitter)}>
+                        <Ionicons name="logo-twitter" size={28} color={Colors.brand.accent} />
+                      </TouchableOpacity>
+                    )}
+                    {memberDetail.instagram && (
+                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.instagram)}>
+                        <Ionicons name="logo-instagram" size={28} color={Colors.brand.accent} />
+                      </TouchableOpacity>
+                    )}
+                    {memberDetail.youtube && (
+                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.youtube)}>
+                        <Ionicons name="logo-youtube" size={28} color={Colors.brand.accent} />
+                      </TouchableOpacity>
+                    )}
+                    {memberDetail.phone && (
+                      <TouchableOpacity onPress={() => openPhone(memberDetail.phone)}>
+                        <Ionicons name="call" size={28} color={Colors.status.success} />
+                      </TouchableOpacity>
+                    )}
+                    {memberDetail.email && (
+                      <TouchableOpacity onPress={() => openEmail(memberDetail.email, memberDetail.display_name)}>
+                        <Ionicons name="mail" size={28} color={Colors.brand.primary} />
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
 

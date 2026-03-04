@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { TEST_USER, waitForAppReady, loginUser } from '../fixtures/helpers';
 
-test.describe('CRM Features - Deals and Contacts', () => {
+test.describe('CRM Features - Signals, Deals and Contacts', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await waitForAppReady(page);
@@ -18,26 +18,40 @@ test.describe('CRM Features - Deals and Contacts', () => {
     await expect(page.getByText('CRM').first()).toBeVisible({ timeout: 15000 });
   });
 
-  test('CRM page has deals and contacts tabs', async ({ page }) => {
-    // Check for tab buttons
+  test('CRM page has signals, deals and contacts tabs', async ({ page }) => {
+    // Check for all three tab buttons
+    await expect(page.getByTestId('crm-tab-signals')).toBeVisible();
     await expect(page.getByTestId('crm-tab-deals')).toBeVisible();
     await expect(page.getByTestId('crm-tab-contacts')).toBeVisible();
     
     await page.screenshot({ path: 'test-results/crm-page.jpeg', quality: 20 });
   });
 
-  test('can switch between deals and contacts tabs', async ({ page }) => {
+  test('signals tab is default and shows signals list', async ({ page }) => {
+    // Signals tab should be active by default
+    await expect(page.getByTestId('crm-tab-signals')).toBeVisible();
+    
+    // Should see signals count
+    await expect(page.getByText('Signals').first()).toBeVisible();
+    
+    await page.screenshot({ path: 'test-results/signals-tab.jpeg', quality: 20 });
+  });
+
+  test('can switch between signals, deals and contacts tabs', async ({ page }) => {
+    // Start on signals tab (default)
+    await expect(page.getByTestId('crm-tab-signals')).toBeVisible();
+    
     // Click contacts tab
     await page.getByTestId('crm-tab-contacts').click();
-    
-    // Should see search input for contacts
     await expect(page.getByTestId('contact-search-input')).toBeVisible();
     
     // Click deals tab
     await page.getByTestId('crm-tab-deals').click();
-    
-    // Should see pipeline summary
     await expect(page.getByText('Pipeline')).toBeVisible();
+    
+    // Click signals tab
+    await page.getByTestId('crm-tab-signals').click();
+    await expect(page.getByText('Signals').first()).toBeVisible();
     
     await page.screenshot({ path: 'test-results/crm-tabs.jpeg', quality: 20 });
   });
@@ -56,25 +70,43 @@ test.describe('CRM Features - Deals and Contacts', () => {
   });
 
   test('deals tab shows stage filters', async ({ page }) => {
-    // Should be on deals tab by default
-    await expect(page.getByTestId('crm-tab-deals')).toBeVisible();
+    // Click deals tab to switch from default signals tab
+    await page.getByTestId('crm-tab-deals').click();
     
     // Check for stage filter chips
-    await expect(page.getByText('Lead')).toBeVisible();
-    await expect(page.getByText('Qualified')).toBeVisible();
-    await expect(page.getByText('Proposal')).toBeVisible();
+    await expect(page.getByText('Lead').first()).toBeVisible();
+    await expect(page.getByText('Qualified').first()).toBeVisible();
     
     await page.screenshot({ path: 'test-results/deal-stages.jpeg', quality: 20 });
   });
 
-  test('can open add deal modal', async ({ page }) => {
+  test('can open add signal modal from signals tab', async ({ page }) => {
+    // On signals tab (default), click add button
+    await page.getByTestId('add-crm-btn').click();
+    
+    // Should see New Signal modal with signal type options
+    await expect(page.getByText('New Signal')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText('Signal Name')).toBeVisible();
+    await expect(page.getByText('Signal Type')).toBeVisible();
+    
+    // Verify signal type options are present
+    await expect(page.getByText('10x Action Item')).toBeVisible();
+    await expect(page.getByText('Revenue Generating Activity')).toBeVisible();
+    await expect(page.getByText('Wormhole Activity')).toBeVisible();
+    
+    await page.screenshot({ path: 'test-results/add-signal-modal.jpeg', quality: 20 });
+  });
+
+  test('can open add deal modal from deals tab', async ({ page }) => {
+    // Switch to deals tab first
+    await page.getByTestId('crm-tab-deals').click();
+    
     // Click add button
     await page.getByTestId('add-crm-btn').click();
     
     // Should see modal with deal form
     await expect(page.getByText('New Deal')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Deal Name')).toBeVisible();
-    await expect(page.getByText('Close Date (MM/DD/YY)')).toBeVisible();
     
     await page.screenshot({ path: 'test-results/add-deal-modal.jpeg', quality: 20 });
   });

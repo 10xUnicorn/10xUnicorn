@@ -343,22 +343,33 @@ class PasswordResetInput(BaseModel):
 
 # ─── Signal & Points System Models ───
 
+# Signal types
+SIGNAL_TYPES = [
+    {"key": "10x_action", "label": "10x Action Item", "color": "#A855F7"},
+    {"key": "revenue", "label": "Revenue Generating Activity", "color": "#10B981"},
+    {"key": "wormhole", "label": "Wormhole Activity", "color": "#3B82F6"},
+]
+
 class SignalInput(BaseModel):
     name: str
     description: Optional[str] = ""
+    signal_type: Optional[str] = "10x_action"  # 10x_action, revenue, wormhole
     impact_rating: Optional[int] = None  # 1-10, determines points (None = not set)
     due_date: Optional[str] = None  # MM/DD/YY format
     deal_id: Optional[str] = None  # Associated deal
     is_public: bool = True
     is_top_10x_action: bool = False  # True if this is the daily top 10x action
+    notes: Optional[str] = ""  # Rich text notes
 
 class SignalUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    signal_type: Optional[str] = None
     impact_rating: Optional[int] = None
     due_date: Optional[str] = None
     deal_id: Optional[str] = None
     is_public: Optional[bool] = None
+    notes: Optional[str] = None
 
 class SignalCompletionInput(BaseModel):
     signal_id: str

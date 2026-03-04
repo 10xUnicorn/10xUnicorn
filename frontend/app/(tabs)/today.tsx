@@ -40,7 +40,6 @@ export default function TodayScreen() {
   const [habitTarget, setHabitTarget] = useState(0);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
-  const [sliderCollapsed, setSliderCollapsed] = useState(false);
   const [showCompoundCounter, setShowCompoundCounter] = useState(false);
   const [compoundCountInput, setCompoundCountInput] = useState('');
   
@@ -289,17 +288,12 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Determination Slider - Collapsible */}
+        {/* Determination Slider - Always visible */}
         <View style={styles.card}>
           <DeterminationSlider 
             testID="determination-slider"
             value={determination}
-            onChange={(val) => {
-              updateEntry({ determination_level: val });
-              setTimeout(() => setSliderCollapsed(true), 1000);
-            }}
-            collapsed={sliderCollapsed}
-            onToggleCollapse={() => setSliderCollapsed(!sliderCollapsed)}
+            onChange={(val) => updateEntry({ determination_level: val })}
           />
         </View>
 
@@ -520,47 +514,57 @@ export default function TodayScreen() {
               <Text style={styles.streakLabel}>streak</Text>
             </View>
           </View>
-          <TouchableOpacity
-            testID="compound-check"
-            style={styles.compoundRow}
-            onPress={() => {
-              if (!entry?.compound_done) {
-                // Show counter modal when marking complete
-                setCompoundCountInput((entry?.compound_count || 1).toString());
+          
+          {/* Quick counter with up/down buttons */}
+          <View style={styles.compoundCounter}>
+            <TouchableOpacity
+              testID="compound-decrease"
+              style={styles.counterCaretBtn}
+              onPress={() => {
+                const newCount = Math.max(0, (entry?.compound_count || 0) - 1);
+                updateEntry({ compound_done: newCount > 0, compound_count: newCount });
+              }}
+            >
+              <Ionicons name="chevron-down" size={24} color={Colors.text.secondary} />
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              testID="compound-count-display"
+              style={styles.counterDisplay}
+              onPress={() => {
+                setCompoundCountInput((entry?.compound_count || 0).toString());
                 setShowCompoundCounter(true);
-              } else {
-                // Uncomplete - reset count
-                updateEntry({ compound_done: false, compound_count: 0 });
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.checkbox, entry?.compound_done && styles.checkboxChecked]}>
-              {entry?.compound_done && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
-            </View>
-            <View style={styles.compoundTextWrap}>
-              <Text style={[styles.compoundText, entry?.compound_done && styles.actionDone]}>
-                Done today
+              }}
+            >
+              <Text style={styles.counterValue}>{entry?.compound_count || 0}</Text>
+              <Text style={styles.counterLabel}>
+                {habitTarget > 0 ? `/ ${habitTarget}` : 'times'}
               </Text>
-              {entry?.compound_done && entry?.compound_count > 0 && (
-                <Text style={styles.compoundCountBadge}>
-                  {entry.compound_count}x today • {habitTarget > 0 ? `${Math.round((entry.compound_count / habitTarget) * 100)}% of ${habitTarget}` : ''}
-                </Text>
-              )}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              testID="compound-increase"
+              style={styles.counterCaretBtn}
+              onPress={() => {
+                const newCount = (entry?.compound_count || 0) + 1;
+                updateEntry({ compound_done: true, compound_count: newCount });
+              }}
+            >
+              <Ionicons name="chevron-up" size={24} color={Colors.brand.primary} />
+            </TouchableOpacity>
+          </View>
+          
+          {habitTarget > 0 && (
+            <View style={styles.progressBarWrap}>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${Math.min(100, ((entry?.compound_count || 0) / habitTarget) * 100)}%` }]} />
+              </View>
+              <Text style={styles.progressPercent}>
+                {Math.round(((entry?.compound_count || 0) / habitTarget) * 100)}%
+              </Text>
             </View>
-            {entry?.compound_done && (
-              <TouchableOpacity
-                testID="add-more-compound"
-                style={styles.addMoreBtn}
-                onPress={() => {
-                  setCompoundCountInput((entry?.compound_count || 1).toString());
-                  setShowCompoundCounter(true);
-                }}
-              >
-                <Ionicons name="add" size={18} color={Colors.brand.primary} />
-              </TouchableOpacity>
-            )}
-          </TouchableOpacity>
+          )}
+          
           <TextInput
             testID="compound-notes-input"
             style={[styles.cardInput, { marginTop: 12 }]}
@@ -1190,6 +1194,62 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.brand.primary,
+  },
+  
+  // Compound counter with up/down buttons
+  compoundCounter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 16,
+    paddingVertical: 16,
+  },
+  counterCaretBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: Colors.bg.input,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border.default,
+  },
+  counterDisplay: {
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  counterValue: {
+    fontSize: 42,
+    fontWeight: '900',
+    color: Colors.text.primary,
+  },
+  counterLabel: {
+    fontSize: FontSize.sm,
+    color: Colors.text.tertiary,
+    marginTop: -4,
+  },
+  progressBarWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  progressBarBg: {
+    flex: 1,
+    height: 6,
+    backgroundColor: Colors.bg.input,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: Colors.brand.primary,
+    borderRadius: 3,
+  },
+  progressPercent: {
+    color: Colors.text.tertiary,
+    fontSize: FontSize.sm,
+    minWidth: 40,
+    textAlign: 'right',
   },
   
   // Compound counter modal

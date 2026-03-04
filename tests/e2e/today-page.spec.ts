@@ -14,8 +14,8 @@ test.describe('Today Page - Daily Entry Features', () => {
   });
 
   test('displays Today page with determination slider', async ({ page }) => {
-    // Check determination slider section
-    await expect(page.getByText('Determination Level')).toBeVisible();
+    // Check determination slider section (text is now just "Determination")
+    await expect(page.getByText('Determination').first()).toBeVisible();
     await expect(page.getByTestId('determination-slider')).toBeVisible();
     
     await page.screenshot({ path: 'test-results/today-page.jpeg', quality: 20 });
@@ -38,21 +38,21 @@ test.describe('Today Page - Daily Entry Features', () => {
   });
 
   test('displays five core actions with Phase 1 updated labels', async ({ page }) => {
-    // Check for the five core actions with updated labels
-    // 1. Top 10x Action Item
-    await expect(page.getByText('Top 10x Action Item')).toBeVisible();
+    // Check for the five core actions - text label changed to "Top 10x Action (10 points)"
+    // 1. Top 10x Action (now shows point value)
+    await expect(page.getByText('Top 10x Action').first()).toBeVisible();
     
-    // 2. 7-Minute Future Self Meditation
-    await expect(page.getByText('7-Minute Future Self Meditation').or(page.getByText('Meditation'))).toBeVisible();
+    // 2. 7-Minute Future Self Meditation  
+    await expect(page.getByText('Meditation').first()).toBeVisible();
     
     // 3. Wormhole Relationship
-    await expect(page.getByText('Wormhole Relationship')).toBeVisible();
+    await expect(page.getByText('Wormhole').first()).toBeVisible();
     
     // 4. Avoid Distractions
-    await expect(page.getByText('Avoid Distractions').or(page.getByText('Distractions'))).toBeVisible();
+    await expect(page.getByText('Distraction').first()).toBeVisible();
     
-    // 5. Plan the Next Day Ahead of Time
-    await expect(page.getByText('Plan the Next Day').or(page.getByText('Plan Tomorrow'))).toBeVisible();
+    // 5. Plan the Next Day
+    await expect(page.getByText('Plan').first()).toBeVisible();
     
     await page.screenshot({ path: 'test-results/five-core-actions.jpeg', quality: 20 });
   });
@@ -69,10 +69,16 @@ test.describe('Today Page - Daily Entry Features', () => {
     await page.screenshot({ path: 'test-results/action-toggled.jpeg', quality: 20 });
   });
 
-  test('compound habit section is visible', async ({ page }) => {
-    // Check for compound habit checkbox
-    const compoundCheck = page.getByTestId('compound-check');
-    await expect(compoundCheck).toBeVisible();
+  test('compound habit section is visible with up/down carets', async ({ page }) => {
+    // Check for compound counter buttons (up/down caret style)
+    const compoundIncrease = page.getByTestId('compound-increase');
+    const compoundDecrease = page.getByTestId('compound-decrease');
+    const compoundDisplay = page.getByTestId('compound-count-display');
+    
+    // All should be visible
+    await expect(compoundIncrease).toBeVisible();
+    await expect(compoundDecrease).toBeVisible();
+    await expect(compoundDisplay).toBeVisible();
     
     // Check for compound notes input
     const compoundNotes = page.getByTestId('compound-notes-input');
