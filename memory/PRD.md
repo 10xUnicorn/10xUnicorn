@@ -8,6 +8,8 @@
 - **Backend:** FastAPI, Python, MongoDB
 - **Authentication:** JWT-based
 - **AI:** OpenAI GPT-5.2 via Emergent LLM Key
+- **Push Notifications:** Expo Push Service (free, no signup)
+- **Cloud Storage:** Emergent Object Storage
 
 ## Implemented Features (As of March 2026)
 
@@ -19,8 +21,16 @@
 
 ### Phase 2 - Today Screen & Daily Tracking
 - [x] Determination Level slider (0-10) with emoji feedback
+  - **NEW:** Fluid gradient slider (orange→red→purple)
+  - **NEW:** Fire emoji thumb, levels: 8=🔥, 9=💎, 10=🦄
 - [x] 10x Focus section with Top 10x Action (special signal worth 10 points)
-- [x] Five Core Actions checklist
+- [x] 10x Unicorn Checklist with descriptions:
+  1. Top 10x Action Complete - "Set your 10x focus above"
+  2. Wormhole Relationship Activated - "Set contact below"
+  3. 7-Min Future Self Meditation - "Connect with your highest self"
+  4. Tomorrow Prepared - "Plan tomorrow's priorities now"
+  5. No Distraction / Course Corrected - "Locked in or recovered fast"
+- [x] All 5 = 🦄 10x Unicorn Win, Just #1 = ⭐ Priority Win
 - [x] Compound Habit tracking with streaks
 - [x] Today's Signals list with Add Signal modal
 - [x] Signal impact rating (1-10) and deal association
@@ -35,19 +45,32 @@
 - [x] Signal completion with points
 - [x] Planned ahead bonus, Before 6 PM bonus
 
-### Phase 4 - CRM System (Consolidated)
+### Phase 4 - Dashboard Screen (NEW)
+- [x] **My 10x Goal Card** with Edit Goal button
+- [x] **Stats Grid:** Current Streak 🔥, Best Streak ⭐, Unicorn Days 🦄, Priority Wins ⭐
+- [x] **Last 7 Days:** Circular progress indicators showing daily completion
+- [x] **Determination Trend:** Bar chart with gradient bars
+- [x] **Activity Heatmap:** GitHub-style contribution graph (365 days)
+- [x] **Wormhole Network Summary:** Top contacts by engagement
+
+### Phase 5 - CRM System (Consolidated)
 - [x] Single CRM tab with Deals + Contacts sub-tabs
 - [x] **Contact Labels:** prospect, referral_partner, strategic_partner, client, wormhole, resource
-- [x] **Connection Levels:** new_connection, building, warm_local, warm_intl, active_professional, close_personal, mid_aspirational (colored pills)
-- [x] **Contact Tags:** business_owner, influencer, speaker, access, mindset, future_self, community_partner, etc.
-- [x] **Workflow Fields:** activation_next_step, last_contact_date, set_meeting, preferred_platform, power_leverage
+- [x] **Connection Levels (UPDATED):**
+  - Active / Professional (purple)
+  - Warm / Local (green)
+  - Building (amber)
+  - Mid-Aspirational (orange)
+  - Close / Personal (pink)
+- [x] **Contact Tags (UPDATED):** influencer, speaker, business_owner, access, mindset, future_self, community_partner, motivation
+- [x] **Workflow Fields:** activation_next_step, last_contact_date, set_meeting, preferred_platform, power_leverage, best_contact_method
 - [x] **Engagement Tracking:** engagement_level, engagement_types, tagging_in_posts, tagging_in_comments
 - [x] **Reciprocity Notes:** value exchange documentation
 - [x] Deal stages: lead, qualified, proposal, negotiation, closed_won, closed_lost
 - [x] Deal close_date with smart notifications
 - [x] Deal priority calculation based on value/stage/timing
 
-### Phase 5 - Wormhole System (Enhanced Contacts)
+### Phase 6 - Wormhole System (Enhanced Contacts)
 - [x] Wormhole Detail Page with full editable profile
 - [x] **Logs Timeline:** wormhole_logs collection per contact
 - [x] **Log Action Types:** call, meeting, dm, email, coffee_chat, collaboration, intro_made, follow_up
@@ -56,7 +79,7 @@
 - [x] Auto-layout based on contact type (wormholes show all fields)
 - [x] "Show all fields" toggle for other contact types
 
-### Phase 6 - Goal Progress Tracking
+### Phase 7 - Goal Progress Tracking
 - [x] Goal deadline and target_number
 - [x] Daily progress check-in (POST /api/goals/progress)
 - [x] Progress status calculation: crushing_it, on_track, showing_up, leaning_off, needs_support
@@ -64,7 +87,7 @@
 - [x] Points for daily progress updates
 - [x] On-track bonus points
 
-### Phase 7 - Community Features
+### Phase 8 - Community Features
 - [x] Community feed with signal completions and help requests
 - [x] Leaderboard by points
 - [x] Member directory with search
@@ -74,34 +97,47 @@
 - [x] Help request system for off-track users
 - [x] Messages button for accessing DMs
 
-### Phase 8 - Direct & Group Messaging
+### Phase 9 - Direct & Group Messaging
 - [x] Direct messages between community members
 - [x] Conversations list with unread count
 - [x] Group chat creation with multiple members
-- [x] Group messaging
-- [x] Message notifications (stored for push)
-- [x] Messages screen under Community tab
+- [x] Group messaging with chat UI
+- [x] Message notifications (push enabled)
+- [x] Messages screen accessible from Community
 
-### Phase 9 - Notifications & Profile
+### Phase 10 - Push Notifications (NEW)
+- [x] **Expo Push Service Integration** (free, no signup required)
+- [x] Push token registration (POST /api/notifications/push-token)
+- [x] Message notifications (new message alerts)
+- [x] Deal reminder notifications (close date alerts)
+- [x] Daily check-in reminders
 - [x] **Notification Settings:**
   - Daily check-in reminder (customizable time)
   - Deal close date reminders (smart timing)
   - Community notifications
   - Message notifications
-- [x] **Profile Photo Upload:** Base64 image upload with camera icon
-- [x] Photo picker using expo-image-picker
+
+### Phase 11 - Profile & Storage (NEW)
+- [x] **Cloud Storage for Profile Photos** via Emergent Object Storage
+- [x] Profile photo upload (base64)
+- [x] File reference storage in MongoDB
+- [x] Photo delete functionality
 - [x] Show/hide goal status ring toggle
 
-## Navigation Structure
-- **Today** - Daily tracking, signals list, AI coaching
-- **CRM** - Deals + Contacts tabs, wormhole detail view
-- **Community** - Leaderboard, Feed, Directory, Messages access
-- **Profile** - User profile, photo upload, notification settings
+## Navigation Structure (UPDATED)
+- **Daily** (⚡) - Daily tracking, signals list, AI coaching
+- **Dashboard** (📊) - Stats, streaks, heatmap, goals
+- **Community** (🏆) - Leaderboard, Feed, Directory, Messages
+- **CRM** (🌀) - Deals + Contacts tabs, wormhole detail view
+- **Settings** (⚙️) - User profile, photo upload, notification settings
 
 ## API Endpoints
 
 ### Authentication
 - POST /api/register, POST /api/login, GET /api/auth/me
+
+### Dashboard
+- GET /api/dashboard/stats
 
 ### Signals
 - GET/POST /api/signals
@@ -109,11 +145,10 @@
 
 ### CRM - Contacts
 - GET/POST /api/wormhole-contacts
-- GET /api/wormhole-contacts/labels
+- PUT/DELETE /api/wormhole-contacts/{id}
 - GET /api/wormhole-contacts/options (all field options)
 - POST /api/wormhole-contacts/{id}/logs
 - GET /api/wormhole-contacts/{id}/logs
-- GET /api/wormhole-contacts/{id}/timeline
 
 ### CRM - Deals
 - GET/POST /api/deals
@@ -129,7 +164,6 @@
 - GET /api/community/feed
 - POST /api/community/help-request
 - GET /api/community/members
-- GET /api/member/{user_id}
 
 ### Messaging
 - POST /api/messages/direct
@@ -142,31 +176,38 @@
 - POST /api/notifications/push-token
 - GET/PUT /api/notifications/settings
 
-### Profile
+### Profile & Storage
 - GET/PUT /api/profiles/me
-- PUT /api/profiles/photo
+- POST /api/profiles/photo (multipart upload)
+- PUT /api/profiles/photo (base64 upload)
 - DELETE /api/profiles/photo
+- GET /api/files/{path} (download from cloud storage)
 
 ## Database Collections
 - users, goals, signals, signal_completions
 - deals, wormhole_contacts, wormhole_logs
 - daily_entries, profiles, member_profiles
 - user_points, compound_habits, help_requests
-- messages, group_chats, push_tokens, notification_settings, notifications
+- messages, group_chats
+- push_tokens, notification_settings, notifications
+- files (cloud storage references)
+
+## Testing Status (Updated March 4, 2026)
+- Backend: 95% pass rate (90/95 tests)
+- Frontend: 100% pass rate (37/37 tests)
+- Test files: /app/backend/tests/, /app/tests/e2e/
+- Latest report: /app/test_reports/iteration_5.json
 
 ## Pending/Backlog
 
 ### P1 - Medium Priority
-- [ ] Push notification delivery (integrate with Expo Push Service)
-- [ ] Real-time messaging updates
+- [ ] Real-time messaging with WebSocket (currently polling)
+- [ ] Background push notification scheduling
 
-### P2 - Future
+### P2 - Future Enhancements
 - [ ] Premium tiers and coaching integrations
 - [ ] Social accountability groups
 - [ ] Public streak sharing
 - [ ] Community challenges
-
-## Testing Status
-- Backend: 95% pass rate (90/95 tests)
-- Frontend: 100% pass rate (22/22 tests)
-- Test files: /app/backend/tests/, /app/tests/e2e/
+- [ ] Refactor server.py into APIRouter modules
+- [ ] Refactor crm.tsx into smaller components

@@ -267,6 +267,7 @@ class WormholeContactUpdate(BaseModel):
     last_contact_date: Optional[str] = None
     set_meeting: Optional[bool] = None
     preferred_platform: Optional[str] = None
+    best_contact_method: Optional[str] = None  # Preferred contact method
     power_leverage: Optional[str] = None
     leverage_categories: Optional[List[str]] = None
     engagement_level: Optional[str] = None
@@ -1551,12 +1552,18 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
     goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
     
     # For top 10x action, check if one already exists for today
-    today_mmddyy = datetime.now(timezone.utc).strftime("%m/%d/%y")  # MM/DD/YY format to match due_date storage
+    today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")  # ISO format
+    today_mmddyy = datetime.now(timezone.utc).strftime("%m/%d/%y")  # MM/DD/YY format
     if input_data.is_top_10x_action:
+        # Check both date formats for existing top 10x action
         existing_top = await db.signals.find_one({
             "user_id": user['id'],
             "is_top_10x_action": True,
-            "due_date": today_mmddyy
+            "$or": [
+                {"due_date": today_mmddyy},
+                {"due_date": today_iso},
+                {"due_date": {"$regex": f"^{today_iso}"}}  # Also check ISO datetime strings
+            ]
         })
         if existing_top:
             raise HTTPException(status_code=400, detail="You already have a Top 10x Action for today")
