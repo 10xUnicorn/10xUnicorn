@@ -1,161 +1,149 @@
 # 10x Unicorn - Product Requirements Document
 
 ## Product Overview
-10x Unicorn is a **10x goal execution dashboard, relationship intelligence CRM, and community performance platform for business owners**. The system helps users identify daily priorities, take aligned actions toward their goal, activate high-leverage relationships, build compounding habits, track measurable signals of progress, and participate in a community of ambitious builders.
+10x Unicorn is a **10x goal execution dashboard, relationship intelligence CRM, and community performance platform for business owners**. The system helps users identify daily priorities, take aligned actions toward their goal, activate high-leverage relationships, build compounding habits, track measurable signals of progress, earn points for aligned execution, and participate in a community of builders doing the same challenge.
 
 ## Tech Stack
 - **Frontend**: Expo React Native (SDK 54) with expo-router (file-based routing)
 - **Backend**: FastAPI (Python) with MongoDB
-- **AI**: OpenAI GPT-5.2 via Emergent LLM Key (emergentintegrations library)
+- **AI**: OpenAI GPT-5.2 via Emergent LLM Key
 - **Auth**: JWT-based email/password authentication
 
-## Design System (Updated)
+## Design System
 - **Theme**: Deep navy space background (`#0a0a1a`)
 - **Primary**: Electric purple (`#A855F7`)
 - **Secondary**: Magenta/pink (`#D946EF`)
 - **Accent**: Cyan/teal (`#06B6D4`)
 - **Red**: For "10x" branding (`#EF4444`)
 - **Cards**: `#12122a` with `#2D2D50` borders
-- **Typography**: Bold, futuristic aesthetic
-- **Navigation**: Bottom tabs (Today, Momentum, Wormhole, Profile)
 
 ## Core Features
 
 ### 1. Authentication
 - Email + password registration and login
 - JWT session persistence (30 days)
-- Password change
-- Account deletion with full data cleanup
-- User data isolation
+- Password change, account deletion
 
 ### 2. Onboarding Flow (4 Steps)
 1. Display Name
 2. Timezone selection
-3. 10x Goal (title + optional description)
+3. 10x Goal (title + description)
 4. Daily Compound Habit
 
 ### 3. Today Page (Center of Gravity)
-- **Date Navigation**: Yesterday | Today | Tomorrow with auto-create
-- **Status Banner**: Shows computed/override status with color coding
-- **Fluid Determination Slider**: 0-10 continuous draggable slider with emoji indicators:
-  - 0-2 → 😴
-  - 3-4 → 😐
-  - 5-6 → 😤
-  - 7-9 → 🔥
-  - 10 → 🦄
+- **Fluid Determination Slider**: 0-10 continuous draggable slider with emoji indicators (😴→😐→😤→🔥→🦄)
 - **Intention**: "What kind of person are you being today?"
-- **10x Focus**: Large prominent mission input with top action checkbox
-- **Five Core Actions** (Updated):
+- **10x Focus**: Main goal with top action checkbox
+- **Five Core Actions**:
   1. Top 10x Action Item
   2. 7-Minute Future Self Meditation
   3. Wormhole Relationship
   4. Avoid Distractions
   5. Plan the Next Day Ahead of Time
-- **Wormhole Section**: Relationship leverage input with link to contacts
-- **Daily Compound**: Habit checkbox with streak counter + optional notes
+- **Win Logic**: Priority Win (top action) → 10x Unicorn Win (all 5)
+- **Wormhole Section**: Relationship leverage input
+- **Daily Compound**: Habit checkbox with streak counter
 - **Distraction Reflection**: Notes + course-correct toggle
-- **AI Course Correction**: Button to launch AI coaching session
+- **AI Course Correction**: Launch AI coaching session
 
-### 4. Win Logic Engine (Updated)
-| Status | Condition |
-|--------|-----------|
-| `unicorn_win` | All 5 core actions complete (10x Unicorn Win!) |
-| `priority_win` | Top 10x Action Item completed |
-| `course_corrected` | AI session completed |
-| `loss` | Actions started but insufficient |
-| `ready` | No actions taken yet |
-| `lesson` | Manual override only |
+### 4. Signals & Points System (NEW)
+**Signals**: Measurable actions tied to 10x goal
+- Signal name, description, base points
+- Public/private toggle (blue globe icon)
+- Completion tracking with notes
 
-Manual override always supersedes computed status.
+**Points System**:
+- Base signal points (configurable per signal)
+- Bonus: +5 for planning signals the night before
+- Bonus: +10 for completing before 6 PM
+- Bonus: +20 for completing all signals (3+ signals)
+- Bonus: +2 per day of signal streak
+- Bonus: +15 for Top 10x Action
+- Bonus: +10 for Wormhole action
+- Bonus: impact_rating × 0.5 for high-impact wormhole actions
+- Bonus: +50 for 10x Unicorn Win
 
-### 5. AI Course Correction Engine
-- Contextual coaching using user's actual data (determination, intention, focus, actions, distractions)
-- Multi-turn conversation with structured coaching protocol
-- Generates execution plans with 2-min first steps, timeboxing, definition of done
-- Marks day as "course_corrected" upon session completion
+**Leaderboard**: Ranked by total points, showing:
+- Member name, 10x Goal, Total Points, Weekly Points, Signal Streak
 
-### 6. Wormhole Contact System (Expanded CRM)
+**Community Feed**: Public signal completions showing:
+- Who completed what signal, points earned, notes
+
+### 5. Wormhole Contact System (Expanded CRM)
 **Contact Profile Fields:**
 - **Identity**: Name, Company, Title/Role, Location
 - **Contact Info**: Website, Email, Phone
 - **Social Media**: LinkedIn, Twitter/X, Instagram, YouTube, TikTok, Other
-- **Leverage Potential**: Categories (Investor, Strategic Partner, Distribution Partner, Media, Influencer, Connector, Industry Authority) + Description
+- **Leverage Potential**: Categories + Description
+  - Categories: Investor, Strategic Partner, Distribution Partner, Media, Influencer, Connector, Industry Authority
 - **Best Contact Method**: Email, LinkedIn DM, Text, Phone, Warm Intro, In Person, Other
 - **Relationship Intelligence**: Connection Level (cold/warm/hot/close), Tags, Engagement Strength (1-10)
-- **Next Steps**: Activation Next Step, Notes
-- **Interaction History**: Timeline of all logged interactions
+- **Activation**: Next Step, Notes
+- **Interaction History**: Timeline with action types and impact ratings
 
-**Interaction Logging:**
-- Action Type (sent_intro_email, followed_up, scheduled_meeting, commented_post, made_introduction, etc.)
-- Action Text
-- Impact Rating (1-10)
+**Interaction Logging**:
+- Action Types: sent_intro_email, followed_up, scheduled_meeting, commented_post, made_introduction, had_call, sent_proposal, met_in_person, other
+- Impact Rating (1-10): Higher impact = more bonus points
 - Automatic updates to Last Contact Date and Engagement Score
 
-### 7. Momentum Dashboard
+### 6. Momentum Dashboard
 - Active 10x Goal display
-- Compound streak (current + 7/30/90-day percentages)
-- Win Performance (Win Rate, Unicorn Rate, Current/Longest Streak)
-- Win breakdown (Unicorn Wins, Priority Wins, Course Corrected, Total)
+- Compound streak with 7/30/90-day percentages
+- Win Performance metrics
 - Core Action completion rates
-- Determination trend (7-day)
-- Wormhole Network metrics (top contacts by engagement)
+- Determination trend
+- Wormhole Network metrics
 
-### 8. Profile Management
+### 7. Profile Management
 - Edit display name, 10x goal, compound habit
 - View timezone and member-since date
 - Logout / Delete Account
-
-## Data Models (Updated)
-- **users**: id, email, password_hash, onboarded, created_at
-- **profiles**: user_id, display_name, timezone_str
-- **goals**: id, user_id, title, description, start_date, end_date, active
-- **compound_habits**: user_id, habit_title
-- **daily_entries**: user_id, date, determination_level, intention, ten_x_focus, top_10x_action_text, top_priority_completed, five_item_statuses (top_action, meditation, wormhole, distractions, plan_tomorrow), wormhole_contact_id, wormhole_action_text, wormhole_action_type, wormhole_impact_rating, distraction_notes, immediate_course_correction, compound_done, compound_notes, computed_status, manual_override_status, final_status, ai_course_corrected
-- **wormhole_contacts**: id, user_id, name, company, title, location, website, email, phone, linkedin, twitter, instagram, youtube, tiktok, other_social, leverage_categories, leverage_description, best_contact_method, connection_level, tags, engagement_strength, engagement_score, activation_next_step, notes, last_contact_date, interaction_history
-- **ai_sessions**: id, user_id, date_reference, conversation_log, marked_complete
-
-## API Routes (all prefixed with /api)
-- Auth: register, login, me, change-password, account delete
-- Onboarding: complete onboarding
-- Profile: get/update profile, goal, habit
-- Daily Entries: get/update by date, list, move
-- Wormhole: CRUD contacts, log interaction (with action_type, impact_rating), bulk import
-- AI Sessions: start, message, complete, get by date
-- Dashboard: stats, compound streak
 
 ---
 
 ## Implementation Status
 
-### ✅ Phase 1 Complete (Foundation)
-- [x] Updated color scheme (deep navy, electric purple, cyan accents, red "10x")
+### ✅ Phase 1 Complete
+- [x] Updated color scheme (deep navy, electric purple, cyan, red 10x)
 - [x] Fluid determination slider with emoji indicators
 - [x] Updated five core actions
 - [x] Updated win/loss logic
-- [x] Expanded Wormhole contact schema (all new fields)
-- [x] Interaction logging with action_type and impact_rating
+- [x] Expanded Wormhole contact schema
 
-### 🔄 Phase 2: Signals & Points System (Next)
-- [ ] Signal creation tied to 10x goal
-- [ ] Point tracking & bonus system
-- [ ] Planning ahead bonuses
-- [ ] Before 6PM completion bonuses
-- [ ] Signal streaks
+### ✅ Phase 2 Complete (Signals & Points)
+- [x] Signal CRUD operations
+- [x] Signal completion with base + bonus points
+- [x] Planned ahead bonus (+5)
+- [x] Before 6PM bonus (+10)
+- [x] All signals complete bonus (+20)
+- [x] Signal streak tracking
+- [x] Points summary endpoint
+- [x] Leaderboard endpoint
+- [x] Community feed endpoint
+- [x] Daily bonuses endpoint (top action, wormhole, unicorn win)
+- [x] Public/private toggle for signals
+- [x] Signals tab in navigation
 
-### 📋 Phase 3: Expanded Wormhole CRM UI
-- [ ] Full contact profile UI with all fields
-- [ ] Action type selector in interaction logging
-- [ ] Impact rating input
+### ✅ Phase 3 Complete (Expanded Wormhole CRM UI)
+- [x] Full contact profile UI with all fields
+- [x] Social media handles input
+- [x] Leverage categories selector
+- [x] Best contact method selector
+- [x] Connection level selector
+- [x] Engagement strength slider (1-10)
+- [x] Action type selector in interaction logging
+- [x] Impact rating slider (1-10)
+- [x] Interaction history with type and impact display
 
-### 🔵 Phase 4: Community Features
+### 🔵 Phase 4: Community Features (Next)
 - [ ] Member profiles with strategic connection fields
-- [ ] Public signal feed
-- [ ] Leaderboard
-- [ ] Member directory
+- [ ] Public signal feed UI
+- [ ] Leaderboard UI
+- [ ] Member directory with filters
 
 ### 🔵 Phase 5: Deals CRM & Matching
-- [ ] Deal tracking
-- [ ] Needs categories
+- [ ] Deal tracking (contact, value, stage)
+- [ ] Needs categories (Capital, Marketing, etc.)
 - [ ] Service matching
 
 ### 🔵 Phase 6: Messaging
@@ -164,11 +152,56 @@ Manual override always supersedes computed status.
 
 ---
 
+## API Endpoints
+
+### Auth
+- POST /api/auth/register
+- POST /api/auth/login
+- GET /api/auth/me
+
+### Profile & Onboarding
+- POST /api/onboarding
+- GET /api/profile
+- PUT /api/profile
+
+### Daily Entries
+- GET /api/daily-entry/{date}
+- PUT /api/daily-entry/{date}
+- POST /api/daily-entry/{date}/award-bonuses
+
+### Signals & Points
+- GET /api/signals
+- POST /api/signals
+- PUT /api/signals/{id}
+- DELETE /api/signals/{id}
+- POST /api/signals/{id}/complete
+- GET /api/signal-completions
+- GET /api/points/summary
+- GET /api/points/leaderboard
+- GET /api/community/feed
+
+### Wormhole Contacts
+- GET /api/wormhole-contacts
+- POST /api/wormhole-contacts
+- PUT /api/wormhole-contacts/{id}
+- DELETE /api/wormhole-contacts/{id}
+- POST /api/wormhole-contacts/interaction
+- POST /api/wormhole-contacts/import-bulk
+
+### Dashboard
+- GET /api/dashboard/stats
+- GET /api/compound-streak
+
+### AI
+- POST /api/ai/session
+- POST /api/ai/session/{id}/message
+
+---
+
 ## Future Enhancements
+- Push notifications for daily reminders
 - Public streak sharing
 - Social accountability groups
-- Leaderboards
 - Community challenges
 - Premium tiers
 - Coaching integrations
-- Push notifications for daily reminders

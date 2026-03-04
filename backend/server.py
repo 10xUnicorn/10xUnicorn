@@ -196,6 +196,38 @@ class PasswordResetInput(BaseModel):
     current_password: str
     new_password: str
 
+# ─── Signal & Points System Models ───
+
+class SignalInput(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    points: int = 10
+    is_public: bool = True  # Public by default, user can make private
+
+class SignalUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    points: Optional[int] = None
+    is_public: Optional[bool] = None
+
+class SignalCompletionInput(BaseModel):
+    signal_id: str
+    notes: Optional[str] = ""
+    planned_yesterday: bool = False  # Was this signal planned the night before?
+
+# Points configuration
+POINTS_CONFIG = {
+    "base_signal": 10,
+    "planned_ahead_bonus": 5,
+    "before_6pm_bonus": 10,
+    "all_signals_bonus": 20,
+    "streak_bonus_per_day": 2,
+    "top_action_bonus": 15,
+    "wormhole_action_bonus": 10,
+    "wormhole_impact_multiplier": 0.5,  # Extra points = impact_rating * 0.5
+    "unicorn_win_bonus": 50,
+}
+
 # ─── Win Logic ───
 # Updated Five Core Actions:
 # 1. top_action - Top 10x Action Item
@@ -961,6 +993,337 @@ async def get_compound_streak(user: dict = Depends(get_current_user)):
     return {
         "streak": streak,
         "habit": habit
+    }
+
+# ─── Signals & Points System ───
+
+@api_router.post("/signals")
+async def create_signal(input_data: SignalInput, user: dict = Depends(get_current_user)):
+    """Create a new signal (measurable action) tied to the user's 10x goal"""
+    goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
+    
+    signal = {
+        "id": str(uuid.uuid4()),
+        "user_id": user['id'],
+        "goal_id": goal['id'] if goal else None,
+        "name": input_data.name,
+        "description": input_data.description or "",
+        "points": input_data.points,
+        "is_public": input_data.is_public,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.signals.insert_one(signal)
+    return {k: v for k, v in signal.items() if k != '_id'}
+
+@api_router.get("/signals")
+async def list_signals(user: dict = Depends(get_current_user)):
+    """Get all signals for the current user"""
+    signals = await db.signals.find(
+        {"user_id": user['id']}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    return signals
+
+@api_router.get("/signals/{signal_id}")
+async def get_signal(signal_id: str, user: dict = Depends(get_current_user)):
+    signal = await db.signals.find_one(
+        {"id": signal_id, "user_id": user['id']}, {"_id": 0}
+    )
+    if not signal:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    return signal
+
+@api_router.put("/signals/{signal_id}")
+async def update_signal(signal_id: str, input_data: SignalUpdate, user: dict = Depends(get_current_user)):
+    updates = {k: v for k, v in input_data.dict().items() if v is not None}
+    if updates:
+        await db.signals.update_one(
+            {"id": signal_id, "user_id": user['id']},
+            {"$set": updates}
+        )
+    signal = await db.signals.find_one(
+        {"id": signal_id, "user_id": user['id']}, {"_id": 0}
+    )
+    return signal
+
+@api_router.delete("/signals/{signal_id}")
+async def delete_signal(signal_id: str, user: dict = Depends(get_current_user)):
+    result = await db.signals.delete_one({"id": signal_id, "user_id": user['id']})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    return {"message": "Signal deleted"}
+
+@api_router.post("/signals/{signal_id}/complete")
+async def complete_signal(signal_id: str, input_data: SignalCompletionInput, user: dict = Depends(get_current_user)):
+    """Complete a signal and award points with bonuses"""
+    signal = await db.signals.find_one({"id": signal_id, "user_id": user['id']})
+    if not signal:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    
+    # Get user's timezone for 6 PM check (future: use pytz for accurate TZ handling)
+    now = datetime.now(timezone.utc)
+    today = now.strftime("%Y-%m-%d")
+    current_hour = now.hour  # UTC hour, would need pytz for accurate TZ handling
+    
+    # Calculate points
+    base_points = signal.get('points', POINTS_CONFIG['base_signal'])
+    bonus_points = 0
+    bonuses = []
+    
+    # Planned ahead bonus
+    if input_data.planned_yesterday:
+        bonus_points += POINTS_CONFIG['planned_ahead_bonus']
+        bonuses.append({"type": "planned_ahead", "points": POINTS_CONFIG['planned_ahead_bonus']})
+    
+    # Before 6 PM bonus (simplified - using UTC for now)
+    if current_hour < 18:
+        bonus_points += POINTS_CONFIG['before_6pm_bonus']
+        bonuses.append({"type": "before_6pm", "points": POINTS_CONFIG['before_6pm_bonus']})
+    
+    total_points = base_points + bonus_points
+    
+    # Create completion record
+    completion = {
+        "id": str(uuid.uuid4()),
+        "user_id": user['id'],
+        "signal_id": signal_id,
+        "signal_name": signal.get('name'),
+        "date": today,
+        "base_points": base_points,
+        "bonus_points": bonus_points,
+        "total_points": total_points,
+        "bonuses": bonuses,
+        "notes": input_data.notes or "",
+        "is_public": signal.get('is_public', True),
+        "created_at": now.isoformat()
+    }
+    await db.signal_completions.insert_one(completion)
+    
+    # Update user's total points
+    await db.user_points.update_one(
+        {"user_id": user['id']},
+        {
+            "$inc": {"total_points": total_points, "weekly_points": total_points},
+            "$setOnInsert": {"created_at": now.isoformat()}
+        },
+        upsert=True
+    )
+    
+    # Check for all signals completed bonus
+    user_signals = await db.signals.find({"user_id": user['id']}).to_list(100)
+    if len(user_signals) >= 3:
+        today_completions = await db.signal_completions.find({
+            "user_id": user['id'],
+            "date": today
+        }).to_list(100)
+        completed_signal_ids = {c['signal_id'] for c in today_completions}
+        
+        if all(s['id'] in completed_signal_ids for s in user_signals):
+            # Award all signals bonus
+            all_bonus = POINTS_CONFIG['all_signals_bonus']
+            await db.user_points.update_one(
+                {"user_id": user['id']},
+                {"$inc": {"total_points": all_bonus, "weekly_points": all_bonus}}
+            )
+            completion['all_signals_bonus'] = all_bonus
+            total_points += all_bonus
+    
+    return {
+        "completion": {k: v for k, v in completion.items() if k != '_id'},
+        "total_points_earned": total_points
+    }
+
+@api_router.get("/signal-completions")
+async def list_signal_completions(
+    date: Optional[str] = None,
+    limit: int = 50,
+    user: dict = Depends(get_current_user)
+):
+    """Get signal completions, optionally filtered by date"""
+    query = {"user_id": user['id']}
+    if date:
+        query["date"] = date
+    
+    completions = await db.signal_completions.find(
+        query, {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    return completions
+
+@api_router.get("/points/summary")
+async def get_points_summary(user: dict = Depends(get_current_user)):
+    """Get user's points summary including streaks"""
+    points = await db.user_points.find_one({"user_id": user['id']}, {"_id": 0})
+    
+    if not points:
+        points = {"total_points": 0, "weekly_points": 0}
+    
+    # Calculate signal streak
+    completions = await db.signal_completions.find(
+        {"user_id": user['id']}, {"_id": 0}
+    ).sort("date", -1).to_list(365)
+    
+    # Group by date
+    dates_with_completions = set(c['date'] for c in completions)
+    
+    # Calculate streak
+    signal_streak = 0
+    check_date = datetime.now(timezone.utc).date()
+    while True:
+        date_str = check_date.strftime("%Y-%m-%d")
+        if date_str in dates_with_completions:
+            signal_streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+    
+    # Get leaderboard rank
+    all_points = await db.user_points.find({}, {"_id": 0}).sort("total_points", -1).to_list(1000)
+    rank = 1
+    for i, p in enumerate(all_points):
+        if p.get('user_id') == user['id']:
+            rank = i + 1
+            break
+    
+    return {
+        "total_points": points.get('total_points', 0),
+        "weekly_points": points.get('weekly_points', 0),
+        "signal_streak": signal_streak,
+        "rank": rank,
+        "total_users": len(all_points)
+    }
+
+@api_router.get("/points/leaderboard")
+async def get_leaderboard(limit: int = 20):
+    """Get community leaderboard"""
+    # Get all user points sorted by total
+    all_points = await db.user_points.find({}, {"_id": 0}).sort("total_points", -1).limit(limit).to_list(limit)
+    
+    leaderboard = []
+    for i, p in enumerate(all_points):
+        # Get user profile
+        profile = await db.profiles.find_one({"user_id": p['user_id']}, {"_id": 0})
+        goal = await db.goals.find_one({"user_id": p['user_id'], "active": True}, {"_id": 0})
+        
+        # Calculate signal streak for this user
+        completions = await db.signal_completions.find(
+            {"user_id": p['user_id']}, {"date": 1}
+        ).sort("date", -1).to_list(365)
+        dates_with_completions = set(c['date'] for c in completions)
+        
+        signal_streak = 0
+        check_date = datetime.now(timezone.utc).date()
+        while True:
+            date_str = check_date.strftime("%Y-%m-%d")
+            if date_str in dates_with_completions:
+                signal_streak += 1
+                check_date -= timedelta(days=1)
+            else:
+                break
+        
+        leaderboard.append({
+            "rank": i + 1,
+            "user_id": p['user_id'],
+            "display_name": profile.get('display_name', 'Anonymous') if profile else 'Anonymous',
+            "goal_title": goal.get('title', '') if goal else '',
+            "total_points": p.get('total_points', 0),
+            "weekly_points": p.get('weekly_points', 0),
+            "signal_streak": signal_streak
+        })
+    
+    return leaderboard
+
+@api_router.get("/community/feed")
+async def get_community_feed(limit: int = 50):
+    """Get public signal completions feed"""
+    completions = await db.signal_completions.find(
+        {"is_public": True}, {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    feed = []
+    for c in completions:
+        profile = await db.profiles.find_one({"user_id": c['user_id']}, {"_id": 0})
+        goal = await db.goals.find_one({"user_id": c['user_id'], "active": True}, {"_id": 0})
+        
+        feed.append({
+            "id": c['id'],
+            "user_id": c['user_id'],
+            "display_name": profile.get('display_name', 'Anonymous') if profile else 'Anonymous',
+            "goal_title": goal.get('title', '') if goal else '',
+            "signal_name": c.get('signal_name', ''),
+            "total_points": c.get('total_points', 0),
+            "notes": c.get('notes', ''),
+            "created_at": c.get('created_at')
+        })
+    
+    return feed
+
+@api_router.post("/daily-entry/{date}/award-bonuses")
+async def award_daily_bonuses(date: str, user: dict = Depends(get_current_user)):
+    """Award bonus points for daily achievements (top action, wormhole, unicorn win)"""
+    entry = await db.daily_entries.find_one(
+        {"user_id": user['id'], "date": date}, {"_id": 0}
+    )
+    if not entry:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    
+    bonuses = []
+    total_bonus = 0
+    
+    # Top 10x Action bonus
+    if entry.get('top_priority_completed', False):
+        bonus = POINTS_CONFIG['top_action_bonus']
+        bonuses.append({"type": "top_action", "points": bonus})
+        total_bonus += bonus
+    
+    # Wormhole action bonus
+    five = entry.get('five_item_statuses', {})
+    if five.get('wormhole', False):
+        bonus = POINTS_CONFIG['wormhole_action_bonus']
+        bonuses.append({"type": "wormhole_action", "points": bonus})
+        total_bonus += bonus
+        
+        # Impact rating bonus
+        impact = entry.get('wormhole_impact_rating')
+        if impact:
+            impact_bonus = int(impact * POINTS_CONFIG['wormhole_impact_multiplier'])
+            bonuses.append({"type": "wormhole_impact", "points": impact_bonus})
+            total_bonus += impact_bonus
+    
+    # Unicorn win bonus
+    if entry.get('final_status') == 'unicorn_win':
+        bonus = POINTS_CONFIG['unicorn_win_bonus']
+        bonuses.append({"type": "unicorn_win", "points": bonus})
+        total_bonus += bonus
+    
+    if total_bonus > 0:
+        # Check if bonuses already awarded for this date
+        existing = await db.daily_bonuses.find_one({
+            "user_id": user['id'],
+            "date": date
+        })
+        
+        if not existing:
+            await db.daily_bonuses.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": user['id'],
+                "date": date,
+                "bonuses": bonuses,
+                "total_points": total_bonus,
+                "created_at": datetime.now(timezone.utc).isoformat()
+            })
+            
+            await db.user_points.update_one(
+                {"user_id": user['id']},
+                {
+                    "$inc": {"total_points": total_bonus, "weekly_points": total_bonus},
+                    "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}
+                },
+                upsert=True
+            )
+    
+    return {
+        "bonuses": bonuses,
+        "total_bonus": total_bonus,
+        "already_awarded": existing is not None if total_bonus > 0 else False
     }
 
 # ─── Health Check ───

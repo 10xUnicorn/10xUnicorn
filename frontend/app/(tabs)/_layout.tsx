@@ -24,6 +24,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="signals"
+        options={{
+          title: 'Signals',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="flash" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="dashboard"
         options={{
           title: 'Momentum',
@@ -37,7 +46,7 @@ export default function TabsLayout() {
         options={{
           title: 'Wormhole',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people" size={size} color={color} />
+            <Ionicons name="planet" size={size} color={color} />
           ),
         }}
       />
