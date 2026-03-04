@@ -1,138 +1,75 @@
-<analysis>
-<original_problem_statement>
-The user wants to build a mobile application called 10x Unicorn, designed as a mobile-first execution operating system to help individuals become high-performers.
+<analysis>**original_problem_statement:**
+The user wants to build a mobile application called 10x Unicorn. Initially conceived as a personal performance tool, the vision has expanded significantly. The application is now an integrated goal execution dashboard, relationship intelligence system, and community performance platform for business owners.
 
-**PRODUCT REQUIREMENTS:**
-- **Core Experience:** A daily-use app centered around a Today screen.
-- **Authentication:** Email + password, session persistence, password reset, account deletion.
-- **Onboarding:** A quick flow to collect user's name, timezone, a 10x Goal, and a Daily Compound Habit.
-- **Today Page:** The main interface, featuring:
-    - Determination Slider (0-10 with emoji feedback).
-    - Intention input (What kind of person are you being today?).
-    - 10x Focus: The main goal for the day.
-    - Five Core Actions checklist.
-    - Wormhole System: A mini-CRM to log interactions with key contacts.
-    - Daily Compound Habit tracker with streak counter.
-    - Distraction Reflection and course-correction toggle.
-    - Status Display (computed win/loss status, with manual override).
-    - Date Navigation (Yesterday/Today/Tomorrow).
-- **AI Course Correction Engine:** An AI chat feature to help users get back on track, using their daily inputs as context.
-- **Dashboard:** A screen to show momentum metrics like streaks, completion percentages, and performance trends.
-- **Wormhole Contacts:** A dedicated tab to manage contacts.
-- **User Preferences:**
-    - Use Emergent LLM for the AI engine.
-    - Accent color: Electric purple.
-    - Contact management: Allow importing from phone contacts and manual entry.
-    - Notifications: Implement daily push notifications to remind users to complete their entry.
-</original_problem_statement>
+**PRODUCT REQUIREMENTS (Summary of all user requests):**
+- **UI/UX:** A dark, futuristic theme with navy, purple, and cyan accents. Mobile-first design.
+- **Authentication:** Standard email/password login.
+- **Onboarding:** A flow to capture user's name, timezone, and primary 10x Goal.
+- **Today Screen:**
+    - A fluid slider for Determination Level (0-10) with emoji feedback.
+    - A single Top 10x Action for the day, which functions as a special Signal worth 10 points.
+    - A checklist of 5 core actions: Top 10x Action, 7-Minute Future Self Meditation, Wormhole Relationship, Avoid Distractions, Plan the Next Day.
+    - A list of the user's other Signals for the day.
+- **10x Goal Tracking:**
+    - Goals must have a deadline and a measurable target number.
+    - Daily progress check-ins with a progress bar and status (On Track, Off Track).
+    - A status ring around the user's profile picture in the community feed, indicating their goal progress status (e.g., green for on-track, red for off-track).
+    - A Help Request system triggered when a user is significantly off track, posting a need to the community.
+- **Signals System (Daily Progress):**
+    - Users create Signals (measurable actions) to track progress.
+    - Signals have an impact rating (1-10) instead of a fixed point value.
+    - Signals have a due date, selectable via a calendar. The calendar defaults to today (if before 3 PM) or tomorrow (if after 3 PM).
+    - Signals can be associated with a Deal.
+    - Bonus points for planning ahead, completing tasks early, streaks, etc.
+- **CRM System (New CRM Tab):**
+    - Consolidates Deals and Wormhole (Contacts).
+    - **Contacts:**
+        - Can be labeled as Prospect, Referral Partner, Strategic Partner, Client, Wormhole, or Resource.
+        - Extensive profile fields: social media, leverage potential, contact method, engagement score, etc.
+    - **Deals:**
+        - A CRM to track business opportunities with value, stage, and notes.
+        - Deals have a .
+        - The system should send push and email notifications leading up to the .
+- **Community Features (Community Tab):**
+    - A public feed of completed Signals and goal progress.
+    - A leaderboard ranked by points.
+    - **Member Profiles:** Extensive profiles with bio, company info, social links, booking links, services offered, target customer, and connection preferences.
+    - A profile icon on the community page to access and edit one's own profile, including a photo upload feature.
+    - A searchable member directory with filters.
+    - Direct and group messaging.
+- **Service Matching:** A system to match members who need services with those who offer them, based on profile data and Deal needs.
 
 **User's preferred language**: English
 
 **what currently exists?**
-A functional MVP of the 10x Unicorn full-stack mobile application has been built. The app includes user authentication (registration, login, logout), a one-time onboarding flow for new users, and a tab-based navigation structure. The core Today screen is implemented, allowing users to log daily entries. The backend is built with FastAPI and MongoDB, and the frontend is built with Expo (React Native). The basic UI for the Dashboard, Wormhole (Contacts), and Profile tabs is also in place, though the data visualization and advanced logic are not yet implemented.
+A significant portion of the application has been built out over several phases. The current application is a full-stack Expo (React Native) and FastAPI app with a MongoDB database. It includes user authentication, a tabbed interface, and the foundational UI/backend for most of the requested features. The UI reflects the user's desired dark/futuristic branding. Backend models and APIs exist for Users, Goals, Signals, Deals, Contacts, and Community profiles, but the most recent user requests are only partially implemented on the backend and not at all on the frontend.
 
 **Last working item**:
-    - Last item agent was working: The agent's final action was to deliver the  summary after successfully building and debugging the MVP. The development work for the session was complete. The process was significantly delayed by recurring infrastructure instability with the preview tunnel, which the agent had to restart multiple times.
-    - Status: NONE
-    - Agent Testing Done: Y
-    - Which testing method agent to use? NA
+    - Last item agent was working: The agent was in the middle of implementing a large set of new features requested by the user. The agent had just updated the backend Pydantic models in  to support these changes and was updating the  endpoint to handle the new  field for contacts.
+    - Status: IN PROGRESS
+    - Agent Testing Done: N
+    - Which testing method agent to use? backend testing agent
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  Issue 1: ESLint is not configured for TypeScript (P2)
+  Issue 1: Incomplete implementation of latest user requirements (P0)
+  Issue 2: ESLint is not configured for TypeScript (P2)
   
   Issues Detail:
   - Issue 1: 
-     - Description: During the development process, the  tool failed because the ESLint configuration in  does not correctly parse TypeScript syntax ( files). The agent noted this but proceeded, classifying it as a configuration issue rather than a code bug.
-     - Attempted fixes: None. The agent skipped linting.
-     - Next debug checklist: 
-       - Update  to include TypeScript parsing rules, likely using  and .
-       - Re-run 
-/app/frontend/app/(auth)/login.tsx
-    9:18  warning  'Spacing' is defined but never used                              @typescript-eslint/no-unused-vars
-  122:20  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-
-/app/frontend/app/(auth)/register.tsx
-  9:18  warning  'Spacing' is defined but never used  @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(tabs)/_layout.tsx
-  4:10  warning  'View' is defined but never used  @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(tabs)/dashboard.tsx
-   7:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
-  27:37  warning  React Hook useEffect has a missing dependency: 'loadStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/(tabs)/profile.tsx
-  11:18  warning  'Spacing' is defined but never used  @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(tabs)/today.tsx
-   4:34  warning  'Alert' is defined but never used                                                                             @typescript-eslint/no-unused-vars
-  10:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
-  38:10  warning  'profileData' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
-  64:6   warning  React Hook useEffect has a missing dependency: 'loadEntry'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/(tabs)/wormhole.tsx
-  11:18  warning  'Spacing' is defined but never used                                                                              @typescript-eslint/no-unused-vars
-  43:40  warning  React Hook useEffect has a missing dependency: 'loadContacts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/ai-chat.tsx
-   27:6   warning  React Hook useEffect has a missing dependency: 'loadExistingSession'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  138:77  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                         react/no-unescaped-entities
-
-/app/frontend/app/index.tsx
-  20:6  warning  React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/onboarding.tsx
-   10:18  warning  'Spacing' is defined but never used                              @typescript-eslint/no-unused-vars
-   72:57  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-  108:46  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-  108:76  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-
-✖ 20 problems (5 errors, 15 warnings) to confirm that it can now parse all  and  files without errors.
-     - Why fix this issue and what will be achieved with the fix? Fixing this will enable automated code quality and style checks, preventing potential bugs and ensuring code consistency across the project.
-     - Status:  NOT STARTED
+     - Attempted fixes: The agent started backend model updates in  but was interrupted. No other logic or UI has been implemented for the latest requests.
+     - Next debug checklist: This is not a bug, but a large feature implementation task. The checklist is in the In progress Task List.
+     - Why fix this issue and what will be achieved with the fix? To deliver the comprehensive set of features and improvements requested by the user in their last detailed message.
+     - Status:  IN PROGRESS
      - Is recurring issue? N
-     - Should Test frontend/backend/both after fix? frontend
+     - Should Test frontend/backend/both after fix? both
      - Blocked on other issue: None
 
-**In progress Task List**:
-None.
-
-**Upcoming and Future Tasks**
-**Upcoming Tasks (P0-P1):**
-- **P0: Implement AI Course Correction Engine:** The UI button exists on the Today screen (), and a basic API endpoint () is defined in . The next step is to implement the full conversational flow as described in the PRD, where the AI receives user context and guides them through a structured course-correction plan.
-- **P1: Implement Daily Push Notifications:** The user explicitly requested daily push notifications to remind them to complete their entry. This requires setting up Expo's push notification service, asking for user permission, and scheduling a daily local notification.
-- **P1: Implement Contact Import:** The user requested the ability to import contacts from the phone's address book for the Wormhole system. This will require using a library like  and adding the necessary permissions to .
-- **P1: Implement Dashboard Metrics:** The Dashboard UI is in place (). The backend needs to compute and the frontend needs to visualize the required metrics (streaks, completion %, trends over time) based on the  data.
-- **P1: Implement Wormhole Metrics:** Similar to the Dashboard, the backend and frontend for the Wormhole tab () need to be updated to calculate and display contact-related metrics.
-- **P2: Implement Advanced Date Navigation:** The UI buttons for date navigation exist on the Today screen. The backend logic for moving an entry to a different date and handling merge conflicts (as specified in the PRD) needs to be implemented in the  endpoint in .
-
-**Future Tasks:**
-- Public streak sharing
-- Social accountability groups
-- Leaderboards
-- Community challenges
-- Premium tiers
-- Coaching integrations
-
-**Completed work in this session**
-- **Full User Authentication:** Implemented registration (), login (), and session management using JWTs. Frontend screens for login () and register () are functional.
-- **Onboarding Flow:** Created a multi-step onboarding process () to collect user profile data, which is saved via the  endpoint.
-- **Backend and Database:** Set up a FastAPI server () with all necessary data models (User, Goal, Habit, DailyEntry, Contact, etc.) and API endpoints for CRUD operations on daily entries.
-- **Frontend Scaffolding:** Built a complete Expo app structure with file-based routing (Expo Router), including auth, main, and tab-based layouts.
-- **Today Screen MVP:** Implemented the core  screen with all its UI sections: Determination Slider, Intention, 10x Focus, Five Core Actions, Wormhole, Compound Habit, and Distraction Reflection.
-- **Tab Layout:** Created the main tab navigator () with placeholders for Today, Dashboard, Wormhole, and Profile.
-- **Critical Bug Fix (Auth Navigation):** Resolved an issue where users were not redirected after login/register by fixing  and the respective screens.
-- **Critical Bug Fix (API Token):** Fixed a bug where API calls failed immediately after login by implementing an in-memory token cache () to supplement .
-- **Logic Sync Fix:** Ensured that checking the Top 10x Action in different parts of the UI correctly syncs the state in both the frontend () and backend ().
-
-**Earlier issues found/mentioned but not fixed**
-   - Issue 1: ESLint Configuration for TypeScript
-     - Debug checklist:
-       - View .
-       - Add a TypeScript parser and plugin configuration.
-       - Example modification:
-         
+  - Issue 2: 
+     - Description: The  file is not set up to parse  files, so  fails. This has been ignored to focus on feature development.
+     - Attempted fixes: None.
+     - Next debug checklist:
+       - Update  to use  and .
        - Run 
 /app/frontend/app/(auth)/login.tsx
     9:18  warning  'Spacing' is defined but never used                              @typescript-eslint/no-unused-vars
@@ -144,22 +81,44 @@ None.
 /app/frontend/app/(tabs)/_layout.tsx
   4:10  warning  'View' is defined but never used  @typescript-eslint/no-unused-vars
 
+/app/frontend/app/(tabs)/community.tsx
+    5:19  warning  'Image' is defined but never used                                                                            @typescript-eslint/no-unused-vars
+   11:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   44:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  178:62  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+  178:75  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
+
 /app/frontend/app/(tabs)/dashboard.tsx
    7:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
   27:37  warning  React Hook useEffect has a missing dependency: 'loadStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
+/app/frontend/app/(tabs)/deals.tsx
+    9:10  warning  'LinearGradient' is defined but never used                                                                   @typescript-eslint/no-unused-vars
+   11:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   72:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  110:9   warning  'updateStage' is assigned a value but never used                                                             @typescript-eslint/no-unused-vars
+  425:67  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                              react/no-unescaped-entities
+
 /app/frontend/app/(tabs)/profile.tsx
-  11:18  warning  'Spacing' is defined but never used  @typescript-eslint/no-unused-vars
+  12:18  warning  'Spacing' is defined but never used  @typescript-eslint/no-unused-vars
+
+/app/frontend/app/(tabs)/signals.tsx
+    4:34  warning  'FlatList' is defined but never used                                                                         @typescript-eslint/no-unused-vars
+   11:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
+   13:7   warning  'IMPACT_LABELS' is assigned a value but never used                                                           @typescript-eslint/no-unused-vars
+   77:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  208:21  warning  'impact' is assigned a value but never used                                                                  @typescript-eslint/no-unused-vars
+  275:52  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                              react/no-unescaped-entities
 
 /app/frontend/app/(tabs)/today.tsx
-   4:34  warning  'Alert' is defined but never used                                                                             @typescript-eslint/no-unused-vars
-  10:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
-  38:10  warning  'profileData' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
-  64:6   warning  React Hook useEffect has a missing dependency: 'loadEntry'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  11:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
+  11:45  warning  'DETERMINATION_EMOJIS' is defined but never used                                                              @typescript-eslint/no-unused-vars
+  32:10  warning  'profileData' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
+  58:6   warning  React Hook useEffect has a missing dependency: 'loadEntry'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 /app/frontend/app/(tabs)/wormhole.tsx
-  11:18  warning  'Spacing' is defined but never used                                                                              @typescript-eslint/no-unused-vars
-  43:40  warning  React Hook useEffect has a missing dependency: 'loadContacts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  12:18  warning  'Spacing' is defined but never used                                                                              @typescript-eslint/no-unused-vars
+  86:40  warning  React Hook useEffect has a missing dependency: 'loadContacts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
 
 /app/frontend/app/ai-chat.tsx
    27:6   warning  React Hook useEffect has a missing dependency: 'loadExistingSession'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
@@ -174,13 +133,66 @@ None.
   108:46  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
   108:76  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
 
-✖ 20 problems (5 errors, 15 warnings) to validate the fix.
-     - Why to solve this issue and what will be achieved with this? To maintain code quality and catch syntax errors early.
-     - Should Test frontend/backend/both after fix: frontend
+/app/frontend/src/components/DeterminationSlider.tsx
+  26:6  warning  React Hook React.useEffect has a missing dependency: 'animatedValue'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  49:7  warning  React Hook React.useMemo has a missing dependency: 'animatedValue'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
+
+✖ 38 problems (9 errors, 29 warnings) to verify.
+     - Why fix this issue and what will be achieved with the fix? To enable automated code quality checks, prevent syntax errors, and maintain consistency.
+     - Status:  NOT STARTED
      - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? frontend
+     - Blocked on other issue: None
+
+**In progress Task List**:
+  Task 1: Complete implementation of latest user request (P0)
+  
+ Task Detail:
+  - Task 1: 
+     - Where to resume: Continue updating the backend logic in  based on the new model structures. The last action was modifying the contact creation endpoint.
+     - What will be achieved with this? This task will implement the full set of features from the user's last major request.
+     - Status:  IN PROGRESS
+     - Should Test frontend/backend/both after fix? both
+     - Blocked on something: None
+
+**Upcoming and Future Tasks**
+**Upcoming Tasks (P0 - Sequentially):**
+1.  **Backend Logic (P0):**
+    - Finalize the  updates for the new models.
+    - **Top 10x Action Logic:** Modify the  logic so the main action creates a special Signal worth 10 points.
+    - **Goal Progress:** Implement the daily goal progress tracking endpoint ().
+    - **Deal Notifications:** Implement the logic for scheduling and sending push/email notifications for Deal  reminders (this will require an integration like Resend for email and Expo Push Notifications).
+    - **Help Request System:** Create the endpoint that allows a user to post a help needed request to the community feed, and implement the logic to notify matching members.
+    - **Photo Upload:** Create a backend endpoint to handle profile photo uploads (e.g., to a persistent storage service).
+2.  **Frontend Implementation (P0):**
+    - **Consolidate CRM Tab:** Remove the Wormhole and Deals tabs. Create a new CRM tab that contains sub-navigation for both Deals and Contacts.
+    - **Signal Due Date Calendar:** In the Create Signal modal, replace the date input with a calendar picker that defaults to today/tomorrow based on the 3 PM rule.
+    - **Link Signal to Deal:** In the Create Signal modal, add a UI element to search and select a Deal to associate with the Signal.
+    - **Contact Labels:** Update the CRM/Contacts screen to allow filtering by the new labels (Prospect, Client, Wormhole, etc.) and assigning them when creating/editing a contact.
+    - **Goal Progress UI:** On the Today or Profile screen, add the UI for daily progress check-ins, including the progress bar.
+    - **Community Profile Ring:** Implement the colored status ring around user avatars in the community feed.
+    - **Profile Photo Upload UI:** Add a button on the Edit Profile screen to allow users to upload a new profile picture.
+    - **Help Request UI:** Implement the pop-up and input field for the Help Needed feature.
+
+**Future Tasks:**
+- Direct and group messaging within the community.
+- Full implementation of push and email notifications for deals.
+- Public streak sharing, social accountability groups, leaderboards, and community challenges.
+- Premium tiers and coaching integrations.
+
+**Completed work in this session**
+- **Phase 1 (Branding & Today Screen):** The UI was updated with new brand colors, a fluid determination slider, and revised Core Actions. The backend  schema was expanded.
+- **Phase 2 (Signals & Points System):** Backend and frontend were built for creating Signals, earning points, and viewing a leaderboard.
+- **Phase 3 (Expanded Wormhole CRM UI):** The frontend for the detailed contact profile view was implemented.
+- **Phase 4 (Community Features):** Backend and frontend were created for a Community Feed, Member Profiles, and a Member Directory.
+- **Phase 5 (Deals CRM & Feature Polish):** A full Deals CRM was implemented on the backend and frontend. The Signals system was updated to use an impact rating slider for points and a . The Member Profile was significantly expanded with new fields.
+- **UI Visibility Fix:** The agent troubleshooted why the user couldn't see the new features, created a  tab, and verified all new screens were accessible and functional with screenshots.
+
+**Earlier issues found/mentioned but not fixed**
+   - Issue 1: ESLint Configuration for TypeScript (see All Pending/In progress Issue list for details).
 
 **Known issue recurrence from previous fork**
-  - None, this is the first session.
+  - None.
 
 **Code Architecture**
 
@@ -188,48 +200,48 @@ None.
 **Key Technical Concepts**
 - **Backend:** FastAPI, MongoDB (via ), Pydantic for data validation, JWT for authentication.
 - **Frontend:** Expo SDK, React Native, TypeScript, Expo Router for file-based navigation.
-- **State Management:** React Context () for global user session state.
-- **Styling:**  for all component styling, organized in .
-- **Architecture:** Full-stack monorepo structure with separate  and  directories.
+- **State Management:** React Context ().
+- **Styling:** , custom theme in .
+- **Architecture:** Full-stack monorepo with a monolithic backend () and a file-routed Expo frontend.
 
 **key DB schema**
 - **users**: 
 - **goals**: 
-- **habits**: 
-- **daily_entries**: 
-- **wormhole_contacts**: 
-- **ai_sessions**: 
+- **signals**: 
+- **deals**: 
+- **wormhole_contacts**:  where label is one of [prospect, client, wormhole, etc.]
 
 **changes in tech stack**
 - None.
 
 **All files of reference**
-- : Contains all backend logic, API endpoints, and database models.
-- : The core screen of the application.
-- : Manages user authentication state globally.
-- : Centralizes all API calls to the backend and manages the auth token.
-- : The root layout, which directs users to auth or the main app.
-- : Expo configuration file, updated with permissions for contacts.
-- : Contains the , , and .
+- : Contains ALL backend logic. This is the most critical and frequently modified file.
+- : Core Today screen. Will need modification for the Top 10x Action.
+- : Main tab navigator. Needs to be updated to create the CRM tab.
+- : Signals screen. The Create Signal modal needs the calendar picker.
+- : User profile screen. Needs UI for photo upload and goal progress.
+- : The Deals screen.
+- : The Contacts screen.
 
 **Areas that need refactoring**:
-- : Needs to be properly configured for TypeScript to enable linting.
+- **:** This file is now extremely large and handles all logic for authentication, goals, signals, contacts, deals, and community features. It should be broken down into a modular structure using FastAPI's . For example: , , etc.
+- **ESLint Config:** The  file needs to be configured for TypeScript to enable linting.
 
 **key api endpoints**
+- , , 
+- , 
+- , 
 - 
+- , 
+- , 
 - 
-- 
-- 
-- 
-- 
-- 
-- 
-- 
-- 
-- 
+- **(New/Needed)** 
+- **(New/Needed)** 
 
 **Critical Info for New Agent**
-- **Infrastructure Instability:** The preview tunnel proved to be unstable during the session, requiring multiple restarts. If the app preview becomes unresponsive, do not assume it's a code issue. First, try restarting the 
+- **Prioritize User's Last Request:** The immediate goal is to implement the large list of features from the user's message (Chat Message 222). Follow the Upcoming Tasks list sequentially.
+- **Backend Refactoring:** The  file has become a monolith. While the user hasn't requested it, a refactor into separate router files would significantly improve maintainability. This could be proposed to the user after the current feature set is delivered.
+- **Expo Tunnel Instability:** If the frontend preview becomes unresponsive, the first troubleshooting step is always to restart the 
   Usage: expo [command] [options]
 
   Options:
@@ -298,41 +310,40 @@ None.
     upload:ios [path]                 Superseded by eas submit in eas-cli
     client:ios [path]                 Superseded by Expo Dev Clients
 
-[09:10:37]   Run a command with --help for more info 💡
-[09:10:37]     $ expo start --help
-[09:10:37] service using expo: stopped
+[16:28:14]   Run a command with --help for more info 💡
+[16:28:14]     $ expo start --help
+[16:28:14] service with expo: stopped
 expo: started.
-- **Authentication Token Handling:** To solve an issue with API calls failing immediately after login, an in-memory token cache was added in . The  function must be called on login/register, and  on logout to ensure this cache is correctly managed. This is a crucial part of the auth flow.
-- **ESLint Disabled:** Linting is currently non-functional due to a configuration issue with TypeScript. This is a known technical debt item to address.
+- **UI Consolidation:** The user wants to merge Wormhole and Deals into a single CRM tab. This is a primary structural change for the UI.
 
-**documents created in this job**
-  - 
+**documents and test reports created in this job**
+  -  (updated with Phases 1-5).
 
 **Last 10 User Messages and any pending HUMAN messages** 
-- **User Message 1:**
-  - **Summary:** The user specified to use Emergent LLM, set the accent color to electric purple, requested contact import (from phone) and manual entry, and asked for daily push notifications.
-  - **Status:** Accent color was implemented. Emergent LLM was set up. Contact import and push notifications were NOT implemented and are listed in Upcoming Tasks.
+- **User Message (193):** User reported that they could not see any of the Phase 5 features (Signals rating, editable profile, Deals CRM, service matching). They felt the app hadn't refreshed.
+- **Agent Response:** The agent acknowledged the issue, correctly diagnosed that a Deals screen was never created in the UI, and proceeded to build the necessary UI and provide screenshots to prove the features were now visible and functional.
+- **User Message (222):** This is the **most critical pending message**. The user provided a very long and detailed list of new features and modifications, including: making the Top 10x Action a signal, adding a calendar picker for signal due dates, consolidating CRM tabs, adding contact labels, linking signals to deals, adding close dates to deals with notifications, adding deadlines and progress tracking to 10x goals, profile photo uploads, and a help request system.
+- **Agent Response:** The agent acknowledged the comprehensive list and began implementing the backend model changes in  before the session ended.
 
 **Project Health Check:**
-- **Functional:** Authentication, Onboarding, Today Screen (data entry), Basic Tab Navigation.
-- **Mocked:** AI Chat feature (UI only), Dashboard (UI only), Wormhole Metrics (UI only).
+- **Functional:** Core features from Phases 1-5 (Branding, Today Screen, Signals, Community, Deals CRM) are implemented on the backend and have a functional UI.
+- **Mocked:** The newest features are not implemented at all (Goal progress tracking, Deal notifications, Help Request system, Photo Upload).
 - **Broken:** ESLint/Linting.
 
 **3rd Party Integrations**
-- **OpenAI (via Emergent LLM Key):** The  is configured in  for use in the AI Course Correction feature. It uses the Emergent LLM Key.
+- **OpenAI (via Emergent LLM Key):** Configured in  for the AI Course Correction feature. This uses the Emergent LLM Key.
+- **(Needed)** **Push Notifications:** Will require .
+- **(Needed)** **Email:** Will require an email service provider like Resend or SendGrid for deal notifications.
 
 **Testing status**
-  - Testing agent used after significant changes: YES (used once after the initial build).
+  - Testing agent used after significant changes: YES (for Phases 1, 2, 3, 4, and 5).
   - Troubleshoot agent used after agent stuck in loop: NO
   - Test files created: None.
   - Known regressions: None.
 
 **Credentials to test flow:**
-No credentials are needed. The next agent can test the flow by registering a new user through the app's registration screen.
+No credentials are needed. Register a new user via the app's registration screen to test the full flow.
 
 **What agent forgot to execute**
-- **Daily Push Notifications:** This was an explicit user request but was not implemented.
-- **Import Contacts from Phone:** Also an explicit user request for the Wormhole feature that was not implemented.
-- **Full AI Engine Logic:** The agent created the stubs for the AI chat but did not implement the multi-step conversational logic defined in the product requirements.
-- **Dashboard & Wormhole Metrics:** The agent built the UI screens but did not implement the backend logic to compute and display the performance metrics.
-</analysis>
+- The agent was in the middle of executing a large task list from the user's latest request. Nothing was forgotten, but the entire list of features from user message 222 is pending implementation.
+- The ESLint configuration issue has been pending since the start of the project.</analysis>

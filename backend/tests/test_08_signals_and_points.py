@@ -18,7 +18,7 @@ class TestSignalCRUD:
         return {
             "name": f"TEST_Signal_{unique_id}",
             "description": "Test signal for automated testing",
-            "points": 15,
+            "impact_rating": 7,
             "is_public": True
         }
     
@@ -33,7 +33,7 @@ class TestSignalCRUD:
         data = response.json()
         assert data["name"] == test_signal_data["name"]
         assert data["description"] == test_signal_data["description"]
-        assert data["points"] == test_signal_data["points"]
+        assert data["impact_rating"] == test_signal_data["impact_rating"]
         assert data["is_public"] == test_signal_data["is_public"]
         assert "id" in data
         assert "user_id" in data
@@ -83,7 +83,7 @@ class TestSignalCRUD:
         # Update it
         update_data = {
             "name": f"UPDATED_{test_signal_data['name']}",
-            "points": 25
+            "impact_rating": 9
         }
         response = api_client.put(
             f"{base_url}/api/signals/{signal_id}",
@@ -93,7 +93,7 @@ class TestSignalCRUD:
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == update_data["name"]
-        assert data["points"] == update_data["points"]
+        assert data["impact_rating"] == update_data["impact_rating"]
         
         # Verify update persisted
         get_response = api_client.get(
@@ -152,7 +152,7 @@ class TestSignalCompletion:
             json={
                 "name": f"TEST_Completion_{unique_id}",
                 "description": "Signal for completion testing",
-                "points": 10,
+                "impact_rating": 10,
                 "is_public": True
             },
             headers=auth_headers

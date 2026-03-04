@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, RefreshControl,
+  ScrollView, ActivityIndicator, RefreshControl, Modal, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,6 +17,14 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
+// Format date to MM/DD/YY
+const formatDateMMDDYY = (d: Date) => {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  return `${mm}/${dd}/${yy}`;
+};
+
 const STATUS_OPTIONS = ['ready', 'priority_win', 'unicorn_win', 'loss', 'lesson', 'course_corrected'];
 
 export default function TodayScreen() {
@@ -30,20 +38,39 @@ export default function TodayScreen() {
   const [habitTitle, setHabitTitle] = useState('');
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  
+  // Signals state
+  const [signals, setSignals] = useState<any[]>([]);
+  const [showAddSignal, setShowAddSignal] = useState(false);
+  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '' });
+  const [deals, setDeals] = useState<any[]>([]);
+  const [topSignal, setTopSignal] = useState<any>(null);
 
   const isToday = currentDate === getToday();
 
   const loadEntry = useCallback(async () => {
     try {
-      const [entryData, streakData, profile] = await Promise.all([
+      const [entryData, streakData, profile, signalsData, dealsData] = await Promise.all([
         api.get(`/daily-entry/${currentDate}`),
         api.get('/compound-streak'),
         api.get('/profile'),
+        api.get('/signals'),
+        api.get('/deals'),
       ]);
       setEntry(entryData);
       setCompoundStreak(streakData.streak);
       setHabitTitle(streakData.habit?.habit_title || 'Daily Habit');
       setProfileData(profile);
+      setDeals(dealsData || []);
+      
+      // Filter signals for today
+      const todayFormatted = formatDateMMDDYY(new Date());
+      const todaySignals = (signalsData || []).filter((s: any) => s.due_date === todayFormatted || s.due_date === currentDate);
+      setSignals(todaySignals);
+      
+      // Find top 10x action signal for today
+      const top10x = (signalsData || []).find((s: any) => s.is_top_10x_action && (s.due_date === todayFormatted || s.due_date === currentDate));
+      setTopSignal(top10x);
     } catch (e) {
       console.error(e);
     } finally {
@@ -65,6 +92,63 @@ export default function TodayScreen() {
       setEntry(updated);
     } catch (e) {
       console.error(e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Create Top 10x Action as a special signal
+  const createTop10xSignal = async (actionText: string) => {
+    try {
+      const today = formatDateMMDDYY(new Date());
+      const signal = await api.post('/signals', {
+        name: actionText,
+        description: 'Top 10x Action',
+        impact_rating: 10,
+        due_date: today,
+        is_top_10x_action: true,
+        is_public: true,
+      });
+      setTopSignal(signal);
+      loadEntry();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  // Complete a signal
+  const completeSignal = async (signalId: string) => {
+    try {
+      await api.post(`/signals/${signalId}/complete`, { notes: '' });
+      loadEntry();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  // Add a new signal
+  const addSignal = async () => {
+    if (!signalForm.name?.trim()) return;
+    setSaving(true);
+    try {
+      const now = new Date();
+      const hour = now.getHours();
+      const defaultDate = hour >= 15 ? new Date(now.getTime() + 86400000) : now;
+      
+      await api.post('/signals', {
+        name: signalForm.name,
+        description: signalForm.description || '',
+        impact_rating: signalForm.impact_rating,
+        due_date: formatDateMMDDYY(defaultDate),
+        deal_id: signalForm.deal_id || null,
+        is_public: true,
+        is_top_10x_action: false,
+      });
+      setShowAddSignal(false);
+      setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '' });
+      loadEntry();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
     } finally {
       setSaving(false);
     }
@@ -218,9 +302,9 @@ export default function TodayScreen() {
             <Text style={styles.cardTitle}>
               <Text style={styles.redText}>10x</Text> Focus
             </Text>
-            {topActionDone && (
+            {(topSignal?.completed_at || entry?.top_priority_completed) && (
               <View style={styles.winBadge}>
-                <Text style={styles.winBadgeText}>PRIORITY WIN</Text>
+                <Text style={styles.winBadgeText}>+10 PTS</Text>
               </View>
             )}
           </View>
@@ -235,30 +319,72 @@ export default function TodayScreen() {
             multiline
           />
           <View style={styles.divider} />
-          <Text style={styles.actionLabel}>Top 10x Action</Text>
+          <Text style={styles.actionLabel}>Top 10x Action <Text style={styles.pointsHint}>(10 points)</Text></Text>
           <View style={styles.actionRow}>
             <TouchableOpacity
               testID="top-priority-check"
-              style={[styles.checkbox, entry?.top_priority_completed && styles.checkboxChecked]}
-              onPress={() => {
-                const newVal = !entry?.top_priority_completed;
-                updateEntry({ 
-                  top_priority_completed: newVal,
-                  five_item_statuses: { ...fiveStatuses, top_action: newVal }
-                });
+              style={[styles.checkbox, (topSignal?.completed_at || entry?.top_priority_completed) && styles.checkboxChecked]}
+              onPress={async () => {
+                if (topSignal) {
+                  // Complete existing top signal
+                  if (!topSignal.completed_at) {
+                    await completeSignal(topSignal.id);
+                    const newVal = true;
+                    updateEntry({ 
+                      top_priority_completed: newVal,
+                      five_item_statuses: { ...fiveStatuses, top_action: newVal }
+                    });
+                  } else {
+                    // Already completed, just toggle UI
+                    const newVal = !entry?.top_priority_completed;
+                    updateEntry({ 
+                      top_priority_completed: newVal,
+                      five_item_statuses: { ...fiveStatuses, top_action: newVal }
+                    });
+                  }
+                } else if (entry?.top_10x_action_text?.trim()) {
+                  // Create and complete as signal
+                  await createTop10xSignal(entry.top_10x_action_text);
+                  const newVal = true;
+                  updateEntry({ 
+                    top_priority_completed: newVal,
+                    five_item_statuses: { ...fiveStatuses, top_action: newVal }
+                  });
+                } else {
+                  // Just toggle without signal (for backwards compat)
+                  const newVal = !entry?.top_priority_completed;
+                  updateEntry({ 
+                    top_priority_completed: newVal,
+                    five_item_statuses: { ...fiveStatuses, top_action: newVal }
+                  });
+                }
               }}
             >
-              {entry?.top_priority_completed && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
+              {(topSignal?.completed_at || entry?.top_priority_completed) && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
             </TouchableOpacity>
             <TextInput
               testID="top-action-input"
               style={styles.actionInput}
-              value={entry?.top_10x_action_text || ''}
+              value={topSignal?.name || entry?.top_10x_action_text || ''}
               onChangeText={t => setEntry({ ...entry, top_10x_action_text: t })}
-              onBlur={() => updateEntry({ top_10x_action_text: entry?.top_10x_action_text })}
+              onBlur={() => {
+                if (!topSignal) {
+                  updateEntry({ top_10x_action_text: entry?.top_10x_action_text });
+                }
+              }}
               placeholder="Clear executable task..."
               placeholderTextColor={Colors.text.tertiary}
+              editable={!topSignal}
             />
+            {!topSignal && entry?.top_10x_action_text?.trim() && (
+              <TouchableOpacity
+                testID="set-top-signal-btn"
+                style={styles.setSignalBtn}
+                onPress={() => createTop10xSignal(entry.top_10x_action_text)}
+              >
+                <Text style={styles.setSignalBtnText}>Set</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -416,6 +542,65 @@ export default function TodayScreen() {
           <Ionicons name="chevron-forward" size={20} color={Colors.text.secondary} />
         </TouchableOpacity>
 
+        {/* Today's Signals Section */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardTitleRow}>
+              <Ionicons name="flash" size={22} color={Colors.brand.accent} />
+              <Text style={styles.cardTitle}>Today's Signals</Text>
+            </View>
+            <TouchableOpacity
+              testID="add-signal-btn"
+              style={styles.addSignalBtn}
+              onPress={() => setShowAddSignal(true)}
+            >
+              <Ionicons name="add" size={20} color={Colors.brand.primary} />
+              <Text style={styles.addSignalText}>Add</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {signals.length === 0 ? (
+            <View style={styles.emptySignals}>
+              <Text style={styles.emptySignalsText}>No signals for today</Text>
+              <Text style={styles.emptySignalsSub}>Add measurable actions to track your progress</Text>
+            </View>
+          ) : (
+            signals.filter(s => !s.is_top_10x_action).map(signal => (
+              <TouchableOpacity
+                key={signal.id}
+                testID={`signal-${signal.id}`}
+                style={styles.signalItem}
+                onPress={() => !signal.completed_at && completeSignal(signal.id)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.checkbox, signal.completed_at && styles.checkboxChecked]}>
+                  {signal.completed_at && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
+                </View>
+                <View style={styles.signalInfo}>
+                  <Text style={[styles.signalName, signal.completed_at && styles.actionDone]}>
+                    {signal.name}
+                  </Text>
+                  {signal.deal_name && (
+                    <Text style={styles.signalDeal}>🤝 {signal.deal_name}</Text>
+                  )}
+                </View>
+                <View style={styles.signalPoints}>
+                  <Text style={styles.signalPointsText}>+{signal.impact_rating}</Text>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
+          
+          <TouchableOpacity
+            testID="view-all-signals-btn"
+            style={styles.viewAllBtn}
+            onPress={() => router.push('/(tabs)/signals')}
+          >
+            <Text style={styles.viewAllText}>View All Signals</Text>
+            <Ionicons name="arrow-forward" size={16} color={Colors.brand.accent} />
+          </TouchableOpacity>
+        </View>
+
         {saving && (
           <View style={styles.savingIndicator}>
             <ActivityIndicator size="small" color={Colors.brand.primary} />
@@ -425,6 +610,89 @@ export default function TodayScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Add Signal Modal */}
+      <Modal visible={showAddSignal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>New Signal</Text>
+              <TouchableOpacity onPress={() => setShowAddSignal(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.inputLabel}>Signal Name *</Text>
+            <TextInput
+              testID="signal-name-input"
+              style={styles.modalInput}
+              value={signalForm.name}
+              onChangeText={t => setSignalForm({...signalForm, name: t})}
+              placeholder="What will you accomplish?"
+              placeholderTextColor={Colors.text.tertiary}
+            />
+            
+            <Text style={styles.inputLabel}>Description</Text>
+            <TextInput
+              testID="signal-desc-input"
+              style={[styles.modalInput, { minHeight: 60 }]}
+              value={signalForm.description}
+              onChangeText={t => setSignalForm({...signalForm, description: t})}
+              placeholder="Optional details..."
+              placeholderTextColor={Colors.text.tertiary}
+              multiline
+            />
+            
+            <Text style={styles.inputLabel}>Impact Rating (1-10): {signalForm.impact_rating}</Text>
+            <View style={styles.ratingRow}>
+              {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                <TouchableOpacity
+                  key={n}
+                  testID={`rating-${n}`}
+                  style={[styles.ratingBtn, signalForm.impact_rating === n && styles.ratingBtnActive]}
+                  onPress={() => setSignalForm({...signalForm, impact_rating: n})}
+                >
+                  <Text style={[styles.ratingText, signalForm.impact_rating === n && styles.ratingTextActive]}>{n}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {deals.length > 0 && (
+              <>
+                <Text style={styles.inputLabel}>Link to Deal (optional)</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.dealRow}>
+                    <TouchableOpacity
+                      style={[styles.dealChip, !signalForm.deal_id && styles.dealChipActive]}
+                      onPress={() => setSignalForm({...signalForm, deal_id: ''})}
+                    >
+                      <Text style={[styles.dealChipText, !signalForm.deal_id && styles.dealChipTextActive]}>None</Text>
+                    </TouchableOpacity>
+                    {deals.map(d => (
+                      <TouchableOpacity
+                        key={d.id}
+                        style={[styles.dealChip, signalForm.deal_id === d.id && styles.dealChipActive]}
+                        onPress={() => setSignalForm({...signalForm, deal_id: d.id})}
+                      >
+                        <Text style={[styles.dealChipText, signalForm.deal_id === d.id && styles.dealChipTextActive]}>{d.name}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
+              </>
+            )}
+            
+            <TouchableOpacity
+              testID="save-signal-btn"
+              style={[styles.saveSignalBtn, !signalForm.name?.trim() && styles.saveSignalBtnDisabled]}
+              onPress={addSignal}
+              disabled={!signalForm.name?.trim()}
+            >
+              <Text style={styles.saveSignalBtnText}>Add Signal</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -575,4 +843,86 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, padding: 8,
   },
   savingText: { color: Colors.text.tertiary, fontSize: FontSize.sm },
+  
+  // New styles for signals
+  pointsHint: { color: Colors.brand.accent, fontSize: FontSize.xs, fontWeight: '400' },
+  setSignalBtn: { 
+    backgroundColor: Colors.brand.primary, 
+    paddingHorizontal: 14, 
+    paddingVertical: 6, 
+    borderRadius: Radius.sm 
+  },
+  setSignalBtnText: { color: Colors.text.primary, fontSize: FontSize.sm, fontWeight: '600' },
+  
+  // Signals Section
+  addSignalBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  addSignalText: { color: Colors.brand.primary, fontSize: FontSize.sm, fontWeight: '600' },
+  emptySignals: { paddingVertical: 20, alignItems: 'center' },
+  emptySignalsText: { color: Colors.text.secondary, fontSize: FontSize.base },
+  emptySignalsSub: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4 },
+  signalItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
+  },
+  signalInfo: { flex: 1 },
+  signalName: { color: Colors.text.primary, fontSize: FontSize.base },
+  signalDeal: { color: Colors.brand.accent, fontSize: FontSize.xs, marginTop: 2 },
+  signalPoints: { 
+    backgroundColor: 'rgba(168,85,247,0.15)', 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: Radius.sm 
+  },
+  signalPointsText: { color: Colors.brand.primary, fontSize: FontSize.sm, fontWeight: '700' },
+  viewAllBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingTop: 16 },
+  viewAllText: { color: Colors.brand.accent, fontSize: FontSize.sm },
+  
+  // Modal
+  modalOverlay: { 
+    flex: 1, 
+    backgroundColor: 'rgba(0,0,0,0.7)', 
+    justifyContent: 'flex-end' 
+  },
+  modal: { 
+    backgroundColor: Colors.bg.card, 
+    borderTopLeftRadius: Radius.xl, 
+    borderTopRightRadius: Radius.xl, 
+    padding: 24, 
+    maxHeight: '80%' 
+  },
+  modalHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: 16 
+  },
+  modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
+  inputLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 6, marginTop: 12 },
+  modalInput: {
+    backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14,
+    color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default,
+  },
+  ratingRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  ratingBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: Colors.bg.input, justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border.default,
+  },
+  ratingBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  ratingText: { color: Colors.text.secondary, fontSize: FontSize.sm },
+  ratingTextActive: { color: Colors.text.primary, fontWeight: '700' },
+  dealRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+  dealChip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.sm,
+    backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default,
+  },
+  dealChipActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  dealChipText: { color: Colors.text.secondary, fontSize: FontSize.sm },
+  dealChipTextActive: { color: Colors.text.primary },
+  saveSignalBtn: {
+    backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16,
+    alignItems: 'center', marginTop: 24,
+  },
+  saveSignalBtnDisabled: { opacity: 0.5 },
+  saveSignalBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
 });

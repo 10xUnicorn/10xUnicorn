@@ -115,6 +115,9 @@ class WormholeContactInput(BaseModel):
     title: Optional[str] = ""
     location: Optional[str] = ""
     
+    # Contact Label - required classification
+    label: str = "prospect"  # prospect, referral_partner, strategic_partner, client, wormhole, resource
+    
     # Contact Info
     website: Optional[str] = ""
     email: Optional[str] = ""
@@ -129,16 +132,16 @@ class WormholeContactInput(BaseModel):
     other_social: Optional[str] = ""
     
     # Leverage Potential
-    leverage_categories: Optional[List[str]] = []  # investor, partner, influencer, etc.
+    leverage_categories: Optional[List[str]] = []
     leverage_description: Optional[str] = ""
     
     # Best Contact Method
-    best_contact_method: Optional[str] = ""  # email, linkedin_dm, text, phone, warm_intro, in_person, other
+    best_contact_method: Optional[str] = ""
     
     # Relationship Intelligence
-    connection_level: Optional[str] = "warm"  # cold, warm, hot, close
+    connection_level: Optional[str] = "warm"
     tags: Optional[List[str]] = []
-    engagement_strength: Optional[int] = 5  # 1-10
+    engagement_strength: Optional[int] = 5
     
     # Next Steps
     activation_next_step: Optional[str] = ""
@@ -150,6 +153,7 @@ class WormholeContactUpdate(BaseModel):
     company: Optional[str] = None
     title: Optional[str] = None
     location: Optional[str] = None
+    label: Optional[str] = None  # Contact label
     website: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -183,7 +187,13 @@ class GoalUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     end_date: Optional[str] = None
+    deadline: Optional[str] = None  # Goal deadline (MM/DD/YY format)
+    target_number: Optional[float] = None  # Target number to track against
     active: Optional[bool] = None
+
+class GoalProgressInput(BaseModel):
+    current_value: float
+    notes: Optional[str] = ""
 
 class HabitUpdate(BaseModel):
     habit_title: Optional[str] = None
@@ -202,32 +212,42 @@ class SignalInput(BaseModel):
     name: str
     description: Optional[str] = ""
     impact_rating: Optional[int] = None  # 1-10, determines points (None = not set)
-    due_date: Optional[str] = None  # YYYY-MM-DD format
+    due_date: Optional[str] = None  # MM/DD/YY format
+    deal_id: Optional[str] = None  # Associated deal
     is_public: bool = True
+    is_top_10x_action: bool = False  # True if this is the daily top 10x action
 
 class SignalUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     impact_rating: Optional[int] = None
     due_date: Optional[str] = None
+    deal_id: Optional[str] = None
     is_public: Optional[bool] = None
 
 class SignalCompletionInput(BaseModel):
     signal_id: str
     notes: Optional[str] = ""
-    # planned_yesterday is now auto-calculated based on due_date
+
+# Contact Labels
+CONTACT_LABELS = [
+    "prospect", "referral_partner", "strategic_partner", "client", "wormhole", "resource"
+]
 
 # Points configuration
 POINTS_CONFIG = {
     "base_signal": 10,
+    "top_10x_action_points": 10,  # Fixed 10 points for top 10x action
     "planned_ahead_bonus": 5,
     "before_6pm_bonus": 10,
     "all_signals_bonus": 20,
     "streak_bonus_per_day": 2,
     "top_action_bonus": 15,
     "wormhole_action_bonus": 10,
-    "wormhole_impact_multiplier": 0.5,  # Extra points = impact_rating * 0.5
+    "wormhole_impact_multiplier": 0.5,
     "unicorn_win_bonus": 50,
+    "daily_goal_update_points": 1,  # 1 point for daily goal progress update
+    "on_track_bonus": 5,  # Daily bonus for being on track
 }
 
 # ─── Member Profile Models ───
@@ -283,6 +303,14 @@ class MemberProfileUpdate(BaseModel):
     # Needs
     needs: Optional[List[str]] = None
     financial_services_needed: Optional[List[str]] = None
+    
+    # Settings
+    show_status_ring: Optional[bool] = None  # Show/hide goal status ring in community
+    profile_photo_url: Optional[str] = None  # Profile photo URL
+
+class HelpRequestInput(BaseModel):
+    description: str
+    goal_id: Optional[str] = None
 
 # ─── Deals CRM Models ───
 
@@ -302,10 +330,12 @@ class DealInput(BaseModel):
     company: Optional[str] = ""
     value: Optional[float] = None
     stage: str = "lead"
+    close_date: Optional[str] = None  # MM/DD/YY format - expected close date
     notes: Optional[str] = ""
-    needs: Optional[List[str]] = []  # Resources needed for this deal
-    financial_services: Optional[List[str]] = []  # Specific financial services needed
-    other_needs: Optional[str] = ""  # Custom tags for other needs
+    needs: Optional[List[str]] = []
+    financial_services: Optional[List[str]] = []
+    other_needs: Optional[str] = ""
+    notifications_enabled: bool = True  # Enable/disable close date notifications
 
 class DealUpdate(BaseModel):
     name: Optional[str] = None
@@ -313,10 +343,12 @@ class DealUpdate(BaseModel):
     company: Optional[str] = None
     value: Optional[float] = None
     stage: Optional[str] = None
+    close_date: Optional[str] = None
     notes: Optional[str] = None
     needs: Optional[List[str]] = None
     financial_services: Optional[List[str]] = None
     other_needs: Optional[str] = None
+    notifications_enabled: Optional[bool] = None
 
 # ─── Win Logic ───
 # Updated Five Core Actions:
@@ -488,6 +520,169 @@ async def update_habit(input_data: HabitUpdate, user: dict = Depends(get_current
     habit = await db.compound_habits.find_one({"user_id": user['id']}, {"_id": 0})
     return habit
 
+# ─── Goal Progress Tracking ───
+
+def calculate_goal_status(goal: dict) -> dict:
+    """Calculate goal progress status: on_track, ahead, off_track, crushing_it, needs_support"""
+    if not goal:
+        return {"status": "no_goal", "progress_pct": 0, "ring_color": "gray"}
+    
+    target = goal.get('target_number', 0)
+    deadline = goal.get('deadline') or goal.get('end_date')
+    progress_history = goal.get('progress_history', [])
+    
+    if not target or target == 0 or not deadline:
+        return {"status": "incomplete", "progress_pct": 0, "ring_color": "gray"}
+    
+    # Get current progress (latest entry)
+    current_value = progress_history[-1]['value'] if progress_history else 0
+    progress_pct = min(100, (current_value / target) * 100)
+    
+    # Parse deadline
+    try:
+        # Support MM/DD/YY or YYYY-MM-DD formats
+        if '/' in deadline:
+            from datetime import datetime
+            deadline_date = datetime.strptime(deadline, "%m/%d/%y").date()
+        else:
+            deadline_date = datetime.fromisoformat(deadline.replace('Z', '+00:00')).date() if 'T' in deadline else datetime.strptime(deadline, "%Y-%m-%d").date()
+    except Exception:
+        return {"status": "incomplete", "progress_pct": progress_pct, "ring_color": "gray"}
+    
+    today = datetime.now(timezone.utc).date()
+    total_days = (deadline_date - datetime.strptime(goal.get('start_date', today.isoformat()), "%Y-%m-%d").date()).days
+    days_elapsed = (today - datetime.strptime(goal.get('start_date', today.isoformat()), "%Y-%m-%d").date()).days
+    
+    if total_days <= 0:
+        total_days = 1
+    
+    expected_progress_pct = min(100, (days_elapsed / total_days) * 100)
+    
+    # Calculate streak
+    streak = 0
+    for entry in reversed(progress_history):
+        if entry.get('value', 0) > 0:
+            streak += 1
+        else:
+            break
+    
+    # Determine status and ring color
+    # green = on track/crushing it, maroon-blue = showing up, orange = leaning off, red-white = needs support
+    if progress_pct >= expected_progress_pct + 20:
+        status = "crushing_it"
+        ring_color = "green_fire"  # Green with fire effect for streaks
+    elif progress_pct >= expected_progress_pct:
+        status = "on_track"
+        ring_color = "green"
+    elif progress_pct >= expected_progress_pct - 10:
+        status = "showing_up"
+        ring_color = "maroon_blue"  # Maroon with blue hue
+    elif progress_pct >= expected_progress_pct - 25:
+        status = "leaning_off"
+        ring_color = "orange"
+    else:
+        status = "needs_support"
+        ring_color = "red_pulse"  # Red with white heartbeat
+    
+    return {
+        "status": status,
+        "progress_pct": round(progress_pct, 1),
+        "expected_pct": round(expected_progress_pct, 1),
+        "current_value": current_value,
+        "target_number": target,
+        "streak": streak,
+        "ring_color": ring_color,
+        "days_remaining": (deadline_date - today).days
+    }
+
+@api_router.post("/goals/progress")
+async def update_goal_progress(input_data: GoalProgressInput, user: dict = Depends(get_current_user)):
+    """Update daily goal progress and award points"""
+    goal = await db.goals.find_one({"user_id": user['id'], "active": True})
+    if not goal:
+        raise HTTPException(status_code=404, detail="No active goal found")
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Check if already updated today
+    progress_history = goal.get('progress_history', [])
+    already_updated_today = any(p.get('date') == today for p in progress_history)
+    
+    # Add progress entry
+    progress_entry = {
+        "date": today,
+        "value": input_data.current_value,
+        "notes": input_data.notes or "",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.goals.update_one(
+        {"user_id": user['id'], "active": True},
+        {"$push": {"progress_history": progress_entry}}
+    )
+    
+    # Award points only if first update of the day
+    points_awarded = 0
+    if not already_updated_today:
+        points_awarded = POINTS_CONFIG['daily_goal_update_points']
+        
+        # Check if on track for bonus
+        updated_goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
+        status = calculate_goal_status(updated_goal)
+        
+        if status['status'] in ['on_track', 'crushing_it']:
+            points_awarded += POINTS_CONFIG['on_track_bonus']
+        
+        if points_awarded > 0:
+            await db.user_points.update_one(
+                {"user_id": user['id']},
+                {
+                    "$inc": {"total_points": points_awarded, "weekly_points": points_awarded},
+                    "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}
+                },
+                upsert=True
+            )
+    
+    # Get updated goal
+    updated_goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
+    status = calculate_goal_status(updated_goal)
+    
+    # If needs support, check if should prompt for help
+    should_prompt_help = status['status'] == 'needs_support' and status['progress_pct'] < status['expected_pct'] - 30
+    
+    return {
+        "goal": updated_goal,
+        "status": status,
+        "points_awarded": points_awarded,
+        "already_updated_today": already_updated_today,
+        "should_prompt_help": should_prompt_help
+    }
+
+@api_router.get("/goals/status")
+async def get_goal_status(user: dict = Depends(get_current_user)):
+    """Get current goal progress status"""
+    goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
+    goal_status = calculate_goal_status(goal)
+    return {"goal": goal, "status": goal_status}
+
+@api_router.get("/goals/user/{user_id}/status")
+async def get_user_goal_status(user_id: str):
+    """Get a user's goal status (for community ring display)"""
+    goal = await db.goals.find_one({"user_id": user_id, "active": True}, {"_id": 0})
+    user_goal_status = calculate_goal_status(goal)
+    profile = await db.profiles.find_one({"user_id": user_id}, {"_id": 0})
+    
+    # Check if user has disabled status ring
+    member_profile = await db.member_profiles.find_one({"user_id": user_id}, {"_id": 0})
+    show_status_ring = member_profile.get('show_status_ring', True) if member_profile else True
+    
+    return {
+        "user_id": user_id,
+        "display_name": profile.get('display_name', '') if profile else '',
+        "status": user_goal_status if show_status_ring else None,
+        "show_status_ring": show_status_ring
+    }
+
 # ─── Daily Entries ───
 
 def empty_entry(user_id: str, date: str) -> dict:
@@ -628,6 +823,8 @@ async def create_contact(input_data: WormholeContactInput, user: dict = Depends(
         "company": input_data.company or "",
         "title": input_data.title or "",
         "location": input_data.location or "",
+        # Contact Label (classification)
+        "label": input_data.label or "prospect",  # prospect, referral_partner, strategic_partner, client, wormhole, resource
         # Contact Info
         "website": input_data.website or "",
         "email": input_data.email or "",
@@ -661,11 +858,19 @@ async def create_contact(input_data: WormholeContactInput, user: dict = Depends(
     return {k: v for k, v in contact.items() if k != '_id'}
 
 @api_router.get("/wormhole-contacts")
-async def list_contacts(user: dict = Depends(get_current_user)):
+async def list_contacts(label: Optional[str] = None, user: dict = Depends(get_current_user)):
+    query = {"user_id": user['id']}
+    if label:
+        query["label"] = label
     contacts = await db.wormhole_contacts.find(
-        {"user_id": user['id']}, {"_id": 0}
+        query, {"_id": 0}
     ).sort("name", 1).to_list(500)
     return contacts
+
+@api_router.get("/wormhole-contacts/labels")
+async def get_contact_labels():
+    """Get available contact labels"""
+    return CONTACT_LABELS
 
 @api_router.get("/wormhole-contacts/{contact_id}")
 async def get_contact(contact_id: str, user: dict = Depends(get_current_user)):
@@ -1092,18 +1297,39 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
     """Create a new signal (measurable action) tied to the user's 10x goal"""
     goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
     
+    # For top 10x action, check if one already exists for today
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if input_data.is_top_10x_action:
+        existing_top = await db.signals.find_one({
+            "user_id": user['id'],
+            "is_top_10x_action": True,
+            "due_date": today
+        })
+        if existing_top:
+            raise HTTPException(status_code=400, detail="You already have a Top 10x Action for today")
+    
     signal = {
         "id": str(uuid.uuid4()),
         "user_id": user['id'],
         "goal_id": goal['id'] if goal else None,
         "name": input_data.name,
         "description": input_data.description or "",
-        "impact_rating": input_data.impact_rating,  # 1-10, None if not set
-        "due_date": input_data.due_date,  # YYYY-MM-DD
+        "impact_rating": 10 if input_data.is_top_10x_action else input_data.impact_rating,  # Top 10x = 10 pts
+        "due_date": input_data.due_date,  # MM/DD/YY format
+        "deal_id": input_data.deal_id,  # Associated deal
         "is_public": input_data.is_public,
+        "is_top_10x_action": input_data.is_top_10x_action,  # Mark as top 10x action
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.signals.insert_one(signal)
+    
+    # If linked to a deal, add signal to deal's signals array
+    if input_data.deal_id:
+        await db.deals.update_one(
+            {"id": input_data.deal_id, "user_id": user['id']},
+            {"$addToSet": {"signals": signal['id']}}
+        )
+    
     return {k: v for k, v in signal.items() if k != '_id'}
 
 @api_router.get("/signals")
@@ -1174,7 +1400,7 @@ async def complete_signal(signal_id: str, input_data: SignalCompletionInput, use
             # If due date is at least 1 day after creation, it was planned ahead
             if (due.date() - created.date()).days >= 1:
                 planned_yesterday = True
-        except:
+        except Exception:
             pass
     
     if planned_yesterday:
@@ -1342,28 +1568,122 @@ async def get_leaderboard(limit: int = 20):
 
 @api_router.get("/community/feed")
 async def get_community_feed(limit: int = 50):
-    """Get public signal completions feed"""
+    """Get public signal completions and help requests feed"""
+    # Get signal completions
     completions = await db.signal_completions.find(
         {"is_public": True}, {"_id": 0}
     ).sort("created_at", -1).limit(limit).to_list(limit)
     
+    # Get help requests
+    help_requests = await db.help_requests.find(
+        {"is_public": True}, {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
     feed = []
+    
+    # Add signal completions
     for c in completions:
         profile = await db.profiles.find_one({"user_id": c['user_id']}, {"_id": 0})
         goal = await db.goals.find_one({"user_id": c['user_id'], "active": True}, {"_id": 0})
+        member_profile = await db.member_profiles.find_one({"user_id": c['user_id']}, {"_id": 0})
+        
+        # Get goal status for ring color
+        goal_status = calculate_goal_status(goal)
+        show_ring = member_profile.get('show_status_ring', True) if member_profile else True
         
         feed.append({
             "id": c['id'],
+            "type": "signal_completion",
             "user_id": c['user_id'],
             "display_name": profile.get('display_name', 'Anonymous') if profile else 'Anonymous',
+            "profile_photo_url": member_profile.get('profile_photo_url') if member_profile else None,
             "goal_title": goal.get('title', '') if goal else '',
             "signal_name": c.get('signal_name', ''),
             "total_points": c.get('total_points', 0),
             "notes": c.get('notes', ''),
+            "ring_color": goal_status.get('ring_color') if show_ring else None,
+            "goal_status": goal_status.get('status') if show_ring else None,
             "created_at": c.get('created_at')
         })
     
-    return feed
+    # Add help requests
+    for hr in help_requests:
+        profile = await db.profiles.find_one({"user_id": hr['user_id']}, {"_id": 0})
+        member_profile = await db.member_profiles.find_one({"user_id": hr['user_id']}, {"_id": 0})
+        
+        feed.append({
+            "id": hr['id'],
+            "type": "help_request",
+            "user_id": hr['user_id'],
+            "display_name": profile.get('display_name', 'Anonymous') if profile else 'Anonymous',
+            "profile_photo_url": member_profile.get('profile_photo_url') if member_profile else None,
+            "description": hr.get('description', ''),
+            "ring_color": "red_pulse",  # Help requests always show red ring
+            "created_at": hr.get('created_at')
+        })
+    
+    # Sort combined feed by created_at
+    feed.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    
+    return feed[:limit]
+
+@api_router.post("/community/help-request")
+async def create_help_request(input_data: HelpRequestInput, user: dict = Depends(get_current_user)):
+    """Create a help request when user is off-track and needs support"""
+    profile = await db.profiles.find_one({"user_id": user['id']}, {"_id": 0})
+    goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
+    
+    help_request = {
+        "id": str(uuid.uuid4()),
+        "user_id": user['id'],
+        "goal_id": input_data.goal_id or (goal['id'] if goal else None),
+        "description": input_data.description,
+        "is_public": True,
+        "status": "open",  # open, resolved
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.help_requests.insert_one(help_request)
+    
+    # Find potential helpers based on services_offered matching user's needs
+    member_profile = await db.member_profiles.find_one({"user_id": user['id']}, {"_id": 0})
+    user_needs = member_profile.get('needs', []) if member_profile else []
+    
+    # Get members who offer relevant services
+    potential_helpers = []
+    if user_needs:
+        all_members = await db.member_profiles.find({}, {"_id": 0}).to_list(500)
+        for mp in all_members:
+            if mp.get('user_id') == user['id']:
+                continue
+            services = mp.get('services_offered', [])
+            if any(s in user_needs for s in services):
+                potential_helpers.append(mp.get('user_id'))
+    
+    return {
+        "help_request": {k: v for k, v in help_request.items() if k != '_id'},
+        "potential_helpers_count": len(potential_helpers),
+        "display_name": profile.get('display_name', 'Anonymous') if profile else 'Anonymous'
+    }
+
+@api_router.get("/community/help-requests")
+async def get_help_requests():
+    """Get all open help requests"""
+    requests = await db.help_requests.find(
+        {"status": "open"}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    
+    enriched = []
+    for hr in requests:
+        profile = await db.profiles.find_one({"user_id": hr['user_id']}, {"_id": 0})
+        goal = await db.goals.find_one({"id": hr.get('goal_id')}, {"_id": 0})
+        
+        enriched.append({
+            **hr,
+            "display_name": profile.get('display_name', 'Anonymous') if profile else 'Anonymous',
+            "goal_title": goal.get('title', '') if goal else ''
+        })
+    
+    return enriched
 
 @api_router.post("/daily-entry/{date}/award-bonuses")
 async def award_daily_bonuses(date: str, user: dict = Depends(get_current_user)):
@@ -1599,16 +1919,149 @@ async def create_deal(input_data: DealInput, user: dict = Depends(get_current_us
         "company": input_data.company or "",
         "value": input_data.value,
         "stage": input_data.stage,
+        "close_date": input_data.close_date,  # Expected close date (MM/DD/YY)
         "notes": input_data.notes or "",
         "needs": input_data.needs or [],
         "financial_services": input_data.financial_services or [],
         "other_needs": input_data.other_needs or "",
+        "notifications_enabled": input_data.notifications_enabled,  # Enable/disable close date notifications
         "signals": [],  # Associated signal IDs
+        "priority": calculate_deal_priority(input_data.value, input_data.stage, input_data.close_date),
         "created_at": datetime.now(timezone.utc).isoformat(),
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     await db.deals.insert_one(deal)
     return {k: v for k, v in deal.items() if k != '_id'}
+
+def calculate_deal_priority(value: float, stage: str, close_date: str) -> str:
+    """Calculate deal priority based on value, stage, and close date for smart notifications"""
+    priority_score = 0
+    
+    # Value-based priority
+    if value:
+        if value >= 100000:
+            priority_score += 50
+        elif value >= 50000:
+            priority_score += 35
+        elif value >= 10000:
+            priority_score += 20
+        else:
+            priority_score += 10
+    
+    # Stage-based priority
+    stage_scores = {
+        'negotiation': 40,
+        'proposal': 30,
+        'qualified': 20,
+        'lead': 10,
+        'closed_won': 0,
+        'closed_lost': 0
+    }
+    priority_score += stage_scores.get(stage, 10)
+    
+    # Close date urgency
+    if close_date:
+        try:
+            if '/' in close_date:
+                close = datetime.strptime(close_date, "%m/%d/%y").date()
+            else:
+                close = datetime.strptime(close_date, "%Y-%m-%d").date()
+            days_until = (close - datetime.now(timezone.utc).date()).days
+            if days_until <= 3:
+                priority_score += 30
+            elif days_until <= 7:
+                priority_score += 20
+            elif days_until <= 14:
+                priority_score += 10
+        except Exception:
+            pass
+    
+    if priority_score >= 80:
+        return "critical"
+    elif priority_score >= 50:
+        return "high"
+    elif priority_score >= 30:
+        return "medium"
+    return "low"
+
+@api_router.get("/deals/notifications")
+async def get_deal_notifications(user: dict = Depends(get_current_user)):
+    """Get smart notifications for deals based on priority, stage, and close date"""
+    deals = await db.deals.find(
+        {"user_id": user['id'], "stage": {"$nin": ["closed_won", "closed_lost"]}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    notifications = []
+    today = datetime.now(timezone.utc).date()
+    
+    for deal in deals:
+        if not deal.get('notifications_enabled', True):
+            continue
+        
+        close_date = deal.get('close_date')
+        if close_date:
+            try:
+                if '/' in close_date:
+                    close = datetime.strptime(close_date, "%m/%d/%y").date()
+                else:
+                    close = datetime.strptime(close_date, "%Y-%m-%d").date()
+                days_until = (close - today).days
+                
+                # Smart notification logic based on priority and timing
+                priority = calculate_deal_priority(deal.get('value'), deal.get('stage'), close_date)
+                
+                notification = None
+                if days_until < 0:
+                    notification = {
+                        "type": "overdue",
+                        "message": f"Deal '{deal['name']}' is {abs(days_until)} days past close date!",
+                        "urgency": "critical"
+                    }
+                elif days_until == 0:
+                    notification = {
+                        "type": "due_today",
+                        "message": f"Deal '{deal['name']}' closes TODAY!",
+                        "urgency": "critical"
+                    }
+                elif priority == "critical" and days_until <= 3:
+                    notification = {
+                        "type": "closing_soon",
+                        "message": f"High-value deal '{deal['name']}' closes in {days_until} days",
+                        "urgency": "high"
+                    }
+                elif priority in ["critical", "high"] and days_until <= 7:
+                    notification = {
+                        "type": "action_needed",
+                        "message": f"Take action on '{deal['name']}' - closes in {days_until} days",
+                        "urgency": "medium"
+                    }
+                elif days_until <= 14 and deal.get('stage') in ['proposal', 'negotiation']:
+                    notification = {
+                        "type": "follow_up",
+                        "message": f"Follow up on '{deal['name']}' ({deal.get('stage')}) - {days_until} days left",
+                        "urgency": "low"
+                    }
+                
+                if notification:
+                    notifications.append({
+                        **notification,
+                        "deal_id": deal['id'],
+                        "deal_name": deal['name'],
+                        "value": deal.get('value'),
+                        "stage": deal.get('stage'),
+                        "close_date": close_date,
+                        "days_until_close": days_until,
+                        "priority": priority
+                    })
+            except Exception:
+                pass
+    
+    # Sort by urgency (critical first)
+    urgency_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    notifications.sort(key=lambda x: urgency_order.get(x.get('urgency', 'low'), 4))
+    
+    return notifications
 
 @api_router.get("/deals")
 async def list_deals(stage: Optional[str] = None, user: dict = Depends(get_current_user)):

@@ -1,0 +1,87 @@
+{
+  "summary": "Phase 2 new features testing complete. Backend: 70/72 passed (97%). Frontend: 23/23 passed (100%). Two backend test failures identified as actual bugs - not test issues.",
+  "mode": "generate",
+  "baseline_commit": "0dc9586c2e7063b6c4fd1dc743657e83547e963e",
+  "head_commit": "79d57e281be2a078d2d139574480b9b275f978ab",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "POST /api/signals with is_top_10x_action",
+        "issue": "BUG: Duplicate top 10x action check fails due to date format mismatch. Backend checks for YYYY-MM-DD format but due_date is stored in MM/DD/YY format. Line ~1301-1306 in server.py needs to convert today date to MM/DD/YY format.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": [
+      {
+        "endpoint": "POST /api/signals/{id}/complete with planned_yesterday",
+        "issue": "The planned_yesterday parameter is no longer used - bonus is auto-calculated from due_date vs created_at. Test was checking for manual planned_yesterday bonus."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "All screens",
+        "issues": [
+          "Console warning: shadow* style props are deprecated. Use boxShadow. (non-blocking)"
+        ]
+      }
+    ]
+  },
+  "regression_results": {
+    "total_specs": 4,
+    "passed": 23,
+    "failed": 0,
+    "skipped": 0
+  },
+  "specs_created": [
+    "/app/tests/e2e/crm-community.spec.ts"
+  ],
+  "specs_updated": [],
+  "quarantined_tests": [],
+  "test_report_links": [
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/backend/tests/test_10_new_features.py",
+    "/app/tests/e2e/auth-flow.spec.ts",
+    "/app/tests/e2e/today-page.spec.ts",
+    "/app/tests/e2e/crm-community.spec.ts"
+  ],
+  "action_items": [
+    "FIX BUG: server.py line ~1301-1306 - Change date format check for duplicate top 10x action. Currently uses today = datetime.now(timezone.utc).strftime('%Y-%m-%d') but should use MM/DD/YY format to match stored due_date. Fix: today = datetime.now(timezone.utc).strftime('%m/%d/%y')"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_08_signals_and_points.py",
+    "/app/backend/tests/test_10_new_features.py",
+    "/app/tests/e2e/crm-community.spec.ts"
+  ],
+  "success_rate": {
+    "backend": "97% (70/72 tests passed)",
+    "frontend": "100% (23/23 tests passed)"
+  },
+  "seed_data_creation": "Test user: test_unicorn_001@example.com from iteration 1 and 2",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All Phase 2 new features tested. Backend APIs for signals, contacts labels, deals notifications, goal progress, help requests, and community feed all working. One bug found: duplicate top 10x action check has date format mismatch (YYYY-MM-DD vs MM/DD/YY). Frontend tests cover CRM page (deals/contacts tabs, label filters, stage filters, add deal modal) and Community page (leaderboard, feed, directory tabs, profile icon navigation). All frontend tests pass.",
+  "features_verified": {
+    "top_10x_action_signal": "WORKING - creates signal with is_top_10x_action=true and sets impact_rating=10. BUG: duplicate check doesn't work due to date format mismatch.",
+    "contact_labels_api": "WORKING - GET /api/wormhole-contacts/labels returns all 6 labels without auth",
+    "contacts_label_filter": "WORKING - GET /api/wormhole-contacts?label=prospect filters correctly",
+    "deal_close_date": "WORKING - POST /api/deals accepts close_date and notifications_enabled",
+    "deal_notifications": "WORKING - GET /api/deals/notifications returns smart notifications based on priority and timing",
+    "goal_progress": "WORKING - POST /api/goals/progress updates progress and returns status with ring_color",
+    "goal_status": "WORKING - GET /api/goals/status returns calculated status with ring_color",
+    "help_request": "WORKING - POST /api/community/help-request creates help request",
+    "community_feed": "WORKING - GET /api/community/feed includes type and ring_color fields"
+  },
+  "bugs_found": [
+    {
+      "location": "server.py lines 1300-1309",
+      "description": "Duplicate top 10x action check uses wrong date format",
+      "root_cause": "today = datetime.now(timezone.utc).strftime('%Y-%m-%d') produces '2026-03-04' but due_date is stored as '03/04/26'",
+      "fix": "Change to strftime('%m/%d/%y') to match MM/DD/YY format of due_date",
+      "severity": "HIGH"
+    }
+  ]
+}

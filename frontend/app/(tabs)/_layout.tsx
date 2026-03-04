@@ -24,20 +24,11 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="signals"
+        name="crm"
         options={{
-          title: 'Signals',
+          title: 'CRM',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="flash" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="deals"
-        options={{
-          title: 'Deals',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="briefcase" size={size} color={color} />
+            <Ionicons name="planet" size={size} color={color} />
           ),
         }}
       />
@@ -51,21 +42,31 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="wormhole"
-        options={{
-          title: 'Wormhole',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="planet" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),
+        }}
+      />
+      {/* Hidden tabs - still accessible via navigation */}
+      <Tabs.Screen
+        name="signals"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="deals"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="wormhole"
+        options={{
+          href: null,
         }}
       />
       <Tabs.Screen

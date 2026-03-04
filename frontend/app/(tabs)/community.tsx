@@ -5,6 +5,7 @@ import {
   RefreshControl, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
@@ -12,7 +13,18 @@ import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 
 type TabType = 'leaderboard' | 'feed' | 'directory';
 
+// Status ring colors based on goal progress
+const RING_COLORS: Record<string, [string, string]> = {
+  green_fire: ['#00FF88', '#22C55E'],  // Crushing it / on fire
+  green: ['#22C55E', '#34D399'],  // On track
+  maroon_blue: ['#7C3AED', '#6D28D9'],  // Showing up
+  orange: ['#F97316', '#FB923C'],  // Leaning off
+  red_pulse: ['#EF4444', '#F87171'],  // Needs support
+  gray: ['#6B7280', '#9CA3AF'],  // No goal / incomplete
+};
+
 export default function CommunityScreen() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [feed, setFeed] = useState<any[]>([]);
@@ -65,6 +77,11 @@ export default function CommunityScreen() {
     return `${diffDays}d ago`;
   };
 
+  const getRingColors = (ringColor: string | null): [string, string] | null => {
+    if (!ringColor) return null;
+    return RING_COLORS[ringColor] || RING_COLORS.gray;
+  };
+
   const filteredMembers = search
     ? members.filter(m => 
         m.display_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -85,6 +102,13 @@ export default function CommunityScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Community</Text>
+        <TouchableOpacity
+          testID="profile-icon-btn"
+          style={styles.profileIconBtn}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
+          <Ionicons name="person-circle-outline" size={32} color={Colors.brand.primary} />
+        </TouchableOpacity>
       </View>
 
       {/* Tab Bar */}
@@ -159,33 +183,86 @@ export default function CommunityScreen() {
               <Text style={styles.feedSub}>See what the community is accomplishing</Text>
             </View>
           }
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.feedItem}
-              onPress={() => openMemberProfile(item.user_id)}
-            >
-              <View style={styles.feedAvatar}>
-                <Text style={styles.feedAvatarText}>{item.display_name?.[0]?.toUpperCase() || '?'}</Text>
-              </View>
-              <View style={styles.feedContent}>
-                <View style={styles.feedTop}>
-                  <Text style={styles.feedName}>{item.display_name}</Text>
-                  <Text style={styles.feedTime}>{formatTime(item.created_at)}</Text>
+          renderItem={({ item }) => {
+            const ringColors = getRingColors(item.ring_color);
+            const isHelpRequest = item.type === 'help_request';
+            
+            return (
+              <TouchableOpacity
+                style={styles.feedItem}
+                onPress={() => openMemberProfile(item.user_id)}
+              >
+                {/* Avatar with status ring */}
+                <View style={styles.avatarWrapper}>
+                  {ringColors ? (
+                    <LinearGradient
+                      colors={ringColors}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                      style={styles.statusRing}
+                    >
+                      <View style={styles.feedAvatar}>
+                        {item.profile_photo_url ? (
+                          <Image source={{ uri: item.profile_photo_url }} style={styles.avatarImage} />
+                        ) : (
+                          <Text style={styles.feedAvatarText}>{item.display_name?.[0]?.toUpperCase() || '?'}</Text>
+                        )}
+                      </View>
+                    </LinearGradient>
+                  ) : (
+                    <View style={styles.feedAvatar}>
+                      {item.profile_photo_url ? (
+                        <Image source={{ uri: item.profile_photo_url }} style={styles.avatarImage} />
+                      ) : (
+                        <Text style={styles.feedAvatarText}>{item.display_name?.[0]?.toUpperCase() || '?'}</Text>
+                      )}
+                    </View>
+                  )}
+                  {item.goal_status === 'crushing_it' && (
+                    <View style={styles.fireIndicator}>
+                      <Text style={styles.fireEmoji}>🔥</Text>
+                    </View>
+                  )}
+                  {item.goal_status === 'needs_support' && (
+                    <View style={styles.pulseIndicator}>
+                      <Ionicons name="heart" size={12} color={Colors.text.primary} />
+                    </View>
+                  )}
                 </View>
-                <Text style={styles.feedAction}>
-                  Completed <Text style={styles.feedSignal}>{item.signal_name}</Text>
-                </Text>
-                {item.notes ? <Text style={styles.feedNotes}>"{item.notes}"</Text> : null}
-                <View style={styles.feedFooter}>
-                  <View style={styles.feedPointsBadge}>
-                    <Ionicons name="flash" size={12} color={Colors.status.success} />
-                    <Text style={styles.feedPoints}>+{item.total_points} pts</Text>
+                
+                <View style={styles.feedContent}>
+                  <View style={styles.feedTop}>
+                    <Text style={styles.feedName}>{item.display_name}</Text>
+                    <Text style={styles.feedTime}>{formatTime(item.created_at)}</Text>
                   </View>
-                  <Text style={styles.feedGoal} numberOfLines={1}>→ {item.goal_title}</Text>
+                  
+                  {isHelpRequest ? (
+                    <>
+                      <View style={styles.helpRequestBadge}>
+                        <Ionicons name="hand-left" size={14} color={Colors.status.error} />
+                        <Text style={styles.helpRequestText}>Needs Help</Text>
+                      </View>
+                      <Text style={styles.feedNotes}>"{item.description}"</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.feedAction}>
+                        Completed <Text style={styles.feedSignal}>{item.signal_name}</Text>
+                      </Text>
+                      {item.notes ? <Text style={styles.feedNotes}>"{item.notes}"</Text> : null}
+                      <View style={styles.feedFooter}>
+                        <View style={styles.feedPointsBadge}>
+                          <Ionicons name="flash" size={12} color={Colors.status.success} />
+                          <Text style={styles.feedPoints}>+{item.total_points} pts</Text>
+                        </View>
+                        <Text style={styles.feedGoal} numberOfLines={1}>→ {item.goal_title}</Text>
+                      </View>
+                    </>
+                  )}
                 </View>
-              </View>
-            </TouchableOpacity>
-          )}
+              </TouchableOpacity>
+            );
+          }}
           ListEmptyComponent={
             <View style={styles.emptyFeed}>
               <Ionicons name="newspaper-outline" size={48} color={Colors.text.tertiary} />
@@ -374,8 +451,16 @@ export default function CommunityScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg.default },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { paddingHorizontal: 20, paddingTop: 8, marginBottom: 12 },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: 20, 
+    paddingTop: 8, 
+    marginBottom: 12 
+  },
   pageTitle: { fontSize: FontSize.xxxl, fontWeight: '900', color: Colors.text.primary, letterSpacing: -0.5 },
+  profileIconBtn: { padding: 4 },
   
   // Tab Bar
   tabBar: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 12, gap: 8 },
@@ -420,8 +505,33 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg.card, borderRadius: Radius.md, marginBottom: 8,
     borderWidth: 1, borderColor: Colors.border.default,
   },
-  feedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
+  
+  // Avatar with status ring
+  avatarWrapper: { position: 'relative', marginRight: 12 },
+  statusRing: { 
+    width: 52, height: 52, borderRadius: 26, 
+    justifyContent: 'center', alignItems: 'center', 
+    padding: 3 
+  },
+  feedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center' },
   feedAvatarText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
+  avatarImage: { width: 44, height: 44, borderRadius: 22 },
+  fireIndicator: { position: 'absolute', bottom: -2, right: -2, backgroundColor: Colors.bg.card, borderRadius: 8, padding: 2 },
+  fireEmoji: { fontSize: 12 },
+  pulseIndicator: { 
+    position: 'absolute', bottom: -2, right: -2, 
+    backgroundColor: Colors.status.error, borderRadius: 8, 
+    padding: 2 
+  },
+  helpRequestBadge: { 
+    flexDirection: 'row', alignItems: 'center', gap: 6, 
+    backgroundColor: Colors.status.error + '20', 
+    paddingHorizontal: 10, paddingVertical: 4, 
+    borderRadius: Radius.sm, alignSelf: 'flex-start', 
+    marginBottom: 6 
+  },
+  helpRequestText: { color: Colors.status.error, fontSize: FontSize.sm, fontWeight: '600' },
+  
   feedContent: { flex: 1 },
   feedTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   feedName: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
