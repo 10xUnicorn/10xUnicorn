@@ -78,12 +78,6 @@ export default function TabsLayout() {
           href: null,
         }}
       />
-      <Tabs.Screen
-        name="messages"
-        options={{
-          href: null,
-        }}
-      />
     </Tabs>
   );
 }

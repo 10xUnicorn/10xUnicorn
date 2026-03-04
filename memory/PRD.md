@@ -20,10 +20,18 @@
 - [x] Today screen with date navigation
 
 ### Phase 2 - Today Screen & Daily Tracking
-- [x] Determination Level slider (0-10) with emoji feedback
-  - **NEW:** Fluid gradient slider (orange→red→purple)
-  - **NEW:** Fire emoji thumb, levels: 8=🔥, 9=💎, 10=🦄
-- [x] 10x Focus section with Top 10x Action (special signal worth 10 points)
+- [x] **Collapsible Determination Slider (NEW)**
+  - Fluid gradient slider (orange→red→purple)
+  - Fire emoji thumb, levels: 8=🔥, 9=💎, 10=🦄
+  - Collapsed view shows emoji + value + "Check In" button
+  - Auto-collapses after setting determination
+  - Expands on tap for adjustments
+  - Inspiration messages when determination < 8
+- [x] **"Who are you being today? I am ____"** intention format (NEW)
+- [x] 10x Focus section with **glowing complete button** (NEW)
+  - Massive circular button with glow effect
+  - Turns to animated 🔥 fire when completed
+  - Edit button to navigate to signal details
 - [x] 10x Unicorn Checklist with descriptions:
   1. Top 10x Action Complete - "Set your 10x focus above"
   2. Wormhole Relationship Activated - "Set contact below"
@@ -31,105 +39,90 @@
   4. Tomorrow Prepared - "Plan tomorrow's priorities now"
   5. No Distraction / Course Corrected - "Locked in or recovered fast"
 - [x] All 5 = 🦄 10x Unicorn Win, Just #1 = ⭐ Priority Win
-- [x] Compound Habit tracking with streaks
+- [x] Compound Habit tracking with streaks and count
 - [x] Today's Signals list with Add Signal modal
 - [x] Signal impact rating (1-10) and deal association
 - [x] AI Course Correction (OpenAI integration)
 
-### Phase 3 - Signals System
+### Phase 3 - Signals System (ENHANCED)
 - [x] Create signals with impact rating (1-10)
 - [x] Signal due date with MM/DD/YY format
 - [x] Calendar default: today (before 3 PM) or tomorrow (after 3 PM)
 - [x] Link signals to deals
 - [x] Top 10x Action as special signal (10 points)
 - [x] Signal completion with points
+- [x] **Signal uncomplete endpoint (NEW)** - POST /api/signals/{id}/uncomplete
+- [x] Signals now editable (points, notes, rich text future)
 - [x] Planned ahead bonus, Before 6 PM bonus
 
-### Phase 4 - Dashboard Screen (NEW)
-- [x] **My 10x Goal Card** with Edit Goal button
-- [x] **Stats Grid:** Current Streak 🔥, Best Streak ⭐, Unicorn Days 🦄, Priority Wins ⭐
-- [x] **Last 7 Days:** Circular progress indicators showing daily completion
-- [x] **Determination Trend:** Bar chart with gradient bars
-- [x] **Activity Heatmap:** GitHub-style contribution graph (365 days)
-- [x] **Wormhole Network Summary:** Top contacts by engagement
+### Phase 4 - Dashboard Screen
+- [x] My 10x Goal Card with Edit Goal button
+- [x] Stats Grid: Current Streak 🔥, Best Streak ⭐, Unicorn Days 🦄, Priority Wins ⭐
+- [x] Last 7 Days: Circular progress indicators
+- [x] Determination Trend: Bar chart with gradient bars
+- [x] Activity Heatmap: GitHub-style contribution graph (365 days)
+- [x] Wormhole Network Summary
 
-### Phase 5 - CRM System (Consolidated)
-- [x] Single CRM tab with Deals + Contacts sub-tabs
-- [x] **Contact Labels:** prospect, referral_partner, strategic_partner, client, wormhole, resource
-- [x] **Connection Levels (UPDATED):**
+### Phase 5 - CRM System (RESTRUCTURED)
+- [x] **Tab order: Signals, Contacts, Deals (NEW)**
+- [x] Single CRM tab with 3 sub-tabs
+- [x] Contact Labels: prospect, referral_partner, strategic_partner, client, wormhole, resource
+- [x] Connection Levels:
   - Active / Professional (purple)
   - Warm / Local (green)
   - Building (amber)
   - Mid-Aspirational (orange)
   - Close / Personal (pink)
-- [x] **Contact Tags (UPDATED):** influencer, speaker, business_owner, access, mindset, future_self, community_partner, motivation
-- [x] **Workflow Fields:** activation_next_step, last_contact_date, set_meeting, preferred_platform, power_leverage, best_contact_method
-- [x] **Engagement Tracking:** engagement_level, engagement_types, tagging_in_posts, tagging_in_comments
-- [x] **Reciprocity Notes:** value exchange documentation
-- [x] Deal stages: lead, qualified, proposal, negotiation, closed_won, closed_lost
-- [x] Deal close_date with smart notifications
-- [x] Deal priority calculation based on value/stage/timing
+- [x] Contact Tags: influencer, speaker, business_owner, access, mindset, future_self, community_partner, motivation
+- [x] Workflow Fields: activation_next_step, last_contact_date, set_meeting, preferred_platform, power_leverage, best_contact_method
+- [x] Engagement Tracking
+- [x] Deal stages and close_date with notifications
+- [x] Signals list view with edit capability
 
 ### Phase 6 - Wormhole System (Enhanced Contacts)
 - [x] Wormhole Detail Page with full editable profile
-- [x] **Logs Timeline:** wormhole_logs collection per contact
-- [x] **Log Action Types:** call, meeting, dm, email, coffee_chat, collaboration, intro_made, follow_up
+- [x] Logs Timeline with action types
 - [x] Quick "Log an Action" form
-- [x] Days where contact was selected in daily checklist
-- [x] Auto-layout based on contact type (wormholes show all fields)
-- [x] "Show all fields" toggle for other contact types
+- [x] Auto-layout based on contact type
 
 ### Phase 7 - Goal Progress Tracking
 - [x] Goal deadline and target_number
-- [x] Daily progress check-in (POST /api/goals/progress)
-- [x] Progress status calculation: crushing_it, on_track, showing_up, leaning_off, needs_support
+- [x] Daily progress check-in
 - [x] Status ring colors for community avatars
 - [x] Points for daily progress updates
-- [x] On-track bonus points
 
 ### Phase 8 - Community Features
 - [x] Community feed with signal completions and help requests
 - [x] Leaderboard by points
 - [x] Member directory with search
-- [x] Member profiles (company, social, services, connections)
-- [x] Profile icon on community header for quick access
-- [x] Status ring around avatars (green, maroon-blue, orange, red)
-- [x] Help request system for off-track users
-- [x] Messages button for accessing DMs
+- [x] Member profiles with **first_name + emoji display (NEW)**
+- [x] Status ring around avatars
+- [x] Help request system
 
 ### Phase 9 - Direct & Group Messaging
 - [x] Direct messages between community members
 - [x] Conversations list with unread count
-- [x] Group chat creation with multiple members
-- [x] Group messaging with chat UI
-- [x] Message notifications (push enabled)
-- [x] Messages screen accessible from Community
+- [x] Group chat creation and messaging
 
-### Phase 10 - Push Notifications (NEW)
-- [x] **Expo Push Service Integration** (free, no signup required)
-- [x] Push token registration (POST /api/notifications/push-token)
-- [x] Message notifications (new message alerts)
-- [x] Deal reminder notifications (close date alerts)
-- [x] Daily check-in reminders
-- [x] **Notification Settings:**
-  - Daily check-in reminder (customizable time)
-  - Deal close date reminders (smart timing)
-  - Community notifications
-  - Message notifications
+### Phase 10 - Push Notifications
+- [x] Expo Push Service Integration (free)
+- [x] Push token registration
+- [x] Message, deal, and daily check-in notifications
+- [x] Notification settings in profile
 
-### Phase 11 - Profile & Storage (NEW)
-- [x] **Cloud Storage for Profile Photos** via Emergent Object Storage
-- [x] Profile photo upload (base64)
-- [x] File reference storage in MongoDB
-- [x] Photo delete functionality
+### Phase 11 - Profile & Storage (ENHANCED)
+- [x] **Profile emoji picker (NEW)** - 16 emojis to choose from
+- [x] **First name field (NEW)** - Display as "FirstName + Emoji"
+- [x] Cloud Storage for Profile Photos via Emergent Object Storage
+- [x] **Edit profile includes 10x Goal and Compound Habit (NEW)**
 - [x] Show/hide goal status ring toggle
 
 ## Navigation Structure (UPDATED)
-- **Daily** (⚡) - Daily tracking, signals list, AI coaching
-- **Dashboard** (📊) - Stats, streaks, heatmap, goals
-- **Community** (🏆) - Leaderboard, Feed, Directory, Messages
-- **CRM** (🌀) - Deals + Contacts tabs, wormhole detail view
-- **Settings** (⚙️) - User profile, photo upload, notification settings
+- **Daily** (⚡) - Daily tracking, determination slider, signals
+- **Dashboard** (📊) - Bar chart icon, stats, streaks, heatmap
+- **Community** (🏆) - Leaderboard, Feed, Directory
+- **CRM** (🌀) - Signals → Contacts → Deals tabs
+- **Profile** (👤) - Profile settings, emoji, goal, habit
 
 ## API Endpoints
 
@@ -141,24 +134,25 @@
 
 ### Signals
 - GET/POST /api/signals
+- PUT/DELETE /api/signals/{id}
 - POST /api/signals/{id}/complete
+- **POST /api/signals/{id}/uncomplete (NEW)**
 
 ### CRM - Contacts
 - GET/POST /api/wormhole-contacts
 - PUT/DELETE /api/wormhole-contacts/{id}
-- GET /api/wormhole-contacts/options (all field options)
-- POST /api/wormhole-contacts/{id}/logs
-- GET /api/wormhole-contacts/{id}/logs
+- GET /api/wormhole-contacts/options
+- POST/GET /api/wormhole-contacts/{id}/logs
 
 ### CRM - Deals
 - GET/POST /api/deals
 - PUT/DELETE /api/deals/{id}
-- GET /api/deals/notifications (smart notifications)
+- GET /api/deals/notifications
 
 ### Goals
 - GET/POST /api/goals
+- PUT /api/goal
 - POST /api/goals/progress
-- GET /api/goals/status
 
 ### Community
 - GET /api/community/feed
@@ -166,22 +160,18 @@
 - GET /api/community/members
 
 ### Messaging
-- POST /api/messages/direct
-- GET /api/messages/direct/{user_id}
-- GET /api/messages/conversations
+- POST/GET /api/messages/direct
 - POST/GET /api/messages/groups
-- POST/GET /api/messages/groups/{group_id}
 
 ### Notifications
 - POST /api/notifications/push-token
 - GET/PUT /api/notifications/settings
 
 ### Profile & Storage
-- GET/PUT /api/profiles/me
-- POST /api/profiles/photo (multipart upload)
-- PUT /api/profiles/photo (base64 upload)
-- DELETE /api/profiles/photo
-- GET /api/files/{path} (download from cloud storage)
+- GET/PUT /api/profile (now includes first_name, profile_emoji)
+- PUT /api/compound-habit
+- POST/PUT /api/profiles/photo
+- GET /api/files/{path}
 
 ## Database Collections
 - users, goals, signals, signal_completions
@@ -190,24 +180,28 @@
 - user_points, compound_habits, help_requests
 - messages, group_chats
 - push_tokens, notification_settings, notifications
-- files (cloud storage references)
+- files
 
-## Testing Status (Updated March 4, 2026)
-- Backend: 95% pass rate (90/95 tests)
-- Frontend: 100% pass rate (37/37 tests)
-- Test files: /app/backend/tests/, /app/tests/e2e/
-- Latest report: /app/test_reports/iteration_5.json
+## Testing Status (March 4, 2026)
+- Backend: 95% (106/111 tests)
+- All new features verified working
+- Test files: /app/backend/tests/
+- Latest report: /app/test_reports/iteration_6.json
 
-## Pending/Backlog
+## Pending Implementation (In Progress)
+
+### P0 - Immediate
+- [ ] Rich text formatting in signal notes (bold, italic, underline, headers, links)
+- [ ] Compound habit counter modal (ask "how many times" when complete)
+- [ ] Go back a day to update compound count
+- [ ] Keyboard avoiding view fix for modal forms
 
 ### P1 - Medium Priority
-- [ ] Real-time messaging with WebSocket (currently polling)
+- [ ] Activity level rings based on streak colors
+- [ ] Real-time messaging with WebSocket
 - [ ] Background push notification scheduling
 
-### P2 - Future Enhancements
+### P2 - Future
 - [ ] Premium tiers and coaching integrations
-- [ ] Social accountability groups
-- [ ] Public streak sharing
-- [ ] Community challenges
 - [ ] Refactor server.py into APIRouter modules
 - [ ] Refactor crm.tsx into smaller components
