@@ -10,8 +10,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 
-type CRMTab = 'deals' | 'contacts';
-
 const STAGES = [
   { key: 'lead', label: 'Lead', color: Colors.text.tertiary },
   { key: 'qualified', label: 'Qualified', color: Colors.brand.accent },
@@ -68,12 +66,19 @@ const LOG_ACTION_TYPES = [
   { key: 'follow_up', label: 'Follow Up', icon: 'refresh' },
 ];
 
+type CRMTab = 'signals' | 'contacts' | 'deals';
+
 export default function CRMScreen() {
-  const [activeTab, setActiveTab] = useState<CRMTab>('deals');
+  const [activeTab, setActiveTab] = useState<CRMTab>('signals');
+  const [signals, setSignals] = useState<any[]>([]);
   const [deals, setDeals] = useState<any[]>([]);
   const [contacts, setContacts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Signal state
+  const [showEditSignal, setShowEditSignal] = useState<any>(null);
+  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '' });
   
   // Deal state
   const [showAddDeal, setShowAddDeal] = useState(false);
@@ -119,12 +124,14 @@ export default function CRMScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const [dealsData, contactsData] = await Promise.all([
+      const [signalsData, dealsData, contactsData] = await Promise.all([
+        api.get('/signals'),
         api.get('/deals'),
         api.get('/wormhole-contacts'),
       ]);
-      setDeals(dealsData);
-      setContacts(contactsData);
+      setSignals(signalsData || []);
+      setDeals(dealsData || []);
+      setContacts(contactsData || []);
     } catch (e) {
       console.error(e);
     } finally {
@@ -358,12 +365,12 @@ export default function CRMScreen() {
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         <TouchableOpacity
-          testID="crm-tab-deals"
-          style={[styles.tab, activeTab === 'deals' && styles.tabActive]}
-          onPress={() => setActiveTab('deals')}
+          testID="crm-tab-signals"
+          style={[styles.tab, activeTab === 'signals' && styles.tabActive]}
+          onPress={() => setActiveTab('signals')}
         >
-          <Ionicons name="briefcase" size={18} color={activeTab === 'deals' ? Colors.brand.primary : Colors.text.tertiary} />
-          <Text style={[styles.tabText, activeTab === 'deals' && styles.tabTextActive]}>Deals</Text>
+          <Ionicons name="flash" size={18} color={activeTab === 'signals' ? Colors.brand.primary : Colors.text.tertiary} />
+          <Text style={[styles.tabText, activeTab === 'signals' && styles.tabTextActive]}>Signals</Text>
         </TouchableOpacity>
         <TouchableOpacity
           testID="crm-tab-contacts"
@@ -373,7 +380,71 @@ export default function CRMScreen() {
           <Ionicons name="people" size={18} color={activeTab === 'contacts' ? Colors.brand.primary : Colors.text.tertiary} />
           <Text style={[styles.tabText, activeTab === 'contacts' && styles.tabTextActive]}>Contacts</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          testID="crm-tab-deals"
+          style={[styles.tab, activeTab === 'deals' && styles.tabActive]}
+          onPress={() => setActiveTab('deals')}
+        >
+          <Ionicons name="briefcase" size={18} color={activeTab === 'deals' ? Colors.brand.primary : Colors.text.tertiary} />
+          <Text style={[styles.tabText, activeTab === 'deals' && styles.tabTextActive]}>Deals</Text>
+        </TouchableOpacity>
       </View>
+
+      {/* Signals Tab */}
+      {activeTab === 'signals' && (
+        <FlatList
+          data={signals}
+          keyExtractor={item => item.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={Colors.brand.primary} />}
+          ListHeaderComponent={() => (
+            <View style={styles.signalHeader}>
+              <Text style={styles.signalCount}>{signals.length} Signals</Text>
+            </View>
+          )}
+          ListEmptyComponent={() => (
+            <View style={styles.empty}>
+              <Ionicons name="flash-outline" size={48} color={Colors.text.tertiary} />
+              <Text style={styles.emptyText}>No signals yet</Text>
+              <Text style={styles.emptySubtext}>Create signals from the Daily screen</Text>
+            </View>
+          )}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              testID={`signal-${item.id}`} 
+              style={styles.signalCard}
+              onPress={() => {
+                setSignalForm({
+                  name: item.name || '',
+                  description: item.description || '',
+                  impact_rating: item.impact_rating || 5,
+                  deal_id: item.deal_id || '',
+                  notes: item.notes || '',
+                });
+                setShowEditSignal(item);
+              }}
+            >
+              <View style={styles.signalRow}>
+                <View style={[styles.signalImpact, item.completed_at && styles.signalImpactCompleted]}>
+                  <Text style={styles.signalImpactText}>{item.impact_rating || 5}</Text>
+                </View>
+                <View style={styles.signalInfo}>
+                  <Text style={[styles.signalName, item.completed_at && styles.signalNameCompleted]}>{item.name}</Text>
+                  {item.due_date && <Text style={styles.signalDue}>Due: {item.due_date}</Text>}
+                  {item.is_top_10x_action && <Text style={styles.signalTop10x}>⭐ Top 10x Action</Text>}
+                </View>
+                {item.completed_at ? (
+                  <View style={styles.signalCompletedBadge}>
+                    <Text style={{ fontSize: 16 }}>✅</Text>
+                  </View>
+                ) : (
+                  <Ionicons name="chevron-forward" size={20} color={Colors.text.tertiary} />
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+        />
+      )}
 
       {/* Deals Tab */}
       {activeTab === 'deals' && (
@@ -1121,4 +1192,19 @@ const styles = StyleSheet.create({
   logType: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
   logNotes: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
   logDate: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginTop: 4 },
+  
+  // Signals List
+  signalHeader: { paddingVertical: 16 },
+  signalCount: { color: Colors.text.secondary, fontSize: FontSize.sm },
+  signalCard: { backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border.default },
+  signalRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  signalImpact: { width: 40, height: 40, borderRadius: 20, backgroundColor: Colors.brand.primary + '20', justifyContent: 'center', alignItems: 'center' },
+  signalImpactCompleted: { backgroundColor: Colors.status.success + '20' },
+  signalImpactText: { color: Colors.brand.primary, fontSize: FontSize.lg, fontWeight: '700' },
+  signalInfo: { flex: 1 },
+  signalName: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
+  signalNameCompleted: { textDecorationLine: 'line-through', color: Colors.text.tertiary },
+  signalDue: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2 },
+  signalTop10x: { color: Colors.status.warning, fontSize: FontSize.xs, fontWeight: '600', marginTop: 2 },
+  signalCompletedBadge: { padding: 4 },
 });

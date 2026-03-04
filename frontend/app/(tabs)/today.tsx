@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, RefreshControl, Modal, Alert,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -36,32 +37,43 @@ export default function TodayScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [compoundStreak, setCompoundStreak] = useState(0);
   const [habitTitle, setHabitTitle] = useState('');
+  const [habitTarget, setHabitTarget] = useState(0);
   const [showStatusPicker, setShowStatusPicker] = useState(false);
   const [profileData, setProfileData] = useState<any>(null);
+  const [sliderCollapsed, setSliderCollapsed] = useState(false);
+  const [showCompoundCounter, setShowCompoundCounter] = useState(false);
   
   // Signals state
   const [signals, setSignals] = useState<any[]>([]);
   const [showAddSignal, setShowAddSignal] = useState(false);
-  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '' });
+  const [showEditSignal, setShowEditSignal] = useState<any>(null);
+  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '' });
   const [deals, setDeals] = useState<any[]>([]);
   const [topSignal, setTopSignal] = useState<any>(null);
+  const [completedSignals, setCompletedSignals] = useState<Set<string>>(new Set());
 
   const isToday = currentDate === getToday();
 
   const loadEntry = useCallback(async () => {
     try {
-      const [entryData, streakData, profile, signalsData, dealsData] = await Promise.all([
+      const [entryData, streakData, profile, signalsData, dealsData, completionsData] = await Promise.all([
         api.get(`/daily-entry/${currentDate}`),
         api.get('/compound-streak'),
         api.get('/profile'),
         api.get('/signals'),
         api.get('/deals'),
+        api.get(`/signal-completions?date=${currentDate}`),
       ]);
       setEntry(entryData);
       setCompoundStreak(streakData.streak);
       setHabitTitle(streakData.habit?.habit_title || 'Daily Habit');
+      setHabitTarget(streakData.habit?.target_number || 0);
       setProfileData(profile);
       setDeals(dealsData || []);
+      
+      // Track completed signals
+      const completed = new Set((completionsData || []).map((c: any) => c.signal_id));
+      setCompletedSignals(completed);
       
       // Filter signals for today
       const todayFormatted = formatDateMMDDYY(new Date());
@@ -71,6 +83,11 @@ export default function TodayScreen() {
       // Find top 10x action signal for today
       const top10x = (signalsData || []).find((s: any) => s.is_top_10x_action && (s.due_date === todayFormatted || s.due_date === currentDate));
       setTopSignal(top10x);
+      
+      // Auto-collapse slider if determination already set today
+      if (entryData?.determination_level && entryData.determination_level > 0) {
+        setSliderCollapsed(true);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -271,42 +288,53 @@ export default function TodayScreen() {
           </View>
         )}
 
-        {/* Determination Slider */}
+        {/* Determination Slider - Collapsible */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Determination Level</Text>
           <DeterminationSlider 
             testID="determination-slider"
             value={determination}
-            onChange={(val) => updateEntry({ determination_level: val })}
+            onChange={(val) => {
+              updateEntry({ determination_level: val });
+              setTimeout(() => setSliderCollapsed(true), 1000);
+            }}
+            collapsed={sliderCollapsed}
+            onToggleCollapse={() => setSliderCollapsed(!sliderCollapsed)}
           />
         </View>
 
         {/* Intention */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Intention</Text>
-          <Text style={styles.cardSub}>What kind of person are you being today?</Text>
-          <TextInput
-            testID="intention-input"
-            style={styles.cardInput}
-            value={entry?.intention || ''}
-            onChangeText={t => setEntry({ ...entry, intention: t })}
-            onBlur={() => updateEntry({ intention: entry?.intention })}
-            placeholder="I am being..."
-            placeholderTextColor={Colors.text.tertiary}
-          />
+          <Text style={styles.cardTitle}>Who are you being today?</Text>
+          <View style={styles.intentionRow}>
+            <Text style={styles.intentionPrefix}>I am</Text>
+            <TextInput
+              testID="intention-input"
+              style={styles.intentionInput}
+              value={entry?.intention || ''}
+              onChangeText={t => setEntry({ ...entry, intention: t })}
+              onBlur={() => updateEntry({ intention: entry?.intention })}
+              placeholder="confident and focused..."
+              placeholderTextColor={Colors.text.tertiary}
+            />
+          </View>
         </View>
 
-        {/* 10x Focus */}
+        {/* 10x Focus with Glowing Complete Button */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>
               <Text style={styles.redText}>10x</Text> Focus
             </Text>
-            {(topSignal?.completed_at || entry?.top_priority_completed) && (
-              <View style={styles.winBadge}>
-                <Text style={styles.winBadgeText}>+10 PTS</Text>
+            {(topSignal?.completed_at || entry?.top_priority_completed) ? (
+              <View style={styles.completedFireBadge}>
+                <Text style={styles.fireEmoji}>🔥</Text>
+                <Text style={styles.completedText}>DONE</Text>
               </View>
-            )}
+            ) : topSignal ? (
+              <View style={styles.pointsBadge}>
+                <Text style={styles.pointsBadgeText}>+10 PTS</Text>
+              </View>
+            ) : null}
           </View>
           <TextInput
             testID="focus-input"
@@ -321,21 +349,24 @@ export default function TodayScreen() {
           <View style={styles.divider} />
           <Text style={styles.actionLabel}>Top 10x Action <Text style={styles.pointsHint}>(10 points)</Text></Text>
           <View style={styles.actionRow}>
+            {/* Massive Glowing Complete Button */}
             <TouchableOpacity
               testID="top-priority-check"
-              style={[styles.checkbox, (topSignal?.completed_at || entry?.top_priority_completed) && styles.checkboxChecked]}
+              style={[
+                styles.glowingCheckbox, 
+                (topSignal?.completed_at || entry?.top_priority_completed) && styles.glowingCheckboxCompleted
+              ]}
               onPress={async () => {
                 if (topSignal) {
-                  // Complete existing top signal
-                  if (!topSignal.completed_at) {
+                  if (!topSignal.completed_at && !completedSignals.has(topSignal.id)) {
                     await completeSignal(topSignal.id);
+                    setCompletedSignals(prev => new Set([...prev, topSignal.id]));
                     const newVal = true;
                     updateEntry({ 
                       top_priority_completed: newVal,
                       five_item_statuses: { ...fiveStatuses, top_action: newVal }
                     });
                   } else {
-                    // Already completed, just toggle UI
                     const newVal = !entry?.top_priority_completed;
                     updateEntry({ 
                       top_priority_completed: newVal,
@@ -343,7 +374,6 @@ export default function TodayScreen() {
                     });
                   }
                 } else if (entry?.top_10x_action_text?.trim()) {
-                  // Create and complete as signal
                   await createTop10xSignal(entry.top_10x_action_text);
                   const newVal = true;
                   updateEntry({ 
@@ -351,7 +381,6 @@ export default function TodayScreen() {
                     five_item_statuses: { ...fiveStatuses, top_action: newVal }
                   });
                 } else {
-                  // Just toggle without signal (for backwards compat)
                   const newVal = !entry?.top_priority_completed;
                   updateEntry({ 
                     top_priority_completed: newVal,
@@ -360,7 +389,11 @@ export default function TodayScreen() {
                 }
               }}
             >
-              {(topSignal?.completed_at || entry?.top_priority_completed) && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
+              {(topSignal?.completed_at || entry?.top_priority_completed || completedSignals.has(topSignal?.id)) ? (
+                <Text style={styles.glowingFireEmoji}>🔥</Text>
+              ) : (
+                <Ionicons name="checkmark" size={28} color={Colors.text.tertiary} />
+              )}
             </TouchableOpacity>
             <TextInput
               testID="top-action-input"
@@ -376,6 +409,16 @@ export default function TodayScreen() {
               placeholderTextColor={Colors.text.tertiary}
               editable={!topSignal}
             />
+            {/* Edit Signal Button */}
+            {topSignal && (
+              <TouchableOpacity
+                testID="edit-top-signal-btn"
+                style={styles.editSignalBtn}
+                onPress={() => setShowEditSignal(topSignal)}
+              >
+                <Ionicons name="pencil" size={18} color={Colors.brand.primary} />
+              </TouchableOpacity>
+            )}
             {!topSignal && entry?.top_10x_action_text?.trim() && (
               <TouchableOpacity
                 testID="set-top-signal-btn"
@@ -942,4 +985,92 @@ const styles = StyleSheet.create({
   },
   saveSignalBtnDisabled: { opacity: 0.5 },
   saveSignalBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
+  
+  // NEW: Intention row styles
+  intentionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  intentionPrefix: {
+    color: Colors.text.secondary,
+    fontSize: FontSize.lg,
+    fontWeight: '600',
+  },
+  intentionInput: {
+    flex: 1,
+    backgroundColor: Colors.bg.input,
+    borderRadius: Radius.md,
+    padding: 14,
+    color: Colors.text.primary,
+    fontSize: FontSize.base,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  
+  // NEW: Glowing complete button
+  glowingCheckbox: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.bg.input,
+    borderWidth: 2,
+    borderColor: Colors.brand.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.brand.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  glowingCheckboxCompleted: {
+    backgroundColor: 'rgba(249,115,22,0.2)',
+    borderColor: '#F97316',
+  },
+  glowingFireEmoji: {
+    fontSize: 28,
+  },
+  
+  // NEW: Fire badge for completed
+  completedFireBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(249,115,22,0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+  },
+  fireEmoji: {
+    fontSize: 16,
+  },
+  completedText: {
+    color: '#F97316',
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  pointsBadge: {
+    backgroundColor: 'rgba(168,85,247,0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+  },
+  pointsBadgeText: {
+    color: Colors.brand.primary,
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+  },
+  
+  // NEW: Edit signal button
+  editSignalBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.bg.input,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
 });

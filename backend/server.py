@@ -138,6 +138,8 @@ class OnboardingInput(BaseModel):
 
 class ProfileUpdate(BaseModel):
     display_name: Optional[str] = None
+    first_name: Optional[str] = None
+    profile_emoji: Optional[str] = None
     timezone_str: Optional[str] = None
 
 class DailyEntryUpdate(BaseModel):
@@ -155,6 +157,7 @@ class DailyEntryUpdate(BaseModel):
     immediate_course_correction: Optional[bool] = None
     meditation_reflection: Optional[str] = None
     compound_done: Optional[bool] = None
+    compound_count: Optional[int] = None  # How many times action done today
     compound_notes: Optional[str] = None
     manual_override_status: Optional[str] = None
 
@@ -1725,6 +1728,42 @@ async def complete_signal(signal_id: str, input_data: SignalCompletionInput, use
     return {
         "completion": {k: v for k, v in completion.items() if k != '_id'},
         "total_points_earned": total_points
+    }
+
+@api_router.post("/signals/{signal_id}/uncomplete")
+async def uncomplete_signal(signal_id: str, user: dict = Depends(get_current_user)):
+    """Uncomplete a signal - remove completion and deduct points"""
+    signal = await db.signals.find_one({"id": signal_id, "user_id": user['id']})
+    if not signal:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    
+    # Find today's completion for this signal
+    completion = await db.signal_completions.find_one({
+        "signal_id": signal_id,
+        "user_id": user['id'],
+        "date": today
+    })
+    
+    if not completion:
+        raise HTTPException(status_code=400, detail="Signal not completed today")
+    
+    # Calculate total points to deduct
+    points_to_deduct = completion.get('points_earned', 0)
+    
+    # Delete the completion
+    await db.signal_completions.delete_one({"id": completion['id']})
+    
+    # Deduct points
+    await db.user_points.update_one(
+        {"user_id": user['id']},
+        {"$inc": {"total_points": -points_to_deduct, "weekly_points": -points_to_deduct}}
+    )
+    
+    return {
+        "message": "Signal uncompleted",
+        "points_deducted": points_to_deduct
     }
 
 @api_router.get("/signal-completions")

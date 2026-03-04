@@ -19,6 +19,8 @@ const SERVICES = [
   'communities', 'financial_services', 'coaching', 'design', 'sales', 'legal', 'hr'
 ];
 
+const PROFILE_EMOJIS = ['🔥', '💎', '🦄', '🚀', '⭐', '🌟', '💪', '🎯', '👑', '🦅', '🐉', '🌙', '☀️', '🌊', '🏆', '💰'];
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -33,6 +35,7 @@ export default function ProfileScreen() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [notificationSettings, setNotificationSettings] = useState<any>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => { loadProfile(); loadNotificationSettings(); }, []);
 
@@ -104,6 +107,8 @@ export default function ProfileScreen() {
 
   const openEditProfile = () => {
     setEditForm({
+      first_name: profile?.first_name || profile?.display_name?.split(' ')[0] || '',
+      profile_emoji: profile?.profile_emoji || '🔥',
       display_name: profile?.display_name || '',
       company_name: memberProfile?.company_name || '',
       website: memberProfile?.website || '',
@@ -121,6 +126,12 @@ export default function ProfileScreen() {
       warm_connection: memberProfile?.warm_connection || '',
       golden_connection: memberProfile?.golden_connection || '',
       show_status_ring: memberProfile?.show_status_ring ?? true,
+      // Goal and Habit
+      goal_title: goal?.title || '',
+      goal_deadline: goal?.deadline || goal?.end_date || '',
+      goal_target: goal?.target_number?.toString() || '',
+      habit_title: habit?.habit_title || '',
+      habit_target: habit?.target_number?.toString() || '',
     });
     setShowEditProfile(true);
   };
@@ -128,13 +139,34 @@ export default function ProfileScreen() {
   const saveProfile = async () => {
     setSaving(true);
     try {
-      // Update basic profile
-      if (editForm.display_name !== profile?.display_name) {
-        await api.put('/profile', { display_name: editForm.display_name });
-      }
+      // Update basic profile with first_name and emoji
+      await api.put('/profile', { 
+        display_name: editForm.display_name,
+        first_name: editForm.first_name,
+        profile_emoji: editForm.profile_emoji,
+      });
+      
       // Update member profile
-      const { display_name, ...memberFields } = editForm;
+      const { display_name, first_name, profile_emoji, goal_title, goal_deadline, goal_target, habit_title, habit_target, ...memberFields } = editForm;
       await api.put('/member/profile', memberFields);
+      
+      // Update goal if changed
+      if (editForm.goal_title) {
+        await api.put('/goal', {
+          title: editForm.goal_title,
+          deadline: editForm.goal_deadline,
+          target_number: editForm.goal_target ? parseFloat(editForm.goal_target) : null,
+        });
+      }
+      
+      // Update compound habit if changed
+      if (editForm.habit_title) {
+        await api.put('/compound-habit', {
+          habit_title: editForm.habit_title,
+          target_number: editForm.habit_target ? parseInt(editForm.habit_target) : null,
+        });
+      }
+      
       await loadProfile();
       setShowEditProfile(false);
     } catch (e: any) {
