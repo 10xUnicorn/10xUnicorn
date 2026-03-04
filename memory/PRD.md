@@ -1,175 +1,140 @@
 # 10x Unicorn - Product Requirements Document
 
 ## Product Overview
-10x Unicorn is a **10x goal execution dashboard, relationship intelligence CRM, and community performance platform for business owners**.
+10x Unicorn is an integrated goal execution dashboard, relationship intelligence system, and community performance platform for business owners. It combines daily habit tracking, CRM functionality, and community features into a single mobile application.
 
 ## Tech Stack
-- **Frontend**: Expo React Native (SDK 54) with expo-router
-- **Backend**: FastAPI (Python) with MongoDB
-- **AI**: OpenAI GPT-5.2 via Emergent LLM Key
-- **Auth**: JWT-based email/password authentication
+- **Frontend:** Expo (React Native), TypeScript, Expo Router
+- **Backend:** FastAPI, Python, MongoDB
+- **Authentication:** JWT-based
+- **AI:** OpenAI GPT-5.2 via Emergent LLM Key
 
-## Design System
-- **Background**: Deep navy (`#0a0a1a`)
-- **Primary**: Electric purple (`#A855F7`)
-- **Secondary**: Magenta (`#D946EF`)
-- **Accent**: Cyan (`#06B6D4`)
+## Implemented Features (As of March 2026)
 
-## Navigation (5 Tabs)
-1. **Today** - Daily execution center
-2. **Signals** - Goal progress tracking with points
-3. **Community** - Leaderboard, Feed, Directory
-4. **Wormhole** - Relationship CRM
-5. **Profile** - Member profile & settings
+### Phase 1 - Core Foundation
+- [x] User Authentication (register, login, JWT)
+- [x] Onboarding flow (name, timezone, 10x goal)
+- [x] Dark futuristic UI theme (navy, purple, cyan)
+- [x] Today screen with date navigation
 
----
+### Phase 2 - Today Screen
+- [x] Determination Level slider (0-10) with emoji feedback
+- [x] Intention field
+- [x] 10x Focus section
+- [x] Five Core Actions checklist
+- [x] Compound Habit tracking with streaks
+- [x] Distraction Reflection
+- [x] AI Course Correction (OpenAI integration)
 
-## Core Features
+### Phase 3 - Signals System
+- [x] Create signals with impact rating (1-10)
+- [x] Signal due date with MM/DD/YY format
+- [x] Calendar default: today (before 3 PM) or tomorrow (after 3 PM)
+- [x] Link signals to deals
+- [x] Top 10x Action as special signal (10 points)
+- [x] Signal completion with points
+- [x] Planned ahead bonus
+- [x] Before 6 PM bonus
 
-### 1. Signals & Points System
-**Signals** are measurable actions tied to the user's 10x goal.
+### Phase 4 - CRM System (NEW)
+- [x] Consolidated CRM tab (Deals + Contacts)
+- [x] Contact Labels: prospect, referral_partner, strategic_partner, client, wormhole, resource
+- [x] Contact filter by label
+- [x] Deals with close_date (MM/DD/YY)
+- [x] Smart deal notifications based on priority/value/timing
+- [x] Notifications enable/disable per deal
+- [x] Deal stages: lead, qualified, proposal, negotiation, closed_won, closed_lost
+- [x] Link contacts to deals
 
-**Signal Fields:**
-- Name, Description
-- Impact Rating (1-10 slider) = Points value
-- Due Date (YYYY-MM-DD)
-- Public/Private toggle (blue globe icon)
+### Phase 5 - Goal Progress Tracking (NEW)
+- [x] Goal deadline and target_number
+- [x] Daily progress check-in (POST /api/goals/progress)
+- [x] Progress status calculation: crushing_it, on_track, showing_up, leaning_off, needs_support
+- [x] Status ring colors for community avatars
+- [x] Points for daily progress updates
+- [x] On-track bonus points
 
-**Auto-Calculated Bonuses:**
-- +5 **Planned Ahead** (due date ≥1 day after creation)
-- +10 **Before 6 PM**
-- +20 **All Signals Complete** (3+ signals)
-- +15 **Top 10x Action**
-- +10 **Wormhole Action**
-- +50 **10x Unicorn Win**
+### Phase 6 - Community Features
+- [x] Community feed with signal completions
+- [x] Help requests in feed
+- [x] Leaderboard by points
+- [x] Member directory with search
+- [x] Member profiles (company, social, services, etc.)
+- [x] Profile icon on community page header
+- [x] Status ring around avatars (green, maroon-blue, orange, red)
+- [x] Help request system
 
-### 2. Member Profile (Full Profile Fields)
-**Basic Info:**
-- Display Name
-- Company Name
-- Website
-- Email
-- Phone
-- Booking Link
+## Navigation Structure
+- **Today** - Daily tracking, signals, AI coaching
+- **CRM** - Deals and Contacts tabs
+- **Community** - Leaderboard, Feed, Directory
+- **Profile** - User profile and settings
 
-**Social Media:**
-- LinkedIn
-- Twitter
-- Instagram
-- YouTube
-- TikTok
+## API Endpoints
 
-**Business Profile:**
-- Bio
-- What they're working on
-- Services Offered (multi-select)
-- Target Customer
-
-**Connection Profile:**
-- Who they are a good connection for
-- Who a warm connection is
-- Who a golden/ideal connection is
-- Strategic partnerships they seek
-
-### 3. Deals CRM
-**Deal Fields:**
-- Name
-- Associated Contact (from Wormhole)
-- Company
-- Value ($)
-- Stage (lead → qualified → proposal → negotiation → closed_won/closed_lost)
-- Notes
-- Needs Categories
-- Financial Services Needed
-- Other Needs (custom tags)
-- Linked Signals
-
-**Needs Categories:**
-Capital, Marketing, Social Media, Community Management, Operations, Tech Development, Podcast Booking, Speaking, Sponsorships, Events, Communities, Financial Services, Coaching, Design, Sales, Legal, HR
-
-**Financial Services:**
-Accounting, Bookkeeping, Tax Planning, Financial Planning, Wealth Management, Venture Capital, Private Equity, Angel Investment, Debt Financing, Revenue Based Financing, Fractional CFO, M&A Advisory, Fundraising Strategy
-
-### 4. Service Matching
-- Find community members who offer services matching your needs
-- Match by service type, industry, deal needs
-- Display: company info, booking link, services, target customer, points
-
----
-
-## Implementation Status
-
-### ✅ Complete
-
-**Phase 1: Foundation**
-- Color scheme, fluid determination slider, five core actions, win logic
-
-**Phase 2: Signals & Points**
-- Signal CRUD with impact rating (1-10) and due dates
-- Auto-calculated planned_ahead bonus
-- Points summary, leaderboard, community feed
-
-**Phase 3: Expanded Wormhole CRM**
-- Full contact profile with all fields
-- Interaction logging with action types and impact ratings
-
-**Phase 4: Community Features**
-- Leaderboard UI
-- Activity feed UI
-- Member directory with search
-- Member profile modal
-
-**Phase 5: Deals CRM & Service Matching**
-- Deal CRUD with stages, needs, value
-- Link signals to deals
-- Service matching by deal needs
-- Provider search by service type
-- Full member profile editor with all new fields
-
----
-
-## API Endpoints Summary
+### Authentication
+- POST /api/register
+- POST /api/login
+- GET /api/auth/me
 
 ### Signals
-- `GET/POST /api/signals`
-- `PUT/DELETE /api/signals/{id}`
-- `POST /api/signals/{id}/complete`
+- GET/POST /api/signals
+- POST /api/signals/{id}/complete
 
-### Points & Community
-- `GET /api/points/summary`
-- `GET /api/points/leaderboard`
-- `GET /api/community/feed`
-- `GET /api/community/members`
+### CRM
+- GET/POST /api/deals
+- GET /api/deals/{id}
+- PUT /api/deals/{id}
+- DELETE /api/deals/{id}
+- GET /api/deals/notifications
+- GET/POST /api/wormhole-contacts
+- GET /api/wormhole-contacts/labels
 
-### Member Profile
-- `GET/PUT /api/member/profile`
-- `GET /api/member/{user_id}`
+### Goals
+- GET/POST /api/goals
+- POST /api/goals/progress
+- GET /api/goals/status
+- GET /api/goals/user/{user_id}/status
 
-### Deals
-- `GET/POST /api/deals`
-- `PUT/DELETE /api/deals/{id}`
-- `POST /api/deals/{id}/link-signal/{signal_id}`
-- `GET /api/deals/stages/list`
-- `GET /api/deals/needs/list`
+### Community
+- GET /api/community/feed
+- POST /api/community/help-request
+- GET /api/community/members
+- GET /api/member/{user_id}
+- GET/PUT /api/profiles/me
+- GET /api/points/leaderboard
 
-### Service Matching
-- `GET /api/matching/providers`
-- `GET /api/matching/for-deal/{deal_id}`
+## Pending/Backlog
 
-### Wormhole
-- `GET/POST /api/wormhole-contacts`
-- `PUT/DELETE /api/wormhole-contacts/{id}`
-- `POST /api/wormhole-contacts/interaction`
+### P0 - High Priority
+- [ ] Profile photo upload UI and backend
 
----
+### P1 - Medium Priority
+- [ ] Push notifications for deals
+- [ ] Direct messaging
+- [ ] Group messaging
 
-## Remaining Work
+### P2 - Future
+- [ ] Premium tiers
+- [ ] Coaching integrations
+- [ ] Social accountability groups
+- [ ] Public streak sharing
+- [ ] Community challenges
 
-### 🔵 Phase 6: Messaging
-- [ ] Direct messaging between members
-- [ ] Group chats
+## Known Issues
+- Expo tunnel can be unstable (ngrok service)
+- ESLint not configured for TypeScript
 
-### 🔵 Future
-- Push notifications
-- Premium tiers
-- Public streak sharing
+## Database Collections
+- users
+- goals
+- signals
+- signal_completions
+- deals
+- wormhole_contacts
+- daily_entries
+- profiles
+- member_profiles
+- user_points
+- compound_habits
+- help_requests
