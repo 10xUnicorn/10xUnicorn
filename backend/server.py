@@ -201,19 +201,21 @@ class PasswordResetInput(BaseModel):
 class SignalInput(BaseModel):
     name: str
     description: Optional[str] = ""
-    points: int = 10
-    is_public: bool = True  # Public by default, user can make private
+    impact_rating: Optional[int] = None  # 1-10, determines points (None = not set)
+    due_date: Optional[str] = None  # YYYY-MM-DD format
+    is_public: bool = True
 
 class SignalUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    points: Optional[int] = None
+    impact_rating: Optional[int] = None
+    due_date: Optional[str] = None
     is_public: Optional[bool] = None
 
 class SignalCompletionInput(BaseModel):
     signal_id: str
     notes: Optional[str] = ""
-    planned_yesterday: bool = False  # Was this signal planned the night before?
+    # planned_yesterday is now auto-calculated based on due_date
 
 # Points configuration
 POINTS_CONFIG = {
@@ -248,23 +250,73 @@ FINANCIAL_SERVICES = [
 ]
 
 class MemberProfileUpdate(BaseModel):
-    bio: Optional[str] = None
+    # Company Info
+    company_name: Optional[str] = None
     company_description: Optional[str] = None
     website: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    booking_link: Optional[str] = None
+    
+    # Social Media Handles
     linkedin: Optional[str] = None
     twitter: Optional[str] = None
     instagram: Optional[str] = None
     youtube: Optional[str] = None
     tiktok: Optional[str] = None
-    # Strategic connection fields
-    good_connection_for: Optional[str] = None  # Who they are a good connection for
-    seeking_partnerships: Optional[str] = None  # Strategic partnerships they seek
-    target_relationships: Optional[str] = None  # Target wormhole relationships
-    industries: Optional[List[str]] = None
-    skills: Optional[List[str]] = None
+    
+    # Bio & About
+    bio: Optional[str] = None
+    working_on: Optional[str] = None  # What they're currently working on
+    
+    # Services & Business
     services_offered: Optional[List[str]] = None
-    needs: Optional[List[str]] = None  # What resources they need
+    target_customer: Optional[str] = None  # Description of target customer
+    industries: Optional[List[str]] = None
+    
+    # Connection Fields
+    good_connection_for: Optional[str] = None  # Who they are a good connection for
+    warm_connection: Optional[str] = None  # Who a warm connection is for them
+    golden_connection: Optional[str] = None  # Who a golden/ideal connection is for them
+    seeking_partnerships: Optional[str] = None  # Strategic partnerships they seek
+    
+    # Needs
+    needs: Optional[List[str]] = None
     financial_services_needed: Optional[List[str]] = None
+
+# ─── Deals CRM Models ───
+
+DEAL_STAGES = [
+    "lead", "qualified", "proposal", "negotiation", "closed_won", "closed_lost"
+]
+
+DEAL_NEEDS = [
+    "capital", "marketing", "social_media", "community_management", "operations",
+    "tech_development", "podcast_booking", "speaking", "sponsorships", "events",
+    "communities", "financial_services", "coaching", "design", "sales", "legal", "hr"
+]
+
+class DealInput(BaseModel):
+    name: str
+    contact_id: Optional[str] = None  # Associated wormhole contact
+    company: Optional[str] = ""
+    value: Optional[float] = None
+    stage: str = "lead"
+    notes: Optional[str] = ""
+    needs: Optional[List[str]] = []  # Resources needed for this deal
+    financial_services: Optional[List[str]] = []  # Specific financial services needed
+    other_needs: Optional[str] = ""  # Custom tags for other needs
+
+class DealUpdate(BaseModel):
+    name: Optional[str] = None
+    contact_id: Optional[str] = None
+    company: Optional[str] = None
+    value: Optional[float] = None
+    stage: Optional[str] = None
+    notes: Optional[str] = None
+    needs: Optional[List[str]] = None
+    financial_services: Optional[List[str]] = None
+    other_needs: Optional[str] = None
 
 # ─── Win Logic ───
 # Updated Five Core Actions:
@@ -1046,7 +1098,8 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
         "goal_id": goal['id'] if goal else None,
         "name": input_data.name,
         "description": input_data.description or "",
-        "points": input_data.points,
+        "impact_rating": input_data.impact_rating,  # 1-10, None if not set
+        "due_date": input_data.due_date,  # YYYY-MM-DD
         "is_public": input_data.is_public,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -1097,22 +1150,38 @@ async def complete_signal(signal_id: str, input_data: SignalCompletionInput, use
     if not signal:
         raise HTTPException(status_code=404, detail="Signal not found")
     
-    # Get user's timezone for 6 PM check (future: use pytz for accurate TZ handling)
     now = datetime.now(timezone.utc)
     today = now.strftime("%Y-%m-%d")
-    current_hour = now.hour  # UTC hour, would need pytz for accurate TZ handling
+    current_hour = now.hour
     
-    # Calculate points
-    base_points = signal.get('points', POINTS_CONFIG['base_signal'])
+    # Calculate base points from impact_rating (1-10 = 1-10 points)
+    impact_rating = signal.get('impact_rating') or 5
+    base_points = impact_rating
+    
     bonus_points = 0
     bonuses = []
     
-    # Planned ahead bonus
-    if input_data.planned_yesterday:
+    # Auto-calculate planned_yesterday based on due_date
+    # If due_date >= 1 day after created_at, it was planned ahead
+    planned_yesterday = False
+    due_date = signal.get('due_date')
+    created_at = signal.get('created_at', '')
+    
+    if due_date and created_at:
+        try:
+            due = datetime.fromisoformat(due_date.replace('Z', '+00:00')) if 'T' in due_date else datetime.strptime(due_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            created = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            # If due date is at least 1 day after creation, it was planned ahead
+            if (due.date() - created.date()).days >= 1:
+                planned_yesterday = True
+        except:
+            pass
+    
+    if planned_yesterday:
         bonus_points += POINTS_CONFIG['planned_ahead_bonus']
         bonuses.append({"type": "planned_ahead", "points": POINTS_CONFIG['planned_ahead_bonus']})
     
-    # Before 6 PM bonus (simplified - using UTC for now)
+    # Before 6 PM bonus
     if current_hour < 18:
         bonus_points += POINTS_CONFIG['before_6pm_bonus']
         bonuses.append({"type": "before_6pm", "points": POINTS_CONFIG['before_6pm_bonus']})
@@ -1126,6 +1195,8 @@ async def complete_signal(signal_id: str, input_data: SignalCompletionInput, use
         "signal_id": signal_id,
         "signal_name": signal.get('name'),
         "date": today,
+        "due_date": due_date,
+        "impact_rating": impact_rating,
         "base_points": base_points,
         "bonus_points": bonus_points,
         "total_points": total_points,
@@ -1514,6 +1585,255 @@ async def get_services():
 async def get_financial_services():
     """Get list of financial services options"""
     return FINANCIAL_SERVICES
+
+# ─── Deals CRM ───
+
+@api_router.post("/deals")
+async def create_deal(input_data: DealInput, user: dict = Depends(get_current_user)):
+    """Create a new deal"""
+    deal = {
+        "id": str(uuid.uuid4()),
+        "user_id": user['id'],
+        "name": input_data.name,
+        "contact_id": input_data.contact_id,
+        "company": input_data.company or "",
+        "value": input_data.value,
+        "stage": input_data.stage,
+        "notes": input_data.notes or "",
+        "needs": input_data.needs or [],
+        "financial_services": input_data.financial_services or [],
+        "other_needs": input_data.other_needs or "",
+        "signals": [],  # Associated signal IDs
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.deals.insert_one(deal)
+    return {k: v for k, v in deal.items() if k != '_id'}
+
+@api_router.get("/deals")
+async def list_deals(stage: Optional[str] = None, user: dict = Depends(get_current_user)):
+    """Get all deals for current user, optionally filtered by stage"""
+    query = {"user_id": user['id']}
+    if stage:
+        query["stage"] = stage
+    
+    deals = await db.deals.find(query, {"_id": 0}).sort("updated_at", -1).to_list(100)
+    
+    # Enrich with contact info
+    enriched = []
+    for deal in deals:
+        contact = None
+        if deal.get('contact_id'):
+            contact = await db.wormhole_contacts.find_one(
+                {"id": deal['contact_id'], "user_id": user['id']}, {"_id": 0, "name": 1, "company": 1}
+            )
+        enriched.append({
+            **deal,
+            "contact_name": contact.get('name') if contact else None
+        })
+    
+    return enriched
+
+@api_router.get("/deals/{deal_id}")
+async def get_deal(deal_id: str, user: dict = Depends(get_current_user)):
+    deal = await db.deals.find_one({"id": deal_id, "user_id": user['id']}, {"_id": 0})
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    # Enrich with contact info
+    contact = None
+    if deal.get('contact_id'):
+        contact = await db.wormhole_contacts.find_one(
+            {"id": deal['contact_id'], "user_id": user['id']}, {"_id": 0}
+        )
+    
+    return {**deal, "contact": contact}
+
+@api_router.put("/deals/{deal_id}")
+async def update_deal(deal_id: str, input_data: DealUpdate, user: dict = Depends(get_current_user)):
+    updates = {k: v for k, v in input_data.dict().items() if v is not None}
+    if updates:
+        updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+        await db.deals.update_one(
+            {"id": deal_id, "user_id": user['id']},
+            {"$set": updates}
+        )
+    
+    deal = await db.deals.find_one({"id": deal_id, "user_id": user['id']}, {"_id": 0})
+    return deal
+
+@api_router.delete("/deals/{deal_id}")
+async def delete_deal(deal_id: str, user: dict = Depends(get_current_user)):
+    result = await db.deals.delete_one({"id": deal_id, "user_id": user['id']})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    return {"message": "Deal deleted"}
+
+@api_router.post("/deals/{deal_id}/link-signal/{signal_id}")
+async def link_signal_to_deal(deal_id: str, signal_id: str, user: dict = Depends(get_current_user)):
+    """Link a signal to a deal"""
+    deal = await db.deals.find_one({"id": deal_id, "user_id": user['id']})
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    signal = await db.signals.find_one({"id": signal_id, "user_id": user['id']})
+    if not signal:
+        raise HTTPException(status_code=404, detail="Signal not found")
+    
+    signals = deal.get('signals', [])
+    if signal_id not in signals:
+        signals.append(signal_id)
+        await db.deals.update_one(
+            {"id": deal_id, "user_id": user['id']},
+            {"$set": {"signals": signals, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    return await get_deal(deal_id, user)
+
+@api_router.get("/deals/stages/list")
+async def get_deal_stages():
+    """Get list of deal stages"""
+    return DEAL_STAGES
+
+@api_router.get("/deals/needs/list")
+async def get_deal_needs():
+    """Get list of deal needs categories"""
+    return DEAL_NEEDS
+
+# ─── Service Matching ───
+
+@api_router.get("/matching/providers")
+async def find_service_providers(
+    service: Optional[str] = None,
+    industry: Optional[str] = None,
+    need: Optional[str] = None,
+    limit: int = 20,
+    user: dict = Depends(get_current_user)
+):
+    """Find community members who offer services matching your needs"""
+    # Get all member profiles
+    profiles = await db.profiles.find({}, {"_id": 0}).to_list(1000)
+    
+    matches = []
+    for profile in profiles:
+        user_id = profile.get('user_id')
+        if user_id == user['id']:  # Skip self
+            continue
+        
+        member_profile = await db.member_profiles.find_one({"user_id": user_id}, {"_id": 0})
+        if not member_profile:
+            continue
+        
+        mp = member_profile
+        services = mp.get('services_offered') or []
+        industries = mp.get('industries') or []
+        
+        # Score based on matches
+        score = 0
+        matched_services = []
+        
+        if service and service in services:
+            score += 10
+            matched_services.append(service)
+        
+        if industry and industry in industries:
+            score += 5
+        
+        # Match on any service if no specific filter
+        if not service and services:
+            score += len(services)
+            matched_services = services[:3]
+        
+        if score == 0:
+            continue
+        
+        goal = await db.goals.find_one({"user_id": user_id, "active": True}, {"_id": 0})
+        points = await db.user_points.find_one({"user_id": user_id}, {"_id": 0})
+        
+        matches.append({
+            "user_id": user_id,
+            "display_name": profile.get('display_name', ''),
+            "company_name": mp.get('company_name', ''),
+            "website": mp.get('website', ''),
+            "email": mp.get('email', ''),
+            "booking_link": mp.get('booking_link', ''),
+            "bio": mp.get('bio', ''),
+            "services_offered": services,
+            "matched_services": matched_services,
+            "target_customer": mp.get('target_customer', ''),
+            "industries": industries,
+            "goal_title": goal.get('title', '') if goal else '',
+            "total_points": points.get('total_points', 0) if points else 0,
+            "match_score": score
+        })
+    
+    # Sort by match score then points
+    matches.sort(key=lambda x: (x['match_score'], x['total_points']), reverse=True)
+    return matches[:limit]
+
+@api_router.get("/matching/for-deal/{deal_id}")
+async def find_providers_for_deal(deal_id: str, user: dict = Depends(get_current_user)):
+    """Find service providers matching a specific deal's needs"""
+    deal = await db.deals.find_one({"id": deal_id, "user_id": user['id']}, {"_id": 0})
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
+    
+    deal_needs = (deal.get('needs') or []) + (deal.get('financial_services') or [])
+    other_needs = deal.get('other_needs', '')
+    
+    if not deal_needs and not other_needs:
+        return []
+    
+    # Get all member profiles
+    profiles = await db.profiles.find({}, {"_id": 0}).to_list(1000)
+    
+    matches = []
+    for profile in profiles:
+        user_id = profile.get('user_id')
+        if user_id == user['id']:
+            continue
+        
+        member_profile = await db.member_profiles.find_one({"user_id": user_id}, {"_id": 0})
+        if not member_profile:
+            continue
+        
+        mp = member_profile
+        services = mp.get('services_offered') or []
+        
+        # Find matching services
+        matched = [s for s in services if s in deal_needs]
+        
+        # Check other_needs against bio/target_customer
+        if other_needs:
+            searchable = f"{mp.get('bio', '')} {mp.get('target_customer', '')} {' '.join(services)}".lower()
+            if other_needs.lower() in searchable:
+                matched.append('other_match')
+        
+        if not matched:
+            continue
+        
+        goal = await db.goals.find_one({"user_id": user_id, "active": True}, {"_id": 0})
+        points = await db.user_points.find_one({"user_id": user_id}, {"_id": 0})
+        
+        matches.append({
+            "user_id": user_id,
+            "display_name": profile.get('display_name', ''),
+            "company_name": mp.get('company_name', ''),
+            "website": mp.get('website', ''),
+            "email": mp.get('email', ''),
+            "phone": mp.get('phone', ''),
+            "booking_link": mp.get('booking_link', ''),
+            "bio": mp.get('bio', ''),
+            "services_offered": services,
+            "matched_services": matched,
+            "target_customer": mp.get('target_customer', ''),
+            "goal_title": goal.get('title', '') if goal else '',
+            "total_points": points.get('total_points', 0) if points else 0,
+            "match_score": len(matched) * 10
+        })
+    
+    matches.sort(key=lambda x: (x['match_score'], x['total_points']), reverse=True)
+    return matches[:20]
 
 # ─── Health Check ───
 

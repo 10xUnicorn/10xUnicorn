@@ -1,7 +1,7 @@
 # 10x Unicorn - Product Requirements Document
 
 ## Product Overview
-10x Unicorn is a **10x goal execution dashboard, relationship intelligence CRM, and community performance platform for business owners**. The system helps users identify daily priorities, take aligned actions toward their goal, activate high-leverage relationships, build compounding habits, track measurable signals of progress, earn points for aligned execution, and participate in a community of builders doing the same challenge.
+10x Unicorn is a **10x goal execution dashboard, relationship intelligence CRM, and community performance platform for business owners**.
 
 ## Tech Stack
 - **Frontend**: Expo React Native (SDK 54) with expo-router
@@ -14,147 +14,162 @@
 - **Primary**: Electric purple (`#A855F7`)
 - **Secondary**: Magenta (`#D946EF`)
 - **Accent**: Cyan (`#06B6D4`)
-- **Red**: "10x" branding (`#EF4444`)
 
 ## Navigation (5 Tabs)
 1. **Today** - Daily execution center
 2. **Signals** - Goal progress tracking with points
 3. **Community** - Leaderboard, Feed, Directory
 4. **Wormhole** - Relationship CRM
-5. **Profile** - User settings
+5. **Profile** - Member profile & settings
+
+---
 
 ## Core Features
 
-### 1. Today Page
-- Fluid determination slider (0-10 with emojis: 😴→😐→😤→🔥→🦄)
-- Five Core Actions:
-  - Top 10x Action Item
-  - 7-Minute Future Self Meditation
-  - Wormhole Relationship
-  - Avoid Distractions
-  - Plan the Next Day Ahead of Time
-- Win Logic: Priority Win (top action) → Unicorn Win (all 5)
-- Distraction reflection with course-correct toggle
-- AI Course Correction button
+### 1. Signals & Points System
+**Signals** are measurable actions tied to the user's 10x goal.
 
-### 2. Signals & Points System
-- Signal creation tied to 10x goal
-- Completion with bonus points:
-  - +5 planned ahead
-  - +10 before 6PM
-  - +20 all signals complete
-  - +15 top action
-  - +10 wormhole action
-  - +50 unicorn win
-- Public/private toggle (blue globe icon)
-- Signal streaks
+**Signal Fields:**
+- Name, Description
+- Impact Rating (1-10 slider) = Points value
+- Due Date (YYYY-MM-DD)
+- Public/Private toggle (blue globe icon)
 
-### 3. Community Features
-- **Leaderboard**: Ranked by total points with streaks
-- **Activity Feed**: Public signal completions
-- **Member Directory**: Searchable with filters
-- **Member Profiles**: Bio, services, needs, goals
+**Auto-Calculated Bonuses:**
+- +5 **Planned Ahead** (due date ≥1 day after creation)
+- +10 **Before 6 PM**
+- +20 **All Signals Complete** (3+ signals)
+- +15 **Top 10x Action**
+- +10 **Wormhole Action**
+- +50 **10x Unicorn Win**
 
-### 4. Wormhole CRM
-- Full contact profiles:
-  - Identity (name, company, title, location)
-  - Contact info (email, phone, website)
-  - Social media (LinkedIn, Twitter, Instagram, YouTube, TikTok)
-  - Leverage potential (categories + description)
-  - Best contact method
-  - Connection level (cold/warm/hot/close)
-  - Engagement strength (1-10)
-- Interaction logging with action types and impact ratings
+### 2. Member Profile (Full Profile Fields)
+**Basic Info:**
+- Display Name
+- Company Name
+- Website
+- Email
+- Phone
+- Booking Link
 
-### 5. Member Profile Fields
-- Bio, company description
-- Industries, skills, services offered
-- Needs (what resources they seek)
-- Good connection for, seeking partnerships
-- Target wormhole relationships
+**Social Media:**
+- LinkedIn
+- Twitter
+- Instagram
+- YouTube
+- TikTok
+
+**Business Profile:**
+- Bio
+- What they're working on
+- Services Offered (multi-select)
+- Target Customer
+
+**Connection Profile:**
+- Who they are a good connection for
+- Who a warm connection is
+- Who a golden/ideal connection is
+- Strategic partnerships they seek
+
+### 3. Deals CRM
+**Deal Fields:**
+- Name
+- Associated Contact (from Wormhole)
+- Company
+- Value ($)
+- Stage (lead → qualified → proposal → negotiation → closed_won/closed_lost)
+- Notes
+- Needs Categories
+- Financial Services Needed
+- Other Needs (custom tags)
+- Linked Signals
+
+**Needs Categories:**
+Capital, Marketing, Social Media, Community Management, Operations, Tech Development, Podcast Booking, Speaking, Sponsorships, Events, Communities, Financial Services, Coaching, Design, Sales, Legal, HR
+
+**Financial Services:**
+Accounting, Bookkeeping, Tax Planning, Financial Planning, Wealth Management, Venture Capital, Private Equity, Angel Investment, Debt Financing, Revenue Based Financing, Fractional CFO, M&A Advisory, Fundraising Strategy
+
+### 4. Service Matching
+- Find community members who offer services matching your needs
+- Match by service type, industry, deal needs
+- Display: company info, booking link, services, target customer, points
 
 ---
 
 ## Implementation Status
 
-### ✅ Phase 1: Foundation
-- Updated color scheme
-- Fluid determination slider
-- Five core actions
-- Win logic
-- Expanded contact schema
+### ✅ Complete
 
-### ✅ Phase 2: Signals & Points
-- Signal CRUD
-- Point tracking with bonuses
-- Leaderboard API
-- Community feed API
+**Phase 1: Foundation**
+- Color scheme, fluid determination slider, five core actions, win logic
 
-### ✅ Phase 3: Expanded Wormhole CRM
-- Full contact profile UI
-- Action type selector
-- Impact rating
+**Phase 2: Signals & Points**
+- Signal CRUD with impact rating (1-10) and due dates
+- Auto-calculated planned_ahead bonus
+- Points summary, leaderboard, community feed
 
-### ✅ Phase 4: Community Features
-- Leaderboard UI with rankings
+**Phase 3: Expanded Wormhole CRM**
+- Full contact profile with all fields
+- Interaction logging with action types and impact ratings
+
+**Phase 4: Community Features**
+- Leaderboard UI
 - Activity feed UI
 - Member directory with search
 - Member profile modal
-- Member profile endpoints
-- Industries/services lists
 
-### 🔵 Phase 5: Deals CRM (Next)
-- Deal tracking (contact, value, stage)
-- Needs categories
-- Service matching
+**Phase 5: Deals CRM & Service Matching**
+- Deal CRUD with stages, needs, value
+- Link signals to deals
+- Service matching by deal needs
+- Provider search by service type
+- Full member profile editor with all new fields
+
+---
+
+## API Endpoints Summary
+
+### Signals
+- `GET/POST /api/signals`
+- `PUT/DELETE /api/signals/{id}`
+- `POST /api/signals/{id}/complete`
+
+### Points & Community
+- `GET /api/points/summary`
+- `GET /api/points/leaderboard`
+- `GET /api/community/feed`
+- `GET /api/community/members`
+
+### Member Profile
+- `GET/PUT /api/member/profile`
+- `GET /api/member/{user_id}`
+
+### Deals
+- `GET/POST /api/deals`
+- `PUT/DELETE /api/deals/{id}`
+- `POST /api/deals/{id}/link-signal/{signal_id}`
+- `GET /api/deals/stages/list`
+- `GET /api/deals/needs/list`
+
+### Service Matching
+- `GET /api/matching/providers`
+- `GET /api/matching/for-deal/{deal_id}`
+
+### Wormhole
+- `GET/POST /api/wormhole-contacts`
+- `PUT/DELETE /api/wormhole-contacts/{id}`
+- `POST /api/wormhole-contacts/interaction`
+
+---
+
+## Remaining Work
 
 ### 🔵 Phase 6: Messaging
-- Direct messaging
-- Group chats
+- [ ] Direct messaging between members
+- [ ] Group chats
 
----
-
-## API Endpoints
-
-### Auth
-- POST /api/auth/register
-- POST /api/auth/login
-- GET /api/auth/me
-
-### Profile & Onboarding
-- POST /api/onboarding
-- GET /api/profile
-- PUT /api/profile
-- GET /api/member/profile
-- PUT /api/member/profile
-
-### Daily Entries
-- GET /api/daily-entry/{date}
-- PUT /api/daily-entry/{date}
-- POST /api/daily-entry/{date}/award-bonuses
-
-### Signals & Points
-- CRUD /api/signals
-- POST /api/signals/{id}/complete
-- GET /api/signal-completions
-- GET /api/points/summary
-- GET /api/points/leaderboard
-
-### Community
-- GET /api/community/feed
-- GET /api/community/members
-- GET /api/member/{user_id}
-- GET /api/community/industries
-- GET /api/community/services
-
-### Wormhole Contacts
-- CRUD /api/wormhole-contacts
-- POST /api/wormhole-contacts/interaction
-
----
-
-## Future Enhancements
+### 🔵 Future
 - Push notifications
-- Public streak sharing
 - Premium tiers
-- Coaching integrations
+- Public streak sharing

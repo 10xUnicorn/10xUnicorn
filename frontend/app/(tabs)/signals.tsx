@@ -10,6 +10,31 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 
+const IMPACT_LABELS: Record<number, string> = {
+  1: 'Easy',
+  2: '',
+  3: 'Low',
+  4: '',
+  5: 'Medium',
+  6: '',
+  7: 'Moderate',
+  8: '',
+  9: 'Hard',
+  10: 'High Impact',
+};
+
+const getTomorrow = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+};
+
+const formatDate = (dateStr: string) => {
+  if (!dateStr) return '';
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
 export default function SignalsScreen() {
   const [signals, setSignals] = useState<any[]>([]);
   const [completions, setCompletions] = useState<any[]>([]);
@@ -22,13 +47,13 @@ export default function SignalsScreen() {
   // Add form state
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newPoints, setNewPoints] = useState('10');
+  const [newImpact, setNewImpact] = useState<number | null>(null);
+  const [newDueDate, setNewDueDate] = useState(getTomorrow());
   const [newIsPublic, setNewIsPublic] = useState(true);
   const [addLoading, setAddLoading] = useState(false);
   
   // Complete form state
   const [completeNotes, setCompleteNotes] = useState('');
-  const [plannedYesterday, setPlannedYesterday] = useState(false);
   const [completeLoading, setCompleteLoading] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -58,11 +83,12 @@ export default function SignalsScreen() {
       await api.post('/signals', {
         name: newName.trim(),
         description: newDescription.trim(),
-        points: parseInt(newPoints) || 10,
+        impact_rating: newImpact,
+        due_date: newDueDate,
         is_public: newIsPublic,
       });
       setShowAdd(false);
-      setNewName(''); setNewDescription(''); setNewPoints('10'); setNewIsPublic(true);
+      setNewName(''); setNewDescription(''); setNewImpact(null); setNewDueDate(getTomorrow()); setNewIsPublic(true);
       loadData();
     } catch (e: any) {
       console.error(e);
@@ -75,13 +101,12 @@ export default function SignalsScreen() {
     if (!showComplete) return;
     setCompleteLoading(true);
     try {
-      const result = await api.post(`/signals/${showComplete.id}/complete`, {
+      await api.post(`/signals/${showComplete.id}/complete`, {
         signal_id: showComplete.id,
         notes: completeNotes.trim(),
-        planned_yesterday: plannedYesterday,
       });
       setShowComplete(null);
-      setCompleteNotes(''); setPlannedYesterday(false);
+      setCompleteNotes('');
       loadData();
     } catch (e: any) {
       console.error(e);
@@ -110,6 +135,18 @@ export default function SignalsScreen() {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayCompletions = completions.filter(c => c.date === todayStr);
   const completedSignalIds = new Set(todayCompletions.map(c => c.signal_id));
+
+  // Check if due date qualifies for planned ahead bonus
+  const checkPlannedAhead = (signal: any) => {
+    if (!signal.due_date || !signal.created_at) return false;
+    try {
+      const due = new Date(signal.due_date);
+      const created = new Date(signal.created_at);
+      return (due.getTime() - created.getTime()) / (1000 * 60 * 60 * 24) >= 1;
+    } catch {
+      return false;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -167,19 +204,35 @@ export default function SignalsScreen() {
           ) : (
             signals.map(signal => {
               const isCompleted = completedSignalIds.has(signal.id);
+              const plannedAhead = checkPlannedAhead(signal);
+              const impact = signal.impact_rating || 5;
               return (
                 <View key={signal.id} style={[styles.signalCard, isCompleted && styles.signalCardCompleted]}>
                   <View style={styles.signalInfo}>
                     <View style={styles.signalHeader}>
                       <Text style={styles.signalName}>{signal.name}</Text>
-                      <View style={styles.pointsBadge}>
-                        <Text style={styles.pointsBadgeText}>{signal.points} pts</Text>
-                      </View>
+                      {signal.impact_rating && (
+                        <View style={styles.impactBadge}>
+                          <Text style={styles.impactBadgeText}>{signal.impact_rating} pts</Text>
+                        </View>
+                      )}
                     </View>
                     {signal.description ? (
                       <Text style={styles.signalDesc}>{signal.description}</Text>
                     ) : null}
                     <View style={styles.signalMeta}>
+                      {signal.due_date && (
+                        <View style={styles.dueDateBadge}>
+                          <Ionicons name="calendar-outline" size={12} color={Colors.text.tertiary} />
+                          <Text style={styles.dueDateText}>{formatDate(signal.due_date)}</Text>
+                        </View>
+                      )}
+                      {plannedAhead && (
+                        <View style={styles.plannedBadge}>
+                          <Ionicons name="moon" size={12} color={Colors.brand.accent} />
+                          <Text style={styles.plannedText}>+5 bonus</Text>
+                        </View>
+                      )}
                       <TouchableOpacity
                         style={[styles.publicToggle, signal.is_public && styles.publicToggleActive]}
                       >
@@ -280,16 +333,39 @@ export default function SignalsScreen() {
                   multiline
                 />
                 
-                <Text style={styles.inputLabel}>Points Value</Text>
+                <Text style={styles.inputLabel}>Due Date</Text>
                 <TextInput
-                  testID="signal-points-input"
+                  testID="signal-due-input"
                   style={styles.modalInput}
-                  value={newPoints}
-                  onChangeText={setNewPoints}
-                  placeholder="10"
+                  value={newDueDate}
+                  onChangeText={setNewDueDate}
+                  placeholder="YYYY-MM-DD"
                   placeholderTextColor={Colors.text.tertiary}
-                  keyboardType="numeric"
                 />
+                <Text style={styles.inputHint}>Set a future date to earn +5 planned ahead bonus</Text>
+                
+                <Text style={styles.inputLabel}>Impact Rating (Points Value)</Text>
+                <View style={styles.impactRow}>
+                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                    <TouchableOpacity
+                      key={n}
+                      testID={`impact-${n}`}
+                      style={[styles.impactBtn, newImpact === n && styles.impactBtnActive]}
+                      onPress={() => setNewImpact(n)}
+                    >
+                      <Text style={[styles.impactNum, newImpact === n && styles.impactNumActive]}>{n}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={styles.impactLabels}>
+                  <Text style={styles.impactLabelLeft}>Easy / Low</Text>
+                  <Text style={styles.impactLabelRight}>Hard / High</Text>
+                </View>
+                {newImpact && (
+                  <Text style={styles.impactSelected}>
+                    {newImpact} point{newImpact > 1 ? 's' : ''} • {newImpact <= 3 ? 'Easy task' : newImpact <= 6 ? 'Moderate effort' : 'High impact'}
+                  </Text>
+                )}
                 
                 <View style={styles.publicRow}>
                   <View style={styles.publicInfo}>
@@ -333,8 +409,8 @@ export default function SignalsScreen() {
               <ScrollView keyboardShouldPersistTaps="handled">
                 <View style={styles.completeSignalInfo}>
                   <Text style={styles.completeSignalName}>{showComplete?.name}</Text>
-                  <View style={styles.pointsBadge}>
-                    <Text style={styles.pointsBadgeText}>{showComplete?.points} base pts</Text>
+                  <View style={styles.impactBadge}>
+                    <Text style={styles.impactBadgeText}>{showComplete?.impact_rating || 5} base pts</Text>
                   </View>
                 </View>
                 
@@ -350,21 +426,18 @@ export default function SignalsScreen() {
                 />
                 
                 <View style={styles.bonusSection}>
-                  <Text style={styles.bonusSectionTitle}>Bonus Points</Text>
+                  <Text style={styles.bonusSectionTitle}>Potential Bonuses</Text>
                   
-                  <View style={styles.bonusRow}>
-                    <View style={styles.bonusInfo}>
-                      <Ionicons name="moon" size={18} color={Colors.brand.accent} />
-                      <Text style={styles.bonusLabel}>Planned Yesterday</Text>
-                      <Text style={styles.bonusPoints}>+5 pts</Text>
+                  {showComplete && checkPlannedAhead(showComplete) && (
+                    <View style={styles.bonusRow}>
+                      <View style={styles.bonusInfo}>
+                        <Ionicons name="moon" size={18} color={Colors.brand.accent} />
+                        <Text style={styles.bonusLabel}>Planned Ahead</Text>
+                        <Text style={styles.bonusPoints}>+5 pts</Text>
+                      </View>
+                      <Ionicons name="checkmark-circle" size={20} color={Colors.status.success} />
                     </View>
-                    <Switch
-                      value={plannedYesterday}
-                      onValueChange={setPlannedYesterday}
-                      trackColor={{ false: Colors.bg.input, true: Colors.brand.accent }}
-                      thumbColor={Colors.text.primary}
-                    />
-                  </View>
+                  )}
                   
                   <View style={styles.bonusRow}>
                     <View style={styles.bonusInfo}>
@@ -442,10 +515,14 @@ const styles = StyleSheet.create({
   signalInfo: { flex: 1 },
   signalHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   signalName: { fontSize: FontSize.base, fontWeight: '600', color: Colors.text.primary, flex: 1 },
-  pointsBadge: { backgroundColor: Colors.brand.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.sm },
-  pointsBadgeText: { color: Colors.brand.primary, fontSize: FontSize.xs, fontWeight: '600' },
+  impactBadge: { backgroundColor: Colors.brand.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.sm },
+  impactBadgeText: { color: Colors.brand.primary, fontSize: FontSize.xs, fontWeight: '600' },
   signalDesc: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
-  signalMeta: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },
+  signalMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
+  dueDateBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.bg.input, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  dueDateText: { color: Colors.text.tertiary, fontSize: FontSize.xs },
+  plannedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.brand.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  plannedText: { color: Colors.brand.accent, fontSize: FontSize.xs },
   publicToggle: { padding: 4 },
   publicToggleActive: {},
   deleteBtn: { padding: 4 },
@@ -475,12 +552,29 @@ const styles = StyleSheet.create({
   
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalWrap: { maxHeight: '85%' },
+  modalWrap: { maxHeight: '90%' },
   modal: { backgroundColor: Colors.bg.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: 24, maxHeight: '100%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
   inputLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 8, marginTop: 12 },
+  inputHint: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginTop: 4 },
   modalInput: { backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14, color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default },
+  
+  // Impact Rating
+  impactRow: { flexDirection: 'row', gap: 4, marginTop: 8 },
+  impactBtn: { 
+    flex: 1, paddingVertical: 12, borderRadius: Radius.sm, 
+    backgroundColor: Colors.bg.input, alignItems: 'center',
+    borderWidth: 1, borderColor: Colors.border.default,
+  },
+  impactBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  impactNum: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
+  impactNumActive: { color: Colors.text.primary },
+  impactLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  impactLabelLeft: { color: Colors.text.tertiary, fontSize: FontSize.xs },
+  impactLabelRight: { color: Colors.text.tertiary, fontSize: FontSize.xs },
+  impactSelected: { color: Colors.brand.primary, fontSize: FontSize.sm, textAlign: 'center', marginTop: 8 },
+  
   publicRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
   publicInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   publicLabel: { color: Colors.text.primary, fontSize: FontSize.base },
