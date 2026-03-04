@@ -632,7 +632,11 @@ async def get_profile(user: dict = Depends(get_current_user)):
 async def update_profile(input_data: ProfileUpdate, user: dict = Depends(get_current_user)):
     updates = {k: v for k, v in input_data.dict().items() if v is not None}
     if updates:
-        await db.profiles.update_one({"user_id": user['id']}, {"$set": updates})
+        await db.profiles.update_one(
+            {"user_id": user['id']}, 
+            {"$set": {**updates, "user_id": user['id']}},
+            upsert=True
+        )
     profile = await db.profiles.find_one({"user_id": user['id']}, {"_id": 0})
     return profile
 
@@ -907,6 +911,24 @@ async def update_daily_entry(date: str, input_data: DailyEntryUpdate, user: dict
         {"user_id": user['id'], "date": date},
         {"$set": {"computed_status": computed, "final_status": final}}
     )
+
+    # Check for streak milestones and send notifications
+    if final in ['unicorn_win', 'priority_win', 'course_corrected']:
+        # Calculate current streak
+        recent_entries = await db.daily_entries.find(
+            {"user_id": user['id'], "date": {"$lte": date}}, {"_id": 0}
+        ).sort("date", -1).limit(400).to_list(400)
+        
+        streak = 0
+        for e in recent_entries:
+            if e.get('final_status') in ['unicorn_win', 'priority_win', 'course_corrected']:
+                streak += 1
+            else:
+                break
+        
+        # Check and send streak milestone notification
+        if streak in [7, 14, 30, 60, 90, 180, 365]:
+            await check_and_send_streak_notification(user['id'], streak)
 
     entry['computed_status'] = computed
     entry['final_status'] = final
@@ -2846,6 +2868,50 @@ async def send_deal_reminder_notification(user_id: str, deal: dict):
         f"Deal Reminder: {deal_name}",
         f"Close date is {close_date}. Time to follow up!",
         {"type": "deal_reminder", "deal_id": deal.get('id')}
+    )
+
+# Streak milestone messages
+STREAK_MILESTONES = {
+    7: {"emoji": "🔥", "title": "7-Day Streak!", "message": "One week of consistency! You're building momentum."},
+    14: {"emoji": "⚡", "title": "14-Day Streak!", "message": "Two weeks strong! Your habits are taking root."},
+    30: {"emoji": "💎", "title": "30-Day Streak!", "message": "One month! You're becoming unstoppable."},
+    60: {"emoji": "🚀", "title": "60-Day Streak!", "message": "Two months of excellence! Elite performer territory."},
+    90: {"emoji": "🏆", "title": "90-Day Streak!", "message": "Quarter year of wins! You're in the top 1%."},
+    180: {"emoji": "👑", "title": "180-Day Streak!", "message": "Half a year! Your transformation is legendary."},
+    365: {"emoji": "🦄", "title": "365-Day Streak!", "message": "ONE FULL YEAR! You are a true 10x Unicorn!"},
+}
+
+async def check_and_send_streak_notification(user_id: str, streak_count: int):
+    """Check if streak hits a milestone and send celebration notification"""
+    if streak_count not in STREAK_MILESTONES:
+        return
+    
+    milestone = STREAK_MILESTONES[streak_count]
+    settings = await db.notification_settings.find_one({"user_id": user_id})
+    if settings and not settings.get('streak_notifications_enabled', True):
+        return
+    
+    tokens = await db.push_tokens.find({"user_id": user_id}, {"_id": 0}).to_list(10)
+    if not tokens:
+        return
+    
+    push_tokens = [t['token'] for t in tokens if t.get('token')]
+    
+    await send_expo_push_notification(
+        push_tokens,
+        f"{milestone['emoji']} {milestone['title']}",
+        milestone['message'],
+        {"type": "streak_milestone", "streak": streak_count}
+    )
+    
+    # Store achievement
+    await db.achievements.update_one(
+        {"user_id": user_id, "type": "streak", "milestone": streak_count},
+        {"$set": {
+            "achieved_at": datetime.now(timezone.utc).isoformat(),
+            "streak": streak_count
+        }},
+        upsert=True
     )
 
 async def send_daily_checkin_notification(user_id: str):

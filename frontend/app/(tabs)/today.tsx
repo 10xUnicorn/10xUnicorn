@@ -42,6 +42,7 @@ export default function TodayScreen() {
   const [profileData, setProfileData] = useState<any>(null);
   const [sliderCollapsed, setSliderCollapsed] = useState(false);
   const [showCompoundCounter, setShowCompoundCounter] = useState(false);
+  const [compoundCountInput, setCompoundCountInput] = useState('');
   
   // Signals state
   const [signals, setSignals] = useState<any[]>([]);
@@ -522,15 +523,43 @@ export default function TodayScreen() {
           <TouchableOpacity
             testID="compound-check"
             style={styles.compoundRow}
-            onPress={() => updateEntry({ compound_done: !entry?.compound_done })}
+            onPress={() => {
+              if (!entry?.compound_done) {
+                // Show counter modal when marking complete
+                setCompoundCountInput((entry?.compound_count || 1).toString());
+                setShowCompoundCounter(true);
+              } else {
+                // Uncomplete - reset count
+                updateEntry({ compound_done: false, compound_count: 0 });
+              }
+            }}
             activeOpacity={0.7}
           >
             <View style={[styles.checkbox, entry?.compound_done && styles.checkboxChecked]}>
               {entry?.compound_done && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
             </View>
-            <Text style={[styles.compoundText, entry?.compound_done && styles.actionDone]}>
-              Done today
-            </Text>
+            <View style={styles.compoundTextWrap}>
+              <Text style={[styles.compoundText, entry?.compound_done && styles.actionDone]}>
+                Done today
+              </Text>
+              {entry?.compound_done && entry?.compound_count > 0 && (
+                <Text style={styles.compoundCountBadge}>
+                  {entry.compound_count}x today • {habitTarget > 0 ? `${Math.round((entry.compound_count / habitTarget) * 100)}% of ${habitTarget}` : ''}
+                </Text>
+              )}
+            </View>
+            {entry?.compound_done && (
+              <TouchableOpacity
+                testID="add-more-compound"
+                style={styles.addMoreBtn}
+                onPress={() => {
+                  setCompoundCountInput((entry?.compound_count || 1).toString());
+                  setShowCompoundCounter(true);
+                }}
+              >
+                <Ionicons name="add" size={18} color={Colors.brand.primary} />
+              </TouchableOpacity>
+            )}
           </TouchableOpacity>
           <TextInput
             testID="compound-notes-input"
@@ -741,6 +770,77 @@ export default function TodayScreen() {
             </TouchableOpacity>
           </View>
         </View>
+      </Modal>
+
+      {/* Compound Habit Counter Modal */}
+      <Modal visible={showCompoundCounter} animationType="fade" transparent>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalOverlay}
+        >
+          <View style={styles.compoundModal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>How many times?</Text>
+              <TouchableOpacity onPress={() => setShowCompoundCounter(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.compoundModalSubtext}>
+              How many times did you do "{habitTitle}" today?
+            </Text>
+            
+            <View style={styles.counterRow}>
+              <TouchableOpacity
+                testID="counter-minus"
+                style={styles.counterBtn}
+                onPress={() => setCompoundCountInput(Math.max(1, parseInt(compoundCountInput || '1') - 1).toString())}
+              >
+                <Ionicons name="remove" size={28} color={Colors.text.primary} />
+              </TouchableOpacity>
+              
+              <TextInput
+                testID="compound-count-input"
+                style={styles.counterInput}
+                value={compoundCountInput}
+                onChangeText={setCompoundCountInput}
+                keyboardType="numeric"
+                textAlign="center"
+              />
+              
+              <TouchableOpacity
+                testID="counter-plus"
+                style={styles.counterBtn}
+                onPress={() => setCompoundCountInput((parseInt(compoundCountInput || '0') + 1).toString())}
+              >
+                <Ionicons name="add" size={28} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            {habitTarget > 0 && (
+              <View style={styles.progressSection}>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: `${Math.min(100, (parseInt(compoundCountInput || '0') / habitTarget) * 100)}%` }]} />
+                </View>
+                <Text style={styles.progressText}>
+                  {compoundCountInput || 0} / {habitTarget} ({Math.round((parseInt(compoundCountInput || '0') / habitTarget) * 100)}%)
+                </Text>
+              </View>
+            )}
+            
+            <TouchableOpacity
+              testID="save-compound-btn"
+              style={styles.saveBtn}
+              onPress={() => {
+                const count = parseInt(compoundCountInput || '1');
+                updateEntry({ compound_done: true, compound_count: count });
+                setShowCompoundCounter(false);
+              }}
+            >
+              <Text style={styles.saveBtnText}>Save</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -1072,5 +1172,98 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: Colors.border.default,
+  },
+  
+  // Compound habit styles
+  compoundTextWrap: { flex: 1 },
+  compoundCountBadge: { 
+    color: Colors.brand.primary, 
+    fontSize: FontSize.xs, 
+    marginTop: 2 
+  },
+  addMoreBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.brand.primary + '20',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.brand.primary,
+  },
+  
+  // Compound counter modal
+  compoundModal: {
+    backgroundColor: Colors.bg.card,
+    borderRadius: Radius.xl,
+    padding: 24,
+    margin: 20,
+    maxWidth: 400,
+    width: '90%',
+    alignSelf: 'center',
+  },
+  compoundModalSubtext: {
+    color: Colors.text.secondary,
+    fontSize: FontSize.sm,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 24,
+  },
+  counterBtn: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.bg.input,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border.default,
+  },
+  counterInput: {
+    width: 100,
+    height: 70,
+    fontSize: 36,
+    fontWeight: '900',
+    color: Colors.text.primary,
+    backgroundColor: Colors.bg.input,
+    borderRadius: Radius.lg,
+    textAlign: 'center',
+    borderWidth: 2,
+    borderColor: Colors.brand.primary,
+  },
+  progressSection: { marginBottom: 24 },
+  progressBar: {
+    height: 8,
+    backgroundColor: Colors.bg.input,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: Colors.brand.primary,
+    borderRadius: 4,
+  },
+  progressText: {
+    color: Colors.text.secondary,
+    fontSize: FontSize.sm,
+    textAlign: 'center',
+  },
+  saveBtn: {
+    backgroundColor: Colors.brand.primary,
+    borderRadius: Radius.md,
+    padding: 16,
+    alignItems: 'center',
+  },
+  saveBtnText: {
+    color: Colors.text.primary,
+    fontSize: FontSize.lg,
+    fontWeight: '700',
   },
 });
