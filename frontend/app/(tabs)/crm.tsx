@@ -30,22 +30,19 @@ const CONTACT_LABELS = [
   { key: 'resource', label: 'Resource', color: Colors.text.tertiary },
 ];
 
-// Connection levels with colors
+// Connection levels with colors - matching screenshot exactly
 const CONNECTION_LEVELS = [
-  { key: 'new_connection', label: 'New', color: '#6B7280' },
+  { key: 'active_professional', label: 'Active / Professional', color: '#8B5CF6' },
+  { key: 'warm_local', label: 'Warm / Local', color: '#10B981' },
   { key: 'building', label: 'Building', color: '#F59E0B' },
-  { key: 'warm_local', label: 'Warm/Local', color: '#10B981' },
-  { key: 'warm_intl', label: 'Warm/Intl', color: '#3B82F6' },
-  { key: 'active_professional', label: 'Active/Pro', color: '#8B5CF6' },
-  { key: 'close_personal', label: 'Close', color: '#EC4899' },
-  { key: 'mid_aspirational', label: 'Aspirational', color: '#F97316' },
+  { key: 'mid_aspirational', label: 'Mid-Aspirational', color: '#F97316' },
+  { key: 'close_personal', label: 'Close / Personal', color: '#EC4899' },
 ];
 
-// Contact tags
+// Contact tags - matching screenshot exactly  
 const CONTACT_TAGS = [
-  'business_owner', 'influencer', 'speaker', 'access', 'mindset', 
-  'future_self', 'community_partner', 'motivation', 'thought_leader', 
-  'investor', 'mentor', 'connector', 'podcast_host', 'author'
+  'influencer', 'speaker', 'business_owner', 'access', 'mindset', 
+  'future_self', 'community_partner', 'motivation'
 ];
 
 // Platform options

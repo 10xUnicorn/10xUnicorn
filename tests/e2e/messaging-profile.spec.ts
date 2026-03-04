@@ -51,7 +51,8 @@ test.describe('Profile Settings', () => {
     await expect(page.getByTestId('login-email-input')).toBeVisible({ timeout: 15000 });
     await loginUser(page, TEST_USER.email, TEST_USER.password);
     await expect(page.getByTestId('determination-slider')).toBeVisible({ timeout: 15000 });
-    await page.getByRole('tab', { name: /Profile/i }).click();
+    // Tab is "Settings" not "Profile"
+    await page.getByRole('tab', { name: /Settings/i }).click();
     await expect(page.getByText('Profile').first()).toBeVisible({ timeout: 15000 });
   });
 

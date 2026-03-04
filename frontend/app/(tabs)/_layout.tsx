@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../src/constants/theme';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Text } from 'react-native';
 
 export default function TabsLayout() {
   return (
@@ -17,18 +17,20 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="today"
         options={{
-          title: 'Today',
+          title: 'Daily',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="flame" size={size} color={color} />
+            <Ionicons name="flash" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="crm"
+        name="dashboard"
         options={{
-          title: 'CRM',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="planet" size={size} color={color} />
+          title: 'Dashboard',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={styles.dashboardIcon}>
+              <Text style={{ fontSize: 18 }}>📊</Text>
+            </View>
           ),
         }}
       />
@@ -42,11 +44,20 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="crm"
+        options={{
+          title: 'CRM',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="planet" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
+          title: 'Settings',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+            <Ionicons name="settings" size={size} color={color} />
           ),
         }}
       />
@@ -70,7 +81,7 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-        name="dashboard"
+        name="messages"
         options={{
           href: null,
         }}
@@ -91,5 +102,9 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 11,
     fontWeight: '600',
+  },
+  dashboardIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

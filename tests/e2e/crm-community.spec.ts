@@ -146,8 +146,8 @@ test.describe('Community Features', () => {
     // Click profile icon
     await page.getByTestId('profile-icon-btn').click();
     
-    // Should navigate to profile page
-    await expect(page.getByText('Profile').or(page.getByText('Account'))).toBeVisible({ timeout: 5000 });
+    // Should navigate to profile page - "Profile" text is visible (screenshot confirms navigation worked)
+    await expect(page.getByText('Profile', { exact: true }).first()).toBeVisible({ timeout: 5000 });
     
     await page.screenshot({ path: 'test-results/profile-from-community.jpeg', quality: 20 });
   });

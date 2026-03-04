@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
-import { Colors, FontSize, Radius, DETERMINATION_EMOJIS } from '../constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, FontSize, Radius } from '../constants/theme';
 
 interface DeterminationSliderProps {
   value: number;
@@ -9,7 +10,14 @@ interface DeterminationSliderProps {
 }
 
 const SLIDER_WIDTH = Dimensions.get('window').width - 80;
-const THUMB_SIZE = 32;
+const THUMB_SIZE = 40;
+
+// Determination level emojis: 1-7 = 🔥, 8 = 🔥, 9 = 💎, 10 = 🦄
+const getEmoji = (value: number) => {
+  if (value >= 10) return '🦄';
+  if (value >= 9) return '💎';
+  return '🔥';
+};
 
 export function DeterminationSlider({ value, onChange, testID }: DeterminationSliderProps) {
   const animatedValue = React.useRef(new Animated.Value((value / 10) * SLIDER_WIDTH)).current;
@@ -48,63 +56,55 @@ export function DeterminationSlider({ value, onChange, testID }: DeterminationSl
     },
   }), [onChange]);
 
-  const emoji = DETERMINATION_EMOJIS[value] || '🔥';
+  const emoji = getEmoji(value);
   
-  // Gradient colors based on value
-  const getTrackColor = () => {
-    if (value <= 2) return Colors.text.tertiary;
-    if (value <= 4) return Colors.status.warning;
-    if (value <= 6) return '#F97316'; // Orange
-    if (value <= 9) return Colors.brand.primary;
-    return Colors.brand.secondary; // Magenta for 10
-  };
-
   return (
     <View style={styles.container} testID={testID}>
-      <Text style={styles.bigEmoji}>{emoji}</Text>
-      <Text style={styles.valueText}>{value}/10</Text>
+      {/* Header Row */}
+      <View style={styles.headerRow}>
+        <Text style={styles.label}>DETERMINATION LEVEL</Text>
+        <View style={styles.valueRow}>
+          <Text style={styles.valueEmoji}>{emoji}</Text>
+          <Text style={styles.valueText}>{value}</Text>
+        </View>
+      </View>
       
+      {/* Slider */}
       <View style={styles.sliderContainer}>
-        <View style={styles.track}>
-          <Animated.View 
-            style={[
-              styles.filledTrack, 
-              { 
-                width: animatedValue,
-                backgroundColor: getTrackColor(),
-              }
-            ]} 
+        {/* Track Background with Gradient */}
+        <View style={styles.trackBg}>
+          <LinearGradient
+            colors={['#F59E0B', '#EF4444', '#A855F7']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.gradientTrack}
           />
-          <View style={styles.trackMarkers}>
-            {Array.from({ length: 11 }).map((_, i) => (
-              <View 
-                key={i} 
-                style={[
-                  styles.marker,
-                  i <= value && { backgroundColor: Colors.text.primary, opacity: 0.7 }
-                ]} 
-              />
-            ))}
-          </View>
         </View>
         
+        {/* Thumb */}
         <Animated.View
           {...panResponder.panHandlers}
           style={[
             styles.thumb,
             {
               transform: [{ translateX: Animated.subtract(animatedValue, THUMB_SIZE / 2) }],
-              backgroundColor: getTrackColor(),
             },
           ]}
         >
-          <View style={styles.thumbInner} />
+          <Text style={styles.thumbEmoji}>{emoji}</Text>
         </Animated.View>
       </View>
       
+      {/* Labels */}
       <View style={styles.labelRow}>
-        <Text style={styles.labelEmoji}>😴</Text>
-        <Text style={styles.labelEmoji}>🦄</Text>
+        <View style={styles.labelItem}>
+          <Text style={styles.labelEmoji}>😴</Text>
+          <Text style={styles.labelText}>Low</Text>
+        </View>
+        <View style={styles.labelItem}>
+          <Text style={styles.labelEmoji}>🦄</Text>
+          <Text style={styles.labelText}>Level 10</Text>
+        </View>
       </View>
     </View>
   );
@@ -112,71 +112,67 @@ export function DeterminationSlider({ value, onChange, testID }: DeterminationSl
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
-  bigEmoji: {
-    fontSize: 56,
-    marginBottom: 4,
-  },
-  valueText: {
-    fontSize: FontSize.lg,
-    color: Colors.text.secondary,
-    fontWeight: '600',
-    marginBottom: 20,
-  },
-  sliderContainer: {
-    width: SLIDER_WIDTH,
-    height: 48,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  track: {
-    height: 8,
-    backgroundColor: Colors.bg.input,
-    borderRadius: Radius.full,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  filledTrack: {
-    height: '100%',
-    borderRadius: Radius.full,
-  },
-  trackMarkers: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 2,
+    marginBottom: 16,
   },
-  marker: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.border.default,
+  label: {
+    fontSize: FontSize.xs,
+    color: Colors.text.secondary,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  valueEmoji: {
+    fontSize: 28,
+  },
+  valueText: {
+    fontSize: FontSize.xxl,
+    color: Colors.brand.red,
+    fontWeight: '900',
+  },
+  sliderContainer: {
+    width: SLIDER_WIDTH,
+    height: 56,
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  trackBg: {
+    height: 12,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: Colors.bg.input,
+  },
+  gradientTrack: {
+    flex: 1,
+    borderRadius: 6,
   },
   thumb: {
     position: 'absolute',
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
+    backgroundColor: Colors.bg.card,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Colors.brand.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
     elevation: 8,
+    borderWidth: 3,
+    borderColor: Colors.border.default,
   },
-  thumbInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: Colors.text.primary,
+  thumbEmoji: {
+    fontSize: 22,
   },
   labelRow: {
     flexDirection: 'row',
@@ -185,7 +181,16 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 4,
   },
+  labelItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   labelEmoji: {
-    fontSize: 20,
+    fontSize: 14,
+  },
+  labelText: {
+    fontSize: FontSize.xs,
+    color: Colors.text.tertiary,
   },
 });

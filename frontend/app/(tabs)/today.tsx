@@ -391,22 +391,28 @@ export default function TodayScreen() {
         {/* Five Core Actions */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Five Core Actions</Text>
+            <View style={styles.cardTitleRow}>
+              <Text style={styles.checkEmoji}>✅</Text>
+              <Text style={styles.cardTitle}>10X UNICORN CHECKLIST</Text>
+            </View>
             {allFiveDone && (
               <View style={[styles.winBadge, { backgroundColor: 'rgba(168,85,247,0.2)' }]}>
                 <Text style={[styles.winBadgeText, { color: Colors.brand.primary }]}>🦄 UNICORN</Text>
               </View>
             )}
           </View>
+          <Text style={styles.checklistHint}>
+            All 5 = <Text style={{ color: Colors.brand.primary }}>🦄 10x Unicorn Win</Text>  •  Just #1 = <Text style={{ color: Colors.status.warning }}>⭐ Priority Win</Text>
+          </Text>
           {allFiveDone && (
             <LinearGradient
               colors={['rgba(168,85,247,0.15)', 'transparent']}
               style={styles.unicornBanner}
             >
-              <Text style={styles.unicornBannerText}>10x UNICORN WIN!</Text>
+              <Text style={styles.unicornBannerText}>🦄 10x UNICORN WIN!</Text>
             </LinearGradient>
           )}
-          {FIVE_CORE_ACTIONS.map(a => (
+          {FIVE_CORE_ACTIONS.map((a, index) => (
             <TouchableOpacity
               key={a.key}
               testID={`action-${a.key}`}
@@ -417,14 +423,14 @@ export default function TodayScreen() {
               <View style={[styles.checkbox, fiveStatuses[a.key] && styles.checkboxChecked]}>
                 {fiveStatuses[a.key] && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
               </View>
-              <Ionicons 
-                name={a.icon as any} 
-                size={18} 
-                color={fiveStatuses[a.key] ? Colors.brand.primary : Colors.text.tertiary} 
-              />
-              <Text style={[styles.actionItemText, fiveStatuses[a.key] && styles.actionDone]}>
-                {a.label}
-              </Text>
+              <View style={styles.actionTextWrap}>
+                <Text style={[styles.actionItemText, fiveStatuses[a.key] && styles.actionDone]}>
+                  {index + 1}. {a.label}
+                </Text>
+                {a.description && (
+                  <Text style={styles.actionDesc}>{a.description}</Text>
+                )}
+              </View>
             </TouchableOpacity>
           ))}
         </View>
@@ -782,11 +788,22 @@ const styles = StyleSheet.create({
   
   // Action Items
   actionItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
     paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
   },
-  actionItemText: { color: Colors.text.primary, fontSize: FontSize.base, flex: 1 },
+  actionTextWrap: { flex: 1 },
+  actionItemText: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
+  actionDesc: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2 },
   actionDone: { textDecorationLine: 'line-through', color: Colors.text.tertiary },
+  
+  // Checklist styles
+  checkEmoji: { fontSize: 18 },
+  checklistHint: { 
+    color: Colors.text.secondary, 
+    fontSize: FontSize.xs, 
+    marginBottom: 12,
+    lineHeight: 18,
+  },
   
   // Unicorn Banner
   unicornBanner: {

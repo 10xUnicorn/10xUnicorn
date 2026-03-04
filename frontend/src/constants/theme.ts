@@ -93,11 +93,11 @@ export const DETERMINATION_EMOJIS: Record<number, string> = {
   10: '🦄'
 };
 
-// Updated Five Core Actions
+// Updated Five Core Actions with descriptions
 export const FIVE_CORE_ACTIONS = [
-  { key: 'top_action', label: 'Top 10x Action Item', icon: 'rocket' },
-  { key: 'meditation', label: '7-Minute Future Self Meditation', icon: 'leaf' },
-  { key: 'wormhole', label: 'Wormhole Relationship', icon: 'planet' },
-  { key: 'distractions', label: 'Avoid Distractions', icon: 'shield-checkmark' },
-  { key: 'plan_tomorrow', label: 'Plan the Next Day Ahead of Time', icon: 'calendar' },
+  { key: 'top_action', label: 'Top 10x Action Complete', description: 'Set your 10x focus above', icon: 'rocket' },
+  { key: 'wormhole', label: 'Wormhole Relationship Activated', description: 'Set contact below', icon: 'planet' },
+  { key: 'meditation', label: '7-Min Future Self Meditation', description: 'Connect with your highest self', icon: 'leaf' },
+  { key: 'plan_tomorrow', label: 'Tomorrow Prepared', description: "Plan tomorrow's priorities now", icon: 'calendar' },
+  { key: 'distractions', label: 'No Distraction / Course Corrected', description: 'Locked in or recovered fast', icon: 'shield-checkmark' },
 ];

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, status
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, status, UploadFile, File, Response, Query, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -8,6 +8,7 @@ import logging
 import uuid
 import jwt
 import bcrypt
+import requests
 from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict
@@ -29,6 +30,55 @@ JWT_EXPIRY_HOURS = 720
 
 # LLM
 EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
+
+# ─── Emergent Object Storage ───
+STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+APP_NAME = "10x-unicorn"
+storage_key = None
+
+def init_storage():
+    """Initialize storage and get session key. Call ONCE at startup."""
+    global storage_key
+    if storage_key:
+        return storage_key
+    try:
+        resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_LLM_KEY}, timeout=30)
+        resp.raise_for_status()
+        storage_key = resp.json()["storage_key"]
+        return storage_key
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
+        return None
+
+def put_object(path: str, data: bytes, content_type: str) -> dict:
+    """Upload file to Emergent Object Storage"""
+    key = init_storage()
+    if not key:
+        raise Exception("Storage not initialized")
+    resp = requests.put(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key, "Content-Type": content_type},
+        data=data, timeout=120
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+def get_object(path: str):
+    """Download file from Emergent Object Storage"""
+    key = init_storage()
+    if not key:
+        raise Exception("Storage not initialized")
+    resp = requests.get(
+        f"{STORAGE_URL}/objects/{path}",
+        headers={"X-Storage-Key": key}, timeout=60
+    )
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+
+MIME_TYPES = {
+    "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+    "gif": "image/gif", "webp": "image/webp", "heic": "image/heic"
+}
 
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -164,20 +214,17 @@ class WormholeContactInput(BaseModel):
 
 # Connection level options with colors for frontend
 CONNECTION_LEVELS = [
-    {"key": "new_connection", "label": "New Connection", "color": "#6B7280"},
-    {"key": "building", "label": "Building", "color": "#F59E0B"},
-    {"key": "warm_local", "label": "Warm / Local", "color": "#10B981"},
-    {"key": "warm_intl", "label": "Warm / International", "color": "#3B82F6"},
     {"key": "active_professional", "label": "Active / Professional", "color": "#8B5CF6"},
-    {"key": "close_personal", "label": "Close / Personal", "color": "#EC4899"},
+    {"key": "warm_local", "label": "Warm / Local", "color": "#10B981"},
+    {"key": "building", "label": "Building", "color": "#F59E0B"},
     {"key": "mid_aspirational", "label": "Mid-Aspirational", "color": "#F97316"},
+    {"key": "close_personal", "label": "Close / Personal", "color": "#EC4899"},
 ]
 
-# Contact tags
+# Contact tags - matching screenshot
 CONTACT_TAGS = [
-    "business_owner", "influencer", "speaker", "access", "mindset", 
-    "future_self", "community_partner", "motivation", "thought_leader", 
-    "investor", "mentor", "connector", "podcast_host", "author"
+    "influencer", "speaker", "business_owner", "access", "mindset", 
+    "future_self", "community_partner", "motivation"
 ]
 
 # Platform options
@@ -2663,6 +2710,43 @@ async def get_group_messages(group_id: str, user: dict = Depends(get_current_use
 
 # ─── Push Notifications ───
 
+EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
+
+async def send_expo_push_notification(push_tokens: List[str], title: str, body: str, data: Dict = None):
+    """Send push notification using Expo Push API (free, no signup required)"""
+    if not push_tokens:
+        return
+    
+    messages = []
+    for token in push_tokens:
+        if token.startswith("ExponentPushToken["):
+            messages.append({
+                "to": token,
+                "title": title,
+                "body": body,
+                "sound": "default",
+                "data": data or {},
+            })
+    
+    if not messages:
+        return
+    
+    try:
+        response = requests.post(
+            EXPO_PUSH_URL,
+            json=messages,
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
+            timeout=30
+        )
+        result = response.json()
+        logger.info(f"Expo Push result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Expo Push failed: {e}")
+
 async def send_message_notification(recipient_id: str, sender_id: str, preview: str):
     """Send push notification for new message"""
     settings = await db.notification_settings.find_one({"user_id": recipient_id})
@@ -2676,7 +2760,15 @@ async def send_message_notification(recipient_id: str, sender_id: str, preview: 
     sender_profile = await db.profiles.find_one({"user_id": sender_id}, {"_id": 0})
     sender_name = sender_profile.get('display_name', 'Someone') if sender_profile else 'Someone'
     
-    # Store notification for sending (in production, integrate with Expo Push Service)
+    push_tokens = [t['token'] for t in tokens if t.get('token')]
+    await send_expo_push_notification(
+        push_tokens,
+        f"Message from {sender_name}",
+        preview[:100],
+        {"type": "message", "sender_id": sender_id}
+    )
+    
+    # Also store in notifications collection for history
     notification = {
         "id": str(uuid.uuid4()),
         "user_id": recipient_id,
@@ -2684,10 +2776,49 @@ async def send_message_notification(recipient_id: str, sender_id: str, preview: 
         "title": f"Message from {sender_name}",
         "body": preview,
         "data": {"sender_id": sender_id},
-        "sent": False,
+        "sent": True,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.notifications.insert_one(notification)
+
+async def send_deal_reminder_notification(user_id: str, deal: dict):
+    """Send push notification for deal close date reminder"""
+    settings = await db.notification_settings.find_one({"user_id": user_id})
+    if settings and not settings.get('deal_reminders_enabled', True):
+        return
+    
+    tokens = await db.push_tokens.find({"user_id": user_id}, {"_id": 0}).to_list(10)
+    if not tokens:
+        return
+    
+    push_tokens = [t['token'] for t in tokens if t.get('token')]
+    deal_name = deal.get('name', 'Deal')
+    close_date = deal.get('close_date', '')
+    
+    await send_expo_push_notification(
+        push_tokens,
+        f"Deal Reminder: {deal_name}",
+        f"Close date is {close_date}. Time to follow up!",
+        {"type": "deal_reminder", "deal_id": deal.get('id')}
+    )
+
+async def send_daily_checkin_notification(user_id: str):
+    """Send daily check-in reminder"""
+    settings = await db.notification_settings.find_one({"user_id": user_id})
+    if settings and not settings.get('daily_checkin_enabled', True):
+        return
+    
+    tokens = await db.push_tokens.find({"user_id": user_id}, {"_id": 0}).to_list(10)
+    if not tokens:
+        return
+    
+    push_tokens = [t['token'] for t in tokens if t.get('token')]
+    await send_expo_push_notification(
+        push_tokens,
+        "Daily Check-in Reminder",
+        "Time to complete your 10x Unicorn checklist! 🦄",
+        {"type": "daily_checkin"}
+    )
 
 @api_router.post("/notifications/push-token")
 async def register_push_token(input_data: PushTokenInput, user: dict = Depends(get_current_user)):
@@ -2749,38 +2880,119 @@ async def get_pending_notifications(user: dict = Depends(get_current_user)):
 # ─── Profile Photo Upload ───
 
 @api_router.post("/profiles/photo")
-async def upload_profile_photo(user: dict = Depends(get_current_user)):
-    """Generate a presigned URL for profile photo upload or accept base64"""
-    # For simplicity, we'll store base64 directly in member_profiles
-    # In production, use cloud storage like S3
-    return {
-        "message": "Use PUT /api/profiles/photo with base64 data",
-        "max_size_kb": 500
-    }
+async def upload_profile_photo(file: UploadFile = File(...), user: dict = Depends(get_current_user)):
+    """Upload profile photo to cloud storage"""
+    try:
+        # Validate file type
+        ext = file.filename.split(".")[-1].lower() if "." in file.filename else "jpg"
+        if ext not in MIME_TYPES:
+            raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}")
+        
+        content_type = MIME_TYPES.get(ext, "image/jpeg")
+        file_data = await file.read()
+        
+        # Upload to cloud storage
+        path = f"{APP_NAME}/profiles/{user['id']}/{uuid.uuid4()}.{ext}"
+        result = put_object(path, file_data, content_type)
+        
+        # Store reference in database
+        await db.files.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user['id'],
+            "storage_path": result["path"],
+            "original_filename": file.filename,
+            "content_type": content_type,
+            "size": result.get("size", len(file_data)),
+            "file_type": "profile_photo",
+            "is_deleted": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Update member profile with storage path
+        await db.member_profiles.update_one(
+            {"user_id": user['id']},
+            {"$set": {"profile_photo_path": result["path"]}},
+            upsert=True
+        )
+        
+        return {"message": "Profile photo uploaded", "path": result["path"]}
+    except Exception as e:
+        logger.error(f"Photo upload failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.put("/profiles/photo")
 async def save_profile_photo(photo_data: dict, user: dict = Depends(get_current_user)):
-    """Save profile photo (base64 or URL)"""
-    photo_url = photo_data.get('photo_url') or photo_data.get('base64')
+    """Save profile photo from base64 data"""
+    import base64
     
-    if not photo_url:
-        raise HTTPException(status_code=400, detail="photo_url or base64 is required")
+    base64_data = photo_data.get('base64')
+    if not base64_data:
+        raise HTTPException(status_code=400, detail="base64 data is required")
     
-    # Update member profile with photo URL
-    await db.member_profiles.update_one(
-        {"user_id": user['id']},
-        {"$set": {"profile_photo_url": photo_url}},
-        upsert=True
-    )
-    
-    return {"message": "Profile photo updated", "photo_url": photo_url[:100] + "..." if len(photo_url) > 100 else photo_url}
+    try:
+        # Extract base64 content
+        if ',' in base64_data:
+            base64_data = base64_data.split(',')[1]
+        
+        file_data = base64.b64decode(base64_data)
+        ext = "jpg"
+        content_type = "image/jpeg"
+        
+        # Upload to cloud storage
+        path = f"{APP_NAME}/profiles/{user['id']}/{uuid.uuid4()}.{ext}"
+        result = put_object(path, file_data, content_type)
+        
+        # Store reference in database
+        await db.files.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user['id'],
+            "storage_path": result["path"],
+            "content_type": content_type,
+            "size": result.get("size", len(file_data)),
+            "file_type": "profile_photo",
+            "is_deleted": False,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Update member profile with storage path
+        await db.member_profiles.update_one(
+            {"user_id": user['id']},
+            {"$set": {"profile_photo_path": result["path"]}},
+            upsert=True
+        )
+        
+        return {"message": "Profile photo updated", "path": result["path"]}
+    except Exception as e:
+        logger.error(f"Photo save failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/files/{path:path}")
+async def download_file(path: str, authorization: str = Header(None), auth: str = Query(None), user: dict = Depends(get_current_user)):
+    """Download file from cloud storage"""
+    try:
+        record = await db.files.find_one({"storage_path": path, "is_deleted": False})
+        if not record:
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        data, content_type = get_object(path)
+        return Response(content=data, media_type=record.get("content_type", content_type))
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"File download failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.delete("/profiles/photo")
 async def delete_profile_photo(user: dict = Depends(get_current_user)):
-    """Remove profile photo"""
+    """Remove profile photo (soft delete)"""
+    # Mark files as deleted (no actual delete API in storage)
+    await db.files.update_many(
+        {"user_id": user['id'], "file_type": "profile_photo"},
+        {"$set": {"is_deleted": True}}
+    )
     await db.member_profiles.update_one(
         {"user_id": user['id']},
-        {"$unset": {"profile_photo_url": ""}}
+        {"$unset": {"profile_photo_path": ""}}
     )
     return {"message": "Profile photo removed"}
 
@@ -2800,6 +3012,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize services on startup"""
+    try:
+        init_storage()
+        logger.info("Storage initialized successfully")
+    except Exception as e:
+        logger.error(f"Storage initialization failed: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
