@@ -1610,11 +1610,13 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
         "goal_id": goal['id'] if goal else None,
         "name": input_data.name,
         "description": input_data.description or "",
+        "signal_type": input_data.signal_type or "10x_action",  # 10x_action, revenue, wormhole
         "impact_rating": 10 if input_data.is_top_10x_action else input_data.impact_rating,  # Top 10x = 10 pts
         "due_date": input_data.due_date,  # MM/DD/YY format
         "deal_id": input_data.deal_id,  # Associated deal
         "is_public": input_data.is_public,
         "is_top_10x_action": input_data.is_top_10x_action,  # Mark as top 10x action
+        "notes": input_data.notes or "",  # Rich text notes
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.signals.insert_one(signal)
