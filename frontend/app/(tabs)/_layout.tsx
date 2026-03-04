@@ -33,6 +33,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="deals"
+        options={{
+          title: 'Deals',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="briefcase" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="community"
         options={{
           title: 'Community',
@@ -62,7 +71,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          href: null, // Hide from tab bar but keep accessible
+          href: null,
         }}
       />
     </Tabs>
