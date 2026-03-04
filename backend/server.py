@@ -1298,12 +1298,12 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
     goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
     
     # For top 10x action, check if one already exists for today
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_mmddyy = datetime.now(timezone.utc).strftime("%m/%d/%y")  # MM/DD/YY format to match due_date storage
     if input_data.is_top_10x_action:
         existing_top = await db.signals.find_one({
             "user_id": user['id'],
             "is_top_10x_action": True,
-            "due_date": today
+            "due_date": today_mmddyy
         })
         if existing_top:
             raise HTTPException(status_code=400, detail="You already have a Top 10x Action for today")
