@@ -83,11 +83,6 @@ export default function TodayScreen() {
       // Find top 10x action signal for today
       const top10x = (signalsData || []).find((s: any) => s.is_top_10x_action && (s.due_date === todayFormatted || s.due_date === currentDate));
       setTopSignal(top10x);
-      
-      // Auto-collapse slider if determination already set today
-      if (entryData?.determination_level && entryData.determination_level > 0) {
-        setSliderCollapsed(true);
-      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -137,6 +132,32 @@ export default function TodayScreen() {
   const completeSignal = async (signalId: string) => {
     try {
       await api.post(`/signals/${signalId}/complete`, { notes: '' });
+      loadEntry();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  // Uncomplete a signal (mark as not done)
+  const uncompleteSignal = async (signalId: string) => {
+    try {
+      await api.post(`/signals/${signalId}/uncomplete`, {});
+      setCompletedSignals(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(signalId);
+        return newSet;
+      });
+      loadEntry();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  // Update an existing signal
+  const updateSignal = async (signalId: string, updates: any) => {
+    try {
+      await api.put(`/signals/${signalId}`, updates);
+      setShowEditSignal(null);
       loadEntry();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -846,6 +867,120 @@ export default function TodayScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Edit Signal Modal */}
+      <Modal visible={!!showEditSignal} animationType="slide" transparent>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalOverlay}
+        >
+          <ScrollView 
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Signal</Text>
+                <TouchableOpacity onPress={() => setShowEditSignal(null)}>
+                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+              
+              <Text style={styles.inputLabel}>Signal Name *</Text>
+              <TextInput
+                testID="edit-signal-name-input"
+                style={styles.modalInput}
+                value={showEditSignal?.name || ''}
+                onChangeText={t => setShowEditSignal({ ...showEditSignal, name: t })}
+                placeholder="What will you accomplish?"
+                placeholderTextColor={Colors.text.tertiary}
+              />
+              
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                testID="edit-signal-desc-input"
+                style={[styles.modalInput, { minHeight: 60 }]}
+                value={showEditSignal?.description || ''}
+                onChangeText={t => setShowEditSignal({ ...showEditSignal, description: t })}
+                placeholder="Optional details..."
+                placeholderTextColor={Colors.text.tertiary}
+                multiline
+              />
+              
+              <Text style={styles.inputLabel}>Notes</Text>
+              <TextInput
+                testID="edit-signal-notes-input"
+                style={[styles.modalInput, { minHeight: 80 }]}
+                value={showEditSignal?.notes || ''}
+                onChangeText={t => setShowEditSignal({ ...showEditSignal, notes: t })}
+                placeholder="Additional notes..."
+                placeholderTextColor={Colors.text.tertiary}
+                multiline
+              />
+              
+              <Text style={styles.inputLabel}>Impact Rating (1-10): {showEditSignal?.impact_rating || 5}</Text>
+              <View style={styles.ratingRow}>
+                {[1,2,3,4,5,6,7,8,9,10].map(n => (
+                  <TouchableOpacity
+                    key={n}
+                    testID={`edit-rating-${n}`}
+                    style={[styles.ratingBtn, showEditSignal?.impact_rating === n && styles.ratingBtnActive]}
+                    onPress={() => setShowEditSignal({ ...showEditSignal, impact_rating: n })}
+                  >
+                    <Text style={[styles.ratingText, showEditSignal?.impact_rating === n && styles.ratingTextActive]}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              
+              {/* Completion Status Toggle */}
+              {showEditSignal?.completed_at && (
+                <View style={styles.completionSection}>
+                  <Text style={styles.completedBadge}>Completed</Text>
+                  <TouchableOpacity
+                    testID="uncomplete-signal-btn"
+                    style={styles.uncompleteBtn}
+                    onPress={async () => {
+                      if (showEditSignal?.id) {
+                        await uncompleteSignal(showEditSignal.id);
+                        // Also update entry if this is the top 10x action
+                        if (showEditSignal.is_top_10x_action) {
+                          updateEntry({ 
+                            top_priority_completed: false,
+                            five_item_statuses: { ...entry?.five_item_statuses, top_action: false }
+                          });
+                        }
+                        setShowEditSignal(null);
+                      }
+                    }}
+                  >
+                    <Ionicons name="flame" size={20} color="#F97316" />
+                    <Text style={styles.uncompleteBtnText}>Mark as Incomplete</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              
+              <TouchableOpacity
+                testID="save-edit-signal-btn"
+                style={[styles.saveSignalBtn, !showEditSignal?.name?.trim() && styles.saveSignalBtnDisabled]}
+                onPress={() => {
+                  if (showEditSignal?.id && showEditSignal?.name?.trim()) {
+                    updateSignal(showEditSignal.id, {
+                      name: showEditSignal.name,
+                      description: showEditSignal.description,
+                      notes: showEditSignal.notes,
+                      impact_rating: showEditSignal.impact_rating,
+                    });
+                  }
+                }}
+                disabled={!showEditSignal?.name?.trim()}
+              >
+                <Text style={styles.saveSignalBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+              <View style={{ height: 50 }} />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -1325,5 +1460,45 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontSize: FontSize.lg,
     fontWeight: '700',
+  },
+  
+  // Edit Signal Modal styles
+  modalScrollContent: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
+  },
+  completionSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.default,
+  },
+  completedBadge: {
+    color: Colors.status.success,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    backgroundColor: 'rgba(34,197,94,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.sm,
+  },
+  uncompleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(249,115,22,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#F97316',
+  },
+  uncompleteBtnText: {
+    color: '#F97316',
+    fontSize: FontSize.sm,
+    fontWeight: '600',
   },
 });

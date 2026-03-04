@@ -7,6 +7,8 @@ type User = {
   email: string;
   onboarded: boolean;
   created_at?: string;
+  name?: string;
+  picture?: string;
 };
 
 type AuthState = {
@@ -15,6 +17,7 @@ type AuthState = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (sessionId: string) => Promise<void>;
   logout: () => Promise<void>;
   setUserOnboarded: () => void;
   refreshUser: () => Promise<void>;
@@ -26,6 +29,7 @@ const AuthContext = createContext<AuthState>({
   loading: true,
   login: async () => {},
   register: async () => {},
+  loginWithGoogle: async () => {},
   logout: async () => {},
   setUserOnboarded: () => {},
   refreshUser: async () => {},
@@ -79,6 +83,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newUser;
   };
 
+  const loginWithGoogle = async (sessionId: string) => {
+    // Exchange session_id for session data from Emergent Auth
+    const res = await api.post('/auth/google', { session_id: sessionId });
+    await AsyncStorage.setItem('auth_token', res.token);
+    setToken(res.token);
+    setApiToken(res.token);
+    const me = await api.get('/auth/me', res.token);
+    setUser(me);
+    return me;
+  };
+
   const logout = async () => {
     await AsyncStorage.removeItem('auth_token');
     setToken(null);
@@ -98,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, register, logout, setUserOnboarded, refreshUser }}>
+    <AuthContext.Provider value={{ token, user, loading, login, register, loginWithGoogle, logout, setUserOnboarded, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

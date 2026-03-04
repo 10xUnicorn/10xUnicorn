@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
-  TouchableOpacity, Modal, TextInput,
+  TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '../../src/utils/api';
@@ -313,61 +313,70 @@ export default function DashboardScreen() {
 
       {/* Edit Goal Modal */}
       <Modal visible={showEditGoal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Edit Goal</Text>
-              <TouchableOpacity onPress={() => setShowEditGoal(false)}>
-                <Ionicons name="close" size={24} color={Colors.text.primary} />
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+          style={styles.modalOverlay}
+        >
+          <ScrollView 
+            contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.modal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Goal</Text>
+                <TouchableOpacity onPress={() => setShowEditGoal(false)}>
+                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.inputLabel}>Goal Title</Text>
+              <TextInput
+                testID="goal-title-input"
+                style={styles.input}
+                value={goalForm.title}
+                onChangeText={t => setGoalForm({ ...goalForm, title: t })}
+                placeholder="1000 10xUnicorn members in 90 days"
+                placeholderTextColor={Colors.text.tertiary}
+              />
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                testID="goal-desc-input"
+                style={[styles.input, { minHeight: 80 }]}
+                value={goalForm.description}
+                onChangeText={t => setGoalForm({ ...goalForm, description: t })}
+                placeholder="Why this goal matters..."
+                placeholderTextColor={Colors.text.tertiary}
+                multiline
+              />
+              <Text style={styles.inputLabel}>Deadline (MM/DD/YY)</Text>
+              <TextInput
+                testID="goal-deadline-input"
+                style={styles.input}
+                value={goalForm.deadline}
+                onChangeText={t => setGoalForm({ ...goalForm, deadline: t })}
+                placeholder="03/31/26"
+                placeholderTextColor={Colors.text.tertiary}
+              />
+              <Text style={styles.inputLabel}>Target Number (optional)</Text>
+              <TextInput
+                testID="goal-target-input"
+                style={styles.input}
+                value={goalForm.target_number}
+                onChangeText={t => setGoalForm({ ...goalForm, target_number: t })}
+                placeholder="1000"
+                placeholderTextColor={Colors.text.tertiary}
+                keyboardType="numeric"
+              />
+              <TouchableOpacity
+                testID="save-goal-btn"
+                style={styles.saveBtn}
+                onPress={saveGoal}
+              >
+                <Text style={styles.saveBtnText}>Save Goal</Text>
               </TouchableOpacity>
+              <View style={{ height: 50 }} />
             </View>
-            <Text style={styles.inputLabel}>Goal Title</Text>
-            <TextInput
-              testID="goal-title-input"
-              style={styles.input}
-              value={goalForm.title}
-              onChangeText={t => setGoalForm({ ...goalForm, title: t })}
-              placeholder="1000 10xUnicorn members in 90 days"
-              placeholderTextColor={Colors.text.tertiary}
-            />
-            <Text style={styles.inputLabel}>Description</Text>
-            <TextInput
-              testID="goal-desc-input"
-              style={[styles.input, { minHeight: 80 }]}
-              value={goalForm.description}
-              onChangeText={t => setGoalForm({ ...goalForm, description: t })}
-              placeholder="Why this goal matters..."
-              placeholderTextColor={Colors.text.tertiary}
-              multiline
-            />
-            <Text style={styles.inputLabel}>Deadline (MM/DD/YY)</Text>
-            <TextInput
-              testID="goal-deadline-input"
-              style={styles.input}
-              value={goalForm.deadline}
-              onChangeText={t => setGoalForm({ ...goalForm, deadline: t })}
-              placeholder="03/31/26"
-              placeholderTextColor={Colors.text.tertiary}
-            />
-            <Text style={styles.inputLabel}>Target Number (optional)</Text>
-            <TextInput
-              testID="goal-target-input"
-              style={styles.input}
-              value={goalForm.target_number}
-              onChangeText={t => setGoalForm({ ...goalForm, target_number: t })}
-              placeholder="1000"
-              placeholderTextColor={Colors.text.tertiary}
-              keyboardType="numeric"
-            />
-            <TouchableOpacity
-              testID="save-goal-btn"
-              style={styles.saveBtn}
-              onPress={saveGoal}
-            >
-              <Text style={styles.saveBtnText}>Save Goal</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

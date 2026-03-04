@@ -13,9 +13,16 @@ const SLIDER_WIDTH = Dimensions.get('window').width - 80;
 const THUMB_SIZE = 44;
 
 const getEmoji = (value: number) => {
-  if (value >= 10) return '🦄';
-  if (value >= 9) return '💎';
-  return '🔥';
+  if (value >= 10) return '🦄';  // Unicorn
+  if (value >= 9) return '💎';   // Diamond
+  if (value >= 8) return '🔥';   // Fire
+  if (value >= 7) return '🐎';   // Horse
+  if (value >= 6) return '💪';   // Strong arm
+  if (value >= 5) return '😐';   // Neutral face
+  if (value >= 4) return '🚲';   // Bicycle
+  if (value >= 3) return '🚶';   // Walking
+  if (value >= 2) return '🐢';   // Turtle
+  return '😴';                    // Sleeping (level 1)
 };
 
 const MOTIVATIONAL_QUOTES = [

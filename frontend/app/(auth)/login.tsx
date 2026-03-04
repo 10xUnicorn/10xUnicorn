@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
 import { useAuth } from '../../src/context/AuthContext';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,9 +16,45 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  // Handle deep link callback from Google OAuth
+  useEffect(() => {
+    const handleDeepLink = async (event: { url: string }) => {
+      const url = event.url;
+      if (url && url.includes('session_id=')) {
+        const sessionId = url.split('session_id=')[1]?.split('&')[0]?.split('#')[0];
+        if (sessionId) {
+          setGoogleLoading(true);
+          try {
+            const me = await loginWithGoogle(sessionId);
+            if (!me.onboarded) {
+              router.replace('/onboarding');
+            } else {
+              router.replace('/(tabs)/today');
+            }
+          } catch (e: any) {
+            setError(e.message || 'Google login failed');
+          } finally {
+            setGoogleLoading(false);
+          }
+        }
+      }
+    };
+
+    // Check for initial URL (app opened via deep link)
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    // Listen for deep links while app is running
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => subscription.remove();
+  }, []);
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -36,6 +74,36 @@ export default function LoginScreen() {
       setError(e.message || 'Login failed');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      // Get the redirect URL using Expo Linking
+      const redirectUrl = Linking.createURL('auth-callback');
+      const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+      
+      // Open browser for OAuth
+      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUrl);
+      
+      if (result.type === 'success' && result.url) {
+        // Extract session_id from URL
+        const sessionId = result.url.split('session_id=')[1]?.split('&')[0]?.split('#')[0];
+        if (sessionId) {
+          const me = await loginWithGoogle(sessionId);
+          if (!me.onboarded) {
+            router.replace('/onboarding');
+          } else {
+            router.replace('/(tabs)/today');
+          }
+        }
+      }
+    } catch (e: any) {
+      setError(e.message || 'Google login failed');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -114,6 +182,37 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity
+              testID="forgot-password-btn"
+              style={styles.forgotBtn}
+              onPress={() => router.push('/(auth)/forgot-password')}
+            >
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
+
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <TouchableOpacity
+              testID="google-login-btn"
+              style={[styles.googleBtn, googleLoading && styles.btnDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={googleLoading}
+              activeOpacity={0.8}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color={Colors.text.primary} />
+              ) : (
+                <>
+                  <Ionicons name="logo-google" size={20} color={Colors.text.primary} />
+                  <Text style={styles.googleBtnText}>Continue with Google</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
               testID="login-go-register"
               style={styles.linkBtn}
               onPress={() => router.push('/(auth)/register')}
@@ -159,6 +258,17 @@ const styles = StyleSheet.create({
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
+  forgotBtn: { alignItems: 'center', marginTop: 16, padding: 8 },
+  forgotText: { color: Colors.brand.accent, fontSize: FontSize.sm },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginVertical: 24 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border.default },
+  dividerText: { color: Colors.text.tertiary, marginHorizontal: 16, fontSize: FontSize.sm },
+  googleBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10,
+    backgroundColor: Colors.bg.card, borderRadius: Radius.md, padding: 16,
+    borderWidth: 1, borderColor: Colors.border.default,
+  },
+  googleBtnText: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
   linkBtn: { alignItems: 'center', marginTop: 24, padding: 12 },
   linkText: { color: Colors.text.secondary, fontSize: FontSize.base },
   linkBold: { color: Colors.brand.primary, fontWeight: '700' },

@@ -341,6 +341,16 @@ class PasswordResetInput(BaseModel):
     current_password: str
     new_password: str
 
+class GoogleAuthInput(BaseModel):
+    session_id: str
+
+class PasswordResetRequestInput(BaseModel):
+    email: str
+
+class PasswordResetConfirmInput(BaseModel):
+    token: str
+    new_password: str
+
 # ─── Signal & Points System Models ───
 
 # Signal types
@@ -590,6 +600,130 @@ async def delete_account(user: dict = Depends(get_current_user)):
     await db.compound_habits.delete_one({"user_id": uid})
     await db.goals.delete_many({"user_id": uid})
     return {"message": "Account deleted"}
+
+@api_router.post("/auth/google")
+async def google_auth(input_data: GoogleAuthInput):
+    """Exchange Emergent Auth session_id for user data and JWT token"""
+    try:
+        # Call Emergent Auth to get session data
+        response = requests.get(
+            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+            headers={"X-Session-ID": input_data.session_id},
+            timeout=30
+        )
+        response.raise_for_status()
+        session_data = response.json()
+        
+        email = session_data.get('email', '').lower()
+        name = session_data.get('name', '')
+        picture = session_data.get('picture', '')
+        
+        if not email:
+            raise HTTPException(status_code=400, detail="No email in session data")
+        
+        # Check if user exists
+        existing = await db.users.find_one({"email": email}, {"_id": 0})
+        
+        if existing:
+            # Update existing user with Google info
+            await db.users.update_one(
+                {"email": email},
+                {"$set": {
+                    "google_name": name,
+                    "google_picture": picture,
+                    "last_google_login": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            user_id = existing['id']
+            onboarded = existing.get('onboarded', False)
+        else:
+            # Create new user
+            user_id = str(uuid.uuid4())
+            user = {
+                "id": user_id,
+                "email": email,
+                "password_hash": None,  # Google users don't have password
+                "google_name": name,
+                "google_picture": picture,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "onboarded": False
+            }
+            await db.users.insert_one(user)
+            onboarded = False
+        
+        token = create_token(user_id)
+        return {"token": token, "user_id": user_id, "onboarded": onboarded}
+        
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Google auth failed: {e}")
+        raise HTTPException(status_code=401, detail="Failed to verify Google session")
+
+@api_router.post("/auth/request-password-reset")
+async def request_password_reset(input_data: PasswordResetRequestInput):
+    """Request a password reset token (in real app, would send email)"""
+    email = input_data.email.lower()
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    
+    if not user:
+        # Don't reveal if email exists
+        return {"message": "If an account exists with this email, a reset link has been sent."}
+    
+    # Check if user is Google-only (no password)
+    if not user.get('password_hash'):
+        return {"message": "This account uses Google Sign-In. Please log in with Google."}
+    
+    # Generate reset token
+    reset_token = str(uuid.uuid4())
+    expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+    
+    await db.password_resets.update_one(
+        {"email": email},
+        {"$set": {
+            "email": email,
+            "token": reset_token,
+            "expires_at": expires_at.isoformat(),
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }},
+        upsert=True
+    )
+    
+    # In a real app, you would send an email here
+    # For now, we return the token for testing purposes
+    logger.info(f"Password reset requested for {email}. Token: {reset_token}")
+    
+    return {
+        "message": "If an account exists with this email, a reset link has been sent.",
+        "debug_token": reset_token  # Remove in production
+    }
+
+@api_router.post("/auth/reset-password")
+async def reset_password(input_data: PasswordResetConfirmInput):
+    """Reset password using token"""
+    reset_doc = await db.password_resets.find_one({"token": input_data.token}, {"_id": 0})
+    
+    if not reset_doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    
+    # Check expiry
+    expires_at = datetime.fromisoformat(reset_doc['expires_at'].replace('Z', '+00:00'))
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    
+    if expires_at < datetime.now(timezone.utc):
+        await db.password_resets.delete_one({"token": input_data.token})
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    
+    # Update password
+    new_hash = hash_password(input_data.new_password)
+    await db.users.update_one(
+        {"email": reset_doc['email']},
+        {"$set": {"password_hash": new_hash}}
+    )
+    
+    # Delete reset token
+    await db.password_resets.delete_one({"token": input_data.token})
+    
+    return {"message": "Password has been reset successfully"}
 
 # ─── Onboarding ───
 
