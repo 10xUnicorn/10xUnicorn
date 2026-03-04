@@ -1,32 +1,39 @@
 export const Colors = {
   bg: {
-    default: '#050505',
-    card: '#121212',
-    input: '#1A1A1A',
-    overlay: 'rgba(0,0,0,0.8)',
-    elevated: '#1E1E1E',
+    default: '#0a0a1a',      // Deep space navy
+    card: '#12122a',          // Slightly lighter navy for cards
+    input: '#1a1a35',         // Input fields
+    overlay: 'rgba(10,10,26,0.9)',
+    elevated: '#1e1e40',
+    gradient: {
+      start: '#0f0f23',
+      end: '#1a0a2e',
+    },
   },
   text: {
     primary: '#FFFFFF',
-    secondary: '#A1A1AA',
-    tertiary: '#52525B',
-    inverse: '#000000',
+    secondary: '#9CA3AF',
+    tertiary: '#6B7280',
+    inverse: '#0a0a1a',
   },
   brand: {
-    primary: '#7F00FF',
-    secondary: '#9D00FF',
-    accent: '#B915CC',
-    glow: 'rgba(127, 0, 255, 0.4)',
+    primary: '#A855F7',       // Electric purple
+    secondary: '#D946EF',     // Magenta/pink
+    accent: '#06B6D4',        // Cyan/teal
+    red: '#EF4444',           // Red for 10x branding
+    glow: 'rgba(168, 85, 247, 0.4)',
+    glowStrong: 'rgba(168, 85, 247, 0.6)',
   },
   status: {
-    success: '#00FF9D',
-    warning: '#FFD600',
-    error: '#FF0055',
-    info: '#00B2FF',
+    success: '#22C55E',
+    warning: '#F59E0B',
+    error: '#EF4444',
+    info: '#06B6D4',
   },
   border: {
-    default: '#27272A',
-    active: '#7F00FF',
+    default: '#2D2D50',
+    active: '#A855F7',
+    glow: 'rgba(168, 85, 247, 0.3)',
   },
 };
 
@@ -77,4 +84,20 @@ export const STATUS_COLORS: Record<string, string> = {
   course_corrected: Colors.status.info,
 };
 
-export const DETERMINATION_EMOJIS = ['😴', '😴', '😐', '😐', '😤', '😤', '🔥', '🔥', '🔥', '🔥', '🦄'];
+// 0-2 → 😴, 3-4 → 😐, 5-6 → 😤, 7-9 → 🔥, 10 → 🦄
+export const DETERMINATION_EMOJIS: Record<number, string> = {
+  0: '😴', 1: '😴', 2: '😴',
+  3: '😐', 4: '😐',
+  5: '😤', 6: '😤',
+  7: '🔥', 8: '🔥', 9: '🔥',
+  10: '🦄'
+};
+
+// Updated Five Core Actions
+export const FIVE_CORE_ACTIONS = [
+  { key: 'top_action', label: 'Top 10x Action Item', icon: 'rocket' },
+  { key: 'meditation', label: '7-Minute Future Self Meditation', icon: 'leaf' },
+  { key: 'wormhole', label: 'Wormhole Relationship', icon: 'planet' },
+  { key: 'distractions', label: 'Avoid Distractions', icon: 'shield-checkmark' },
+  { key: 'plan_tomorrow', label: 'Plan the Next Day Ahead of Time', icon: 'calendar' },
+];

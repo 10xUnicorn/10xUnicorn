@@ -52,12 +52,17 @@ class TestAISessions:
     def test_complete_ai_session(self, base_url, api_client, test_user_token):
         """Test marking AI session as complete"""
         headers = {"Authorization": f"Bearer {test_user_token}"}
-        today = datetime.now().strftime("%Y-%m-%d")
+        # Use a future date that has no prior data (to avoid status conflicts with earlier tests)
+        from datetime import timedelta
+        test_date = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+        
+        # First create a clean entry for this date with no actions completed
+        api_client.get(f"{base_url}/api/daily-entry/{test_date}", headers=headers)
         
         # Start session
         start_response = api_client.post(f"{base_url}/api/ai-session/start", json={
             "message": "Need help getting back on track",
-            "date": today
+            "date": test_date
         }, headers=headers)
         session_id = start_response.json()["session_id"]
         
@@ -69,9 +74,11 @@ class TestAISessions:
         print(f"✅ AI session completed")
         
         # Verify daily entry marked as course corrected
-        entry_response = api_client.get(f"{base_url}/api/daily-entry/{today}", headers=headers)
+        entry_response = api_client.get(f"{base_url}/api/daily-entry/{test_date}", headers=headers)
         entry_data = entry_response.json()
         assert entry_data["ai_course_corrected"] == True
+        # Note: Status computation prioritizes: unicorn_win > priority_win > course_corrected
+        # Only becomes course_corrected if top_action not done
         assert entry_data["final_status"] == "course_corrected"
         print(f"✅ Daily entry status updated to course_corrected")
 

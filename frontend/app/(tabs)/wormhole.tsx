@@ -93,6 +93,7 @@ export default function WormholeScreen() {
     try {
       const updated = await api.post('/wormhole-contacts/interaction', {
         contact_id: showDetail.id,
+        action_type: 'general',
         action_text: interactionText.trim(),
       });
       setShowDetail(updated);
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
   saveBtnDisabled: { opacity: 0.4 },
   saveBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
   detailInfo: { color: Colors.text.secondary, fontSize: FontSize.base, marginBottom: 16 },
-  nextStepBox: { backgroundColor: 'rgba(127,0,255,0.08)', borderRadius: Radius.md, padding: 14, marginBottom: 16 },
+  nextStepBox: { backgroundColor: 'rgba(168,85,247,0.08)', borderRadius: Radius.md, padding: 14, marginBottom: 16 },
   nextStepLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginBottom: 4 },
   nextStepText: { color: Colors.brand.accent, fontSize: FontSize.base },
   sectionTitle: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700', marginTop: 20, marginBottom: 12 },

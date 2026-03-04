@@ -4,7 +4,7 @@ class TestDashboard:
     """Dashboard stats and analytics tests"""
 
     def test_get_dashboard_stats(self, base_url, api_client, test_user_token):
-        """Test dashboard stats endpoint returns complete data"""
+        """Test dashboard stats endpoint returns complete data with Phase 1 updated keys"""
         headers = {"Authorization": f"Bearer {test_user_token}"}
         
         response = api_client.get(f"{base_url}/api/dashboard/stats", headers=headers)
@@ -33,12 +33,25 @@ class TestDashboard:
         assert "most_activated_contacts" in data
         assert "total_contacts" in data
         
-        print(f"✅ Dashboard stats complete:")
+        # Verify Phase 1 updated five_completion_rates keys
+        five_rates = data["five_completion_rates"]
+        assert "top_action" in five_rates, "Missing updated key: top_action"
+        assert "meditation" in five_rates, "Missing updated key: meditation"
+        assert "wormhole" in five_rates, "Missing updated key: wormhole"
+        assert "distractions" in five_rates, "Missing updated key: distractions"
+        assert "plan_tomorrow" in five_rates, "Missing updated key: plan_tomorrow"
+        # Old keys should NOT be present
+        assert "scariest" not in five_rates, "Old key 'scariest' should not be present"
+        assert "boldest" not in five_rates, "Old key 'boldest' should not be present"
+        
+        print(f"✅ Dashboard stats complete with Phase 1 updated keys:")
         print(f"   Total entries: {data['total_entries']}")
         print(f"   Win rate: {data['win_rate']}%")
         print(f"   Unicorn wins: {data['unicorn_wins']}")
+        print(f"   Priority wins: {data['priority_wins']}")
         print(f"   Compound streak: {data['compound_streak']}")
         print(f"   Total contacts: {data['total_contacts']}")
+        print(f"   Five rates: {five_rates}")
 
     def test_get_compound_streak(self, base_url, api_client, test_user_token):
         """Test compound streak endpoint"""

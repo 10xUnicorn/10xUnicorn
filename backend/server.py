@@ -97,8 +97,10 @@ class DailyEntryUpdate(BaseModel):
     top_10x_action_text: Optional[str] = None
     top_priority_completed: Optional[bool] = None
     five_item_statuses: Optional[Dict[str, bool]] = None
-    wormhole_reference: Optional[str] = None
+    wormhole_contact_id: Optional[str] = None
     wormhole_action_text: Optional[str] = None
+    wormhole_action_type: Optional[str] = None
+    wormhole_impact_rating: Optional[int] = None
     distraction_notes: Optional[str] = None
     immediate_course_correction: Optional[bool] = None
     meditation_reflection: Optional[str] = None
@@ -107,32 +109,70 @@ class DailyEntryUpdate(BaseModel):
     manual_override_status: Optional[str] = None
 
 class WormholeContactInput(BaseModel):
+    # Identity
     name: str
-    connection_level: Optional[str] = "warm"
-    tags: Optional[List[str]] = []
-    activation_next_step: Optional[str] = ""
     company: Optional[str] = ""
     title: Optional[str] = ""
     location: Optional[str] = ""
-    reciprocity_notes: Optional[str] = ""
-    phone: Optional[str] = ""
+    
+    # Contact Info
+    website: Optional[str] = ""
     email: Optional[str] = ""
+    phone: Optional[str] = ""
+    
+    # Social Media Handles
+    linkedin: Optional[str] = ""
+    twitter: Optional[str] = ""
+    instagram: Optional[str] = ""
+    youtube: Optional[str] = ""
+    tiktok: Optional[str] = ""
+    other_social: Optional[str] = ""
+    
+    # Leverage Potential
+    leverage_categories: Optional[List[str]] = []  # investor, partner, influencer, etc.
+    leverage_description: Optional[str] = ""
+    
+    # Best Contact Method
+    best_contact_method: Optional[str] = ""  # email, linkedin_dm, text, phone, warm_intro, in_person, other
+    
+    # Relationship Intelligence
+    connection_level: Optional[str] = "warm"  # cold, warm, hot, close
+    tags: Optional[List[str]] = []
+    engagement_strength: Optional[int] = 5  # 1-10
+    
+    # Next Steps
+    activation_next_step: Optional[str] = ""
+    notes: Optional[str] = ""
+
 
 class WormholeContactUpdate(BaseModel):
     name: Optional[str] = None
-    connection_level: Optional[str] = None
-    tags: Optional[List[str]] = None
-    activation_next_step: Optional[str] = None
     company: Optional[str] = None
     title: Optional[str] = None
     location: Optional[str] = None
-    reciprocity_notes: Optional[str] = None
-    phone: Optional[str] = None
+    website: Optional[str] = None
     email: Optional[str] = None
+    phone: Optional[str] = None
+    linkedin: Optional[str] = None
+    twitter: Optional[str] = None
+    instagram: Optional[str] = None
+    youtube: Optional[str] = None
+    tiktok: Optional[str] = None
+    other_social: Optional[str] = None
+    leverage_categories: Optional[List[str]] = None
+    leverage_description: Optional[str] = None
+    best_contact_method: Optional[str] = None
+    connection_level: Optional[str] = None
+    tags: Optional[List[str]] = None
+    engagement_strength: Optional[int] = None
+    activation_next_step: Optional[str] = None
+    notes: Optional[str] = None
 
 class InteractionInput(BaseModel):
     contact_id: str
+    action_type: str  # sent_intro_email, followed_up, scheduled_meeting, commented_post, made_introduction, etc.
     action_text: str
+    impact_rating: Optional[int] = None  # 1-10
     date: Optional[str] = None
 
 class AIChatMessage(BaseModel):
@@ -157,19 +197,29 @@ class PasswordResetInput(BaseModel):
     new_password: str
 
 # ─── Win Logic ───
+# Updated Five Core Actions:
+# 1. top_action - Top 10x Action Item
+# 2. meditation - 7-Minute Future Self Meditation  
+# 3. wormhole - Wormhole Relationship
+# 4. distractions - Avoid Distractions
+# 5. plan_tomorrow - Plan the Next Day Ahead of Time
+
+# Win Logic:
+# - If Top 10x Action Item is completed → Priority Win
+# - If all five actions are completed → 10x Unicorn Win
 
 def compute_status(entry: dict) -> str:
     five = entry.get('five_item_statuses', {})
     all_five = all([
         five.get('top_action', False),
+        five.get('meditation', False),
         five.get('wormhole', False),
-        five.get('scariest', False),
-        five.get('boldest', False),
-        five.get('meditation', False)
+        five.get('distractions', False),
+        five.get('plan_tomorrow', False)
     ])
     if all_five:
         return 'unicorn_win'
-    if entry.get('top_priority_completed', False):
+    if five.get('top_action', False) or entry.get('top_priority_completed', False):
         return 'priority_win'
     # Check if AI session was completed for this day
     if entry.get('ai_course_corrected', False):
@@ -330,13 +380,15 @@ def empty_entry(user_id: str, date: str) -> dict:
         "top_priority_completed": False,
         "five_item_statuses": {
             "top_action": False,
+            "meditation": False,
             "wormhole": False,
-            "scariest": False,
-            "boldest": False,
-            "meditation": False
+            "distractions": False,
+            "plan_tomorrow": False
         },
-        "wormhole_reference": "",
+        "wormhole_contact_id": None,
         "wormhole_action_text": "",
+        "wormhole_action_type": None,
+        "wormhole_impact_rating": None,
         "distraction_notes": "",
         "immediate_course_correction": False,
         "meditation_reflection": "",
@@ -449,18 +501,37 @@ async def create_contact(input_data: WormholeContactInput, user: dict = Depends(
     contact = {
         "id": str(uuid.uuid4()),
         "user_id": user['id'],
+        # Identity
         "name": input_data.name,
-        "connection_level": input_data.connection_level,
-        "tags": input_data.tags or [],
-        "activation_next_step": input_data.activation_next_step or "",
-        "last_contact_date": None,
-        "engagement_score": 0,
         "company": input_data.company or "",
         "title": input_data.title or "",
         "location": input_data.location or "",
-        "reciprocity_notes": input_data.reciprocity_notes or "",
-        "phone": input_data.phone or "",
+        # Contact Info
+        "website": input_data.website or "",
         "email": input_data.email or "",
+        "phone": input_data.phone or "",
+        # Social Media
+        "linkedin": input_data.linkedin or "",
+        "twitter": input_data.twitter or "",
+        "instagram": input_data.instagram or "",
+        "youtube": input_data.youtube or "",
+        "tiktok": input_data.tiktok or "",
+        "other_social": input_data.other_social or "",
+        # Leverage Potential
+        "leverage_categories": input_data.leverage_categories or [],
+        "leverage_description": input_data.leverage_description or "",
+        # Best Contact Method
+        "best_contact_method": input_data.best_contact_method or "",
+        # Relationship Intelligence
+        "connection_level": input_data.connection_level or "warm",
+        "tags": input_data.tags or [],
+        "engagement_strength": input_data.engagement_strength or 5,
+        "engagement_score": 0,
+        # Next Steps & Notes
+        "activation_next_step": input_data.activation_next_step or "",
+        "notes": input_data.notes or "",
+        # Metadata
+        "last_contact_date": None,
         "interaction_history": [],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -515,10 +586,18 @@ async def log_interaction(input_data: InteractionInput, user: dict = Depends(get
 
     interaction = {
         "id": str(uuid.uuid4()),
+        "action_type": input_data.action_type,
         "action_text": input_data.action_text,
+        "impact_rating": input_data.impact_rating,
         "date": input_data.date or datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "created_at": datetime.now(timezone.utc).isoformat()
     }
+
+    # Calculate new engagement score based on interactions and impact
+    current_history = contact.get('interaction_history', [])
+    new_score = len(current_history) + 1
+    if input_data.impact_rating:
+        new_score += input_data.impact_rating // 2  # Bonus for high-impact interactions
 
     await db.wormhole_contacts.update_one(
         {"id": input_data.contact_id, "user_id": user['id']},
@@ -526,7 +605,7 @@ async def log_interaction(input_data: InteractionInput, user: dict = Depends(get
             "$push": {"interaction_history": interaction},
             "$set": {
                 "last_contact_date": interaction['date'],
-                "engagement_score": len(contact.get('interaction_history', [])) + 1
+                "engagement_score": new_score
             }
         }
     )
@@ -543,17 +622,28 @@ async def import_contacts_bulk(contacts: List[WormholeContactInput], user: dict 
             "id": str(uuid.uuid4()),
             "user_id": user['id'],
             "name": c.name,
-            "connection_level": c.connection_level or "warm",
-            "tags": c.tags or [],
-            "activation_next_step": c.activation_next_step or "",
-            "last_contact_date": None,
-            "engagement_score": 0,
             "company": c.company or "",
             "title": c.title or "",
             "location": c.location or "",
-            "reciprocity_notes": c.reciprocity_notes or "",
-            "phone": c.phone or "",
+            "website": c.website or "",
             "email": c.email or "",
+            "phone": c.phone or "",
+            "linkedin": c.linkedin or "",
+            "twitter": c.twitter or "",
+            "instagram": c.instagram or "",
+            "youtube": c.youtube or "",
+            "tiktok": c.tiktok or "",
+            "other_social": c.other_social or "",
+            "leverage_categories": c.leverage_categories or [],
+            "leverage_description": c.leverage_description or "",
+            "best_contact_method": c.best_contact_method or "",
+            "connection_level": c.connection_level or "warm",
+            "tags": c.tags or [],
+            "engagement_strength": c.engagement_strength or 5,
+            "engagement_score": 0,
+            "activation_next_step": c.activation_next_step or "",
+            "notes": c.notes or "",
+            "last_contact_date": None,
             "interaction_history": [],
             "created_at": datetime.now(timezone.utc).isoformat()
         }
@@ -810,8 +900,8 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         win_rate_trend.append({"date": e.get('date'), "win": is_win})
     win_rate_trend.reverse()
 
-    # Five item completion rates
-    five_stats = {"top_action": 0, "wormhole": 0, "scariest": 0, "boldest": 0, "meditation": 0}
+    # Five item completion rates (updated keys)
+    five_stats = {"top_action": 0, "meditation": 0, "wormhole": 0, "distractions": 0, "plan_tomorrow": 0}
     for e in entries:
         five = e.get('five_item_statuses', {})
         for k in five_stats:

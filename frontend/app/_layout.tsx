@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../src/context/AuthContext';
 import { View, StyleSheet } from 'react-native';
+import { Colors } from '../src/constants/theme';
 
 export default function RootLayout() {
   return (
@@ -23,6 +24,6 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#050505',
+    backgroundColor: Colors.bg.default,
   },
 });
