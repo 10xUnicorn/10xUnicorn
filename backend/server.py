@@ -228,6 +228,44 @@ POINTS_CONFIG = {
     "unicorn_win_bonus": 50,
 }
 
+# ─── Member Profile Models ───
+
+INDUSTRIES = [
+    "technology", "saas", "fintech", "healthcare", "ecommerce", "media", 
+    "consulting", "real_estate", "education", "marketing", "manufacturing", "other"
+]
+
+SERVICES_OFFERED = [
+    "capital", "marketing", "social_media", "community_management", "operations",
+    "tech_development", "podcast_booking", "speaking", "sponsorships", "events",
+    "communities", "financial_services", "coaching", "design", "sales", "legal", "hr"
+]
+
+FINANCIAL_SERVICES = [
+    "accounting", "bookkeeping", "tax_planning", "financial_planning", "wealth_management",
+    "venture_capital", "private_equity", "angel_investment", "debt_financing",
+    "revenue_based_financing", "fractional_cfo", "ma_advisory", "fundraising_strategy"
+]
+
+class MemberProfileUpdate(BaseModel):
+    bio: Optional[str] = None
+    company_description: Optional[str] = None
+    website: Optional[str] = None
+    linkedin: Optional[str] = None
+    twitter: Optional[str] = None
+    instagram: Optional[str] = None
+    youtube: Optional[str] = None
+    tiktok: Optional[str] = None
+    # Strategic connection fields
+    good_connection_for: Optional[str] = None  # Who they are a good connection for
+    seeking_partnerships: Optional[str] = None  # Strategic partnerships they seek
+    target_relationships: Optional[str] = None  # Target wormhole relationships
+    industries: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
+    services_offered: Optional[List[str]] = None
+    needs: Optional[List[str]] = None  # What resources they need
+    financial_services_needed: Optional[List[str]] = None
+
 # ─── Win Logic ───
 # Updated Five Core Actions:
 # 1. top_action - Top 10x Action Item
@@ -1325,6 +1363,157 @@ async def award_daily_bonuses(date: str, user: dict = Depends(get_current_user))
         "total_bonus": total_bonus,
         "already_awarded": existing is not None if total_bonus > 0 else False
     }
+
+# ─── Member Profile & Directory ───
+
+@api_router.get("/member/profile")
+async def get_member_profile(user: dict = Depends(get_current_user)):
+    """Get current user's full member profile"""
+    profile = await db.profiles.find_one({"user_id": user['id']}, {"_id": 0})
+    goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
+    member_profile = await db.member_profiles.find_one({"user_id": user['id']}, {"_id": 0})
+    points = await db.user_points.find_one({"user_id": user['id']}, {"_id": 0})
+    
+    return {
+        "user_id": user['id'],
+        "display_name": profile.get('display_name', '') if profile else '',
+        "company": profile.get('company', '') if profile else '',
+        "title": profile.get('title', '') if profile else '',
+        "location": profile.get('location', '') if profile else '',
+        "timezone": profile.get('timezone_str', '') if profile else '',
+        "goal_title": goal.get('title', '') if goal else '',
+        "goal_description": goal.get('description', '') if goal else '',
+        "total_points": points.get('total_points', 0) if points else 0,
+        **(member_profile or {})
+    }
+
+@api_router.put("/member/profile")
+async def update_member_profile(input_data: MemberProfileUpdate, user: dict = Depends(get_current_user)):
+    """Update member's extended profile fields"""
+    updates = {k: v for k, v in input_data.dict().items() if v is not None}
+    
+    if updates:
+        updates['updated_at'] = datetime.now(timezone.utc).isoformat()
+        await db.member_profiles.update_one(
+            {"user_id": user['id']},
+            {"$set": updates, "$setOnInsert": {"user_id": user['id'], "created_at": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+    
+    return await get_member_profile(user)
+
+@api_router.get("/member/{user_id}")
+async def get_member_by_id(user_id: str):
+    """Get a specific member's public profile"""
+    profile = await db.profiles.find_one({"user_id": user_id}, {"_id": 0})
+    if not profile:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    goal = await db.goals.find_one({"user_id": user_id, "active": True}, {"_id": 0})
+    member_profile = await db.member_profiles.find_one({"user_id": user_id}, {"_id": 0})
+    points = await db.user_points.find_one({"user_id": user_id}, {"_id": 0})
+    
+    # Calculate signal streak
+    completions = await db.signal_completions.find(
+        {"user_id": user_id}, {"date": 1}
+    ).sort("date", -1).to_list(365)
+    dates_with_completions = set(c['date'] for c in completions)
+    
+    signal_streak = 0
+    check_date = datetime.now(timezone.utc).date()
+    while True:
+        date_str = check_date.strftime("%Y-%m-%d")
+        if date_str in dates_with_completions:
+            signal_streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+    
+    return {
+        "user_id": user_id,
+        "display_name": profile.get('display_name', ''),
+        "company": profile.get('company', ''),
+        "title": profile.get('title', ''),
+        "location": profile.get('location', ''),
+        "goal_title": goal.get('title', '') if goal else '',
+        "goal_description": goal.get('description', '') if goal else '',
+        "total_points": points.get('total_points', 0) if points else 0,
+        "weekly_points": points.get('weekly_points', 0) if points else 0,
+        "signal_streak": signal_streak,
+        **(member_profile or {})
+    }
+
+@api_router.get("/community/members")
+async def get_member_directory(
+    industry: Optional[str] = None,
+    location: Optional[str] = None,
+    service: Optional[str] = None,
+    need: Optional[str] = None,
+    search: Optional[str] = None,
+    limit: int = 50
+):
+    """Get searchable member directory"""
+    # Get all users with profiles
+    profiles = await db.profiles.find({}, {"_id": 0}).to_list(1000)
+    
+    members = []
+    for profile in profiles:
+        user_id = profile.get('user_id')
+        member_profile = await db.member_profiles.find_one({"user_id": user_id}, {"_id": 0})
+        goal = await db.goals.find_one({"user_id": user_id, "active": True}, {"_id": 0})
+        points = await db.user_points.find_one({"user_id": user_id}, {"_id": 0})
+        
+        mp = member_profile or {}
+        
+        # Apply filters
+        if industry and industry not in (mp.get('industries') or []):
+            continue
+        if service and service not in (mp.get('services_offered') or []):
+            continue
+        if need and need not in (mp.get('needs') or []):
+            continue
+        if location:
+            member_location = profile.get('location', '').lower()
+            if location.lower() not in member_location:
+                continue
+        if search:
+            search_lower = search.lower()
+            searchable = f"{profile.get('display_name', '')} {profile.get('company', '')} {mp.get('bio', '')} {goal.get('title', '') if goal else ''}".lower()
+            if search_lower not in searchable:
+                continue
+        
+        members.append({
+            "user_id": user_id,
+            "display_name": profile.get('display_name', ''),
+            "company": profile.get('company', ''),
+            "title": profile.get('title', ''),
+            "location": profile.get('location', ''),
+            "goal_title": goal.get('title', '') if goal else '',
+            "total_points": points.get('total_points', 0) if points else 0,
+            "bio": mp.get('bio', ''),
+            "industries": mp.get('industries', []),
+            "services_offered": mp.get('services_offered', []),
+            "needs": mp.get('needs', []),
+        })
+    
+    # Sort by points
+    members.sort(key=lambda x: x['total_points'], reverse=True)
+    return members[:limit]
+
+@api_router.get("/community/industries")
+async def get_industries():
+    """Get list of available industries"""
+    return INDUSTRIES
+
+@api_router.get("/community/services")
+async def get_services():
+    """Get list of available services"""
+    return SERVICES_OFFERED
+
+@api_router.get("/community/financial-services")
+async def get_financial_services():
+    """Get list of financial services options"""
+    return FINANCIAL_SERVICES
 
 # ─── Health Check ───
 
