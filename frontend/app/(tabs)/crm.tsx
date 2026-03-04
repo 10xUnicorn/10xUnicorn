@@ -47,8 +47,24 @@ const CONNECTION_LEVELS = [
 
 // Contact tags - matching screenshot exactly  
 const CONTACT_TAGS = [
-  'influencer', 'speaker', 'business_owner', 'access', 'mindset', 
-  'future_self', 'community_partner', 'motivation'
+  { key: 'influencer', label: 'Influencer', color: '#8B5CF6' },
+  { key: 'speaker', label: 'Speaker', color: '#F97316' },
+  { key: 'business_owner', label: 'Business Owner', color: '#10B981' },
+  { key: 'access', label: 'Access', color: '#3B82F6' },
+  { key: 'mindset', label: 'Mindset', color: '#EC4899' },
+  { key: 'future_self', label: 'Future Self', color: '#14B8A6' },
+  { key: 'community_partner', label: 'Community Partner', color: '#6366F1' },
+  { key: 'motivation', label: 'Motivation', color: '#F59E0B' },
+];
+
+// Engagement types with colors - matching screenshot
+const ENGAGEMENT_TYPES = [
+  { key: 'dms', label: 'DMs', color: '#3B82F6' },
+  { key: 'replies_to_comments', label: 'Replies to Comments', color: '#1E40AF' },
+  { key: 'shares_posts', label: 'Shares Posts', color: '#A855F7' },
+  { key: 'collaborates_on_posts', label: 'Collaborates on Posts', color: '#F97316' },
+  { key: 'tags_in_posts', label: 'Tags in Posts', color: '#10B981' },
+  { key: 'tags_in_comments', label: 'Tags in Comments', color: '#06B6D4' },
 ];
 
 // Platform options
@@ -60,6 +76,8 @@ const PLATFORM_OPTIONS = [
   { key: 'dm_instagram', label: 'IG DM' },
   { key: 'dm_linkedin', label: 'LinkedIn' },
   { key: 'video_call', label: 'Video Call' },
+  { key: 'voice_call', label: 'Voice Call' },
+  { key: 'meetings_app', label: 'Meetings App' },
 ];
 
 // Log action types
@@ -123,11 +141,12 @@ export default function CRMScreen() {
   const resetContactForm = () => {
     setContactForm({
       name: '', company: '', title: '', location: '', email: '', phone: '',
-      label: 'prospect', connection_level: 'new_connection', tags: [],
-      website: '', linkedin: '', instagram: '', twitter: '', 
+      label: 'prospect', connection_level: 'warm_local', tags: [],
+      website: '', linkedin: '', instagram: '', twitter: '', youtube: '', tiktok: '',
       activation_next_step: '', preferred_platform: '', power_leverage: '',
-      engagement_level: 'moderate', reciprocity_notes: '', notes: '',
+      engagement_level: 'moderate', engagement_types: [], reciprocity_notes: '', notes: '',
       set_meeting: false, tagging_in_posts: false, tagging_in_comments: false,
+      last_contact_date: '', engagement_strength: 5,
     });
     setShowAllFields(false);
   };
@@ -782,7 +801,7 @@ export default function CRMScreen() {
         </View>
       </Modal>
 
-      {/* Add/Edit Contact Modal */}
+      {/* Add/Edit Contact Modal - Dynamic based on label */}
       <Modal visible={showAddContact || !!showContactDetail} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
@@ -794,22 +813,25 @@ export default function CRMScreen() {
                 </TouchableOpacity>
               </View>
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                {/* Basic Info */}
                 <Text style={styles.inputLabel}>Name *</Text>
                 <TextInput style={styles.input} value={contactForm.name} onChangeText={t => setContactForm({...contactForm, name: t})} placeholder="Full name" placeholderTextColor={Colors.text.tertiary} />
 
                 <Text style={styles.inputLabel}>Label</Text>
-                <View style={styles.optionRow}>
-                  {CONTACT_LABELS.map(label => (
-                    <TouchableOpacity
-                      key={label.key}
-                      style={[styles.optionBtn, contactForm.label === label.key && { backgroundColor: label.color + '30', borderColor: label.color }]}
-                      onPress={() => setContactForm({...contactForm, label: label.key})}
-                    >
-                      <View style={[styles.dot, { backgroundColor: label.color }]} />
-                      <Text style={[styles.optionText, contactForm.label === label.key && { color: label.color }]}>{label.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                  <View style={styles.optionRow}>
+                    {CONTACT_LABELS.map(label => (
+                      <TouchableOpacity
+                        key={label.key}
+                        style={[styles.optionBtn, contactForm.label === label.key && { backgroundColor: label.color + '30', borderColor: label.color }]}
+                        onPress={() => setContactForm({...contactForm, label: label.key})}
+                      >
+                        <View style={[styles.dot, { backgroundColor: label.color }]} />
+                        <Text style={[styles.optionText, contactForm.label === label.key && { color: label.color }]}>{label.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </ScrollView>
 
                 <Text style={styles.inputLabel}>Company</Text>
                 <TextInput style={styles.input} value={contactForm.company} onChangeText={t => setContactForm({...contactForm, company: t})} placeholder="Company name" placeholderTextColor={Colors.text.tertiary} />
@@ -817,12 +839,169 @@ export default function CRMScreen() {
                 <Text style={styles.inputLabel}>Title</Text>
                 <TextInput style={styles.input} value={contactForm.title} onChangeText={t => setContactForm({...contactForm, title: t})} placeholder="Job title" placeholderTextColor={Colors.text.tertiary} />
 
-                <Text style={styles.inputLabel}>Email</Text>
-                <TextInput style={styles.input} value={contactForm.email} onChangeText={t => setContactForm({...contactForm, email: t})} placeholder="email@example.com" placeholderTextColor={Colors.text.tertiary} keyboardType="email-address" autoCapitalize="none" />
+                {/* Show expanded fields for wormhole contacts or when toggled */}
+                {(contactForm.label === 'wormhole' || showAllFields) && (
+                  <>
+                    {/* Connection Level */}
+                    <Text style={styles.inputLabel}>Connection Level</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.optionRow}>
+                        {CONNECTION_LEVELS.map(level => (
+                          <TouchableOpacity
+                            key={level.key}
+                            style={[styles.connectionBtn, contactForm.connection_level === level.key && { backgroundColor: level.color }]}
+                            onPress={() => setContactForm({...contactForm, connection_level: level.key})}
+                          >
+                            <Text style={[styles.connectionBtnText, contactForm.connection_level === level.key && { color: '#fff' }]}>{level.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
 
-                <Text style={styles.inputLabel}>Phone</Text>
-                <TextInput style={styles.input} value={contactForm.phone} onChangeText={t => setContactForm({...contactForm, phone: t})} placeholder="+1 (555) 000-0000" placeholderTextColor={Colors.text.tertiary} keyboardType="phone-pad" />
+                    {/* Tags */}
+                    <Text style={styles.inputLabel}>Tags</Text>
+                    <View style={styles.tagsWrap}>
+                      {CONTACT_TAGS.map(tag => (
+                        <TouchableOpacity
+                          key={tag.key}
+                          style={[styles.tagOption, contactForm.tags?.includes(tag.key) && { backgroundColor: tag.color + '30', borderColor: tag.color }]}
+                          onPress={() => {
+                            const tags = contactForm.tags || [];
+                            const newTags = tags.includes(tag.key) ? tags.filter((t: string) => t !== tag.key) : [...tags, tag.key];
+                            setContactForm({...contactForm, tags: newTags});
+                          }}
+                        >
+                          <Text style={[styles.tagOptionText, contactForm.tags?.includes(tag.key) && { color: tag.color }]}>{tag.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
 
+                    {/* Activation Next Step */}
+                    <Text style={styles.inputLabel}>Activation Next Step</Text>
+                    <TextInput style={styles.input} value={contactForm.activation_next_step} onChangeText={t => setContactForm({...contactForm, activation_next_step: t})} placeholder="e.g., Book coffee meeting, Send DM" placeholderTextColor={Colors.text.tertiary} />
+
+                    {/* Last Contact & Set Meeting */}
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Last Contact</Text>
+                        <TextInput style={styles.input} value={contactForm.last_contact_date} onChangeText={t => setContactForm({...contactForm, last_contact_date: t})} placeholder="MM/DD/YY" placeholderTextColor={Colors.text.tertiary} />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Set Meeting?</Text>
+                        <TouchableOpacity style={[styles.toggleBtnLarge, contactForm.set_meeting && styles.toggleBtnLargeActive]} onPress={() => setContactForm({...contactForm, set_meeting: !contactForm.set_meeting})}>
+                          <Ionicons name={contactForm.set_meeting ? "checkmark-circle" : "ellipse-outline"} size={20} color={contactForm.set_meeting ? Colors.status.success : Colors.text.tertiary} />
+                          <Text style={[styles.toggleBtnLargeText, contactForm.set_meeting && { color: Colors.status.success }]}>{contactForm.set_meeting ? 'Yes' : 'No'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    {/* Preferred Platform */}
+                    <Text style={styles.inputLabel}>Preferred Platform</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.optionRow}>
+                        {PLATFORM_OPTIONS.map(p => (
+                          <TouchableOpacity
+                            key={p.key}
+                            style={[styles.optionBtn, contactForm.preferred_platform === p.key && styles.optionBtnActive]}
+                            onPress={() => setContactForm({...contactForm, preferred_platform: p.key})}
+                          >
+                            <Text style={[styles.optionText, contactForm.preferred_platform === p.key && styles.optionTextActive]}>{p.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+
+                    {/* Location */}
+                    <Text style={styles.inputLabel}>Location</Text>
+                    <TextInput style={styles.input} value={contactForm.location} onChangeText={t => setContactForm({...contactForm, location: t})} placeholder="City, State" placeholderTextColor={Colors.text.tertiary} />
+
+                    {/* Power Leverage */}
+                    <Text style={styles.inputLabel}>Power Leverage</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="e.g., 1M+ reach, speaker credibility, strong network" placeholderTextColor={Colors.text.tertiary} multiline />
+                  </>
+                )}
+
+                {/* Contact Info - Always show */}
+                <Text style={styles.sectionTitle}>Contact Info</Text>
+                <View style={styles.fieldRow}>
+                  <View style={styles.fieldHalf}>
+                    <Text style={styles.inputLabel}>Email</Text>
+                    <TextInput style={styles.input} value={contactForm.email} onChangeText={t => setContactForm({...contactForm, email: t})} placeholder="email@example.com" placeholderTextColor={Colors.text.tertiary} keyboardType="email-address" autoCapitalize="none" />
+                  </View>
+                  <View style={styles.fieldHalf}>
+                    <Text style={styles.inputLabel}>Phone</Text>
+                    <TextInput style={styles.input} value={contactForm.phone} onChangeText={t => setContactForm({...contactForm, phone: t})} placeholder="+1 (555) 000-0000" placeholderTextColor={Colors.text.tertiary} keyboardType="phone-pad" />
+                  </View>
+                </View>
+
+                {/* Social Links - Show more for wormhole */}
+                {(contactForm.label === 'wormhole' || showAllFields) && (
+                  <>
+                    <Text style={styles.sectionTitle}>Social Media</Text>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>LinkedIn</Text>
+                        <TextInput style={styles.input} value={contactForm.linkedin} onChangeText={t => setContactForm({...contactForm, linkedin: t})} placeholder="linkedin.com/in/..." placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Instagram</Text>
+                        <TextInput style={styles.input} value={contactForm.instagram} onChangeText={t => setContactForm({...contactForm, instagram: t})} placeholder="@handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                    </View>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Twitter</Text>
+                        <TextInput style={styles.input} value={contactForm.twitter} onChangeText={t => setContactForm({...contactForm, twitter: t})} placeholder="@handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Website</Text>
+                        <TextInput style={styles.input} value={contactForm.website} onChangeText={t => setContactForm({...contactForm, website: t})} placeholder="example.com" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                    </View>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>YouTube</Text>
+                        <TextInput style={styles.input} value={contactForm.youtube} onChangeText={t => setContactForm({...contactForm, youtube: t})} placeholder="youtube.com/..." placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>TikTok</Text>
+                        <TextInput style={styles.input} value={contactForm.tiktok} onChangeText={t => setContactForm({...contactForm, tiktok: t})} placeholder="@handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                    </View>
+
+                    {/* Engagement Types */}
+                    <Text style={styles.sectionTitle}>Engagement Types</Text>
+                    <View style={styles.engagementTypesWrap}>
+                      {ENGAGEMENT_TYPES.map(eng => (
+                        <TouchableOpacity
+                          key={eng.key}
+                          style={[styles.engagementTypeBtn, contactForm.engagement_types?.includes(eng.key) && { backgroundColor: eng.color }]}
+                          onPress={() => {
+                            const types = contactForm.engagement_types || [];
+                            const newTypes = types.includes(eng.key) ? types.filter((t: string) => t !== eng.key) : [...types, eng.key];
+                            setContactForm({...contactForm, engagement_types: newTypes});
+                          }}
+                        >
+                          <Text style={[styles.engagementTypeBtnText, contactForm.engagement_types?.includes(eng.key) && { color: '#fff' }]}>{eng.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* Reciprocity Notes */}
+                    <Text style={styles.inputLabel}>Reciprocity Notes</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.reciprocity_notes} onChangeText={t => setContactForm({...contactForm, reciprocity_notes: t})} placeholder="What value exchange exists?" placeholderTextColor={Colors.text.tertiary} multiline />
+                  </>
+                )}
+
+                {/* Toggle to show all fields */}
+                {contactForm.label !== 'wormhole' && (
+                  <TouchableOpacity style={styles.showMoreBtn} onPress={() => setShowAllFields(!showAllFields)}>
+                    <Ionicons name={showAllFields ? "chevron-up" : "chevron-down"} size={18} color={Colors.brand.accent} />
+                    <Text style={styles.showMoreBtnText}>{showAllFields ? 'Show Less' : 'Show Advanced Fields'}</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Notes */}
                 <Text style={styles.inputLabel}>Notes</Text>
                 <TextInput style={[styles.input, { minHeight: 80 }]} value={contactForm.notes} onChangeText={t => setContactForm({...contactForm, notes: t})} placeholder="Notes..." placeholderTextColor={Colors.text.tertiary} multiline />
 
@@ -900,16 +1079,16 @@ export default function CRMScreen() {
                     <View style={styles.tagsWrap}>
                       {CONTACT_TAGS.map(tag => (
                         <TouchableOpacity
-                          key={tag}
-                          style={[styles.tagOption, contactForm.tags?.includes(tag) && styles.tagOptionActive]}
+                          key={tag.key}
+                          style={[styles.tagOption, contactForm.tags?.includes(tag.key) && { backgroundColor: tag.color + '30', borderColor: tag.color }]}
                           onPress={() => {
                             const tags = contactForm.tags || [];
-                            const newTags = tags.includes(tag) ? tags.filter((t: string) => t !== tag) : [...tags, tag];
+                            const newTags = tags.includes(tag.key) ? tags.filter((t: string) => t !== tag.key) : [...tags, tag.key];
                             setContactForm({...contactForm, tags: newTags});
                           }}
                         >
-                          <Text style={[styles.tagOptionText, contactForm.tags?.includes(tag) && styles.tagOptionTextActive]}>
-                            {formatTagLabel(tag)}
+                          <Text style={[styles.tagOptionText, contactForm.tags?.includes(tag.key) && { color: tag.color }]}>
+                            {tag.label}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -1385,4 +1564,26 @@ const styles = StyleSheet.create({
   ratingBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
   ratingText: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
   ratingTextActive: { color: Colors.text.primary },
+  
+  // New styles for dynamic contact form
+  toggleBtnLarge: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14,
+    borderWidth: 1, borderColor: Colors.border.default,
+  },
+  toggleBtnLargeActive: { backgroundColor: Colors.status.success + '20', borderColor: Colors.status.success },
+  toggleBtnLargeText: { color: Colors.text.secondary, fontSize: FontSize.base },
+  
+  engagementTypesWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  engagementTypeBtn: {
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: Radius.md,
+    backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default,
+  },
+  engagementTypeBtnText: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
+  
+  showMoreBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 12, marginTop: 16,
+  },
+  showMoreBtnText: { color: Colors.brand.accent, fontSize: FontSize.sm, fontWeight: '600' },
 });
