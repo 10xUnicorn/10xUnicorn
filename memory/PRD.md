@@ -9,6 +9,7 @@
 - **AI:** OpenAI GPT-5.2 via Emergent LLM Key
 - **Push Notifications:** Expo Push Service
 - **Cloud Storage:** Emergent Object Storage
+- **Authentication:** JWT + Google OAuth (Emergent Auth)
 
 ## Navigation (Tab Order)
 - **Daily** (⚡ flash) - Daily tracking, signals
@@ -19,20 +20,41 @@
 
 ## Implemented Features (March 4, 2026)
 
+### Authentication
+- [x] **Email/Password Login** - Standard JWT auth
+- [x] **Google Sign-In** - Emergent-managed OAuth flow
+- [x] **Password Reset** - Email-based reset with token
+- [x] **Forgot Password Screen** - Step-by-step reset flow
+
 ### Today Screen
 - [x] **Determination Slider** - Always visible with motivational quote
   - Fluid gradient (orange→red→purple), fire emoji thumb
+  - **Updated Emoji Scale:**
+    - 1=😴 (sleeping), 2=🐢 (turtle), 3=🚶 (walking), 4=🚲 (bicycle)
+    - 5=😐 (neutral), 6=💪 (strong arm), 7=🐎 (horse)
+    - 8=🔥 (fire), 9=💎 (diamond), 10=🦄 (unicorn)
   - Random motivational quote displayed always
   - No collapse behavior
 - [x] **"Who are you being today? I am ____"** intention format
-- [x] **Glowing Complete Button** for Top 10x Action
+- [x] **Top 10x Action with Edit Modal**
   - Shows 🔥 fire when completed
-  - Edit button to signal details
+  - **Pencil icon opens Edit Signal modal**
+  - Edit name, description, notes, impact rating
+  - **Mark as incomplete button** to uncomplete
 - [x] **Compound Habit Counter**
   - Up/down caret buttons for quick +1/-1
   - Tap count to open full counter modal
   - Progress bar toward target
 - [x] 10x Unicorn Checklist (5 items)
+
+### Dashboard
+- [x] **10x Goal Card** with Edit button
+- [x] **Edit Goal Modal** - KeyboardAvoidingView enabled
+  - Edit title, description, deadline, target number
+- [x] Stats boxes: Current/Best Streak, Unicorn Days, Priority Wins
+- [x] Last 7 Days performance chart
+- [x] Determination Trend visualization
+- [x] Activity Heatmap
 
 ### Signals System
 - [x] **Signal Types:**
@@ -62,6 +84,14 @@
 
 ## API Endpoints
 
+### Authentication
+- POST /api/auth/register
+- POST /api/auth/login
+- POST /api/auth/google (Emergent OAuth)
+- POST /api/auth/request-password-reset
+- POST /api/auth/reset-password
+- GET /api/auth/me
+
 ### Signals
 - POST /api/signals (includes signal_type, notes)
 - GET/PUT/DELETE /api/signals/{id}
@@ -74,10 +104,18 @@
 ### Daily Entry
 - GET/PUT /api/daily-entry/{date} (compound_count)
 
+### Goals
+- GET/PUT /api/goals/{id}
+
 ## Testing Status
-- Backend: 95%+ passing
-- Frontend: 100% passing
-- Latest: /app/test_reports/iteration_8.json
+- Backend: 100% passing (16/16)
+- Frontend: 100% passing (24/24)
+- Latest: /app/test_reports/iteration_9.json
+
+## Upcoming Tasks
+- [ ] Daily Goal Progress check-in prompt
+- [ ] Rich Text Editor for Signal notes
+- [ ] Profile Ring redesign
 
 ## Browser Cache Note
 **If changes don't appear, hard refresh:**
