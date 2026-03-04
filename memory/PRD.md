@@ -69,7 +69,18 @@
 - [x] **Tab order: Signals, Contacts, Deals**
 - [x] **New Signal button** shows signal type picker
 - [x] Contact labels and connection levels
-- [x] Wormhole-specific fields for wormhole contacts
+- [x] **Dynamic Contact Form** - Fields change based on label type
+- [x] **Wormhole Contact Fields (when "Wormhole" label selected):**
+  - Connection Level selector (Active/Professional, Warm/Local, Building, Mid-Aspirational, Close/Personal)
+  - Tags with colors (Influencer, Speaker, Business Owner, Access, Mindset, Future Self, Community Partner, Motivation)
+  - Activation Next Step
+  - Last Contact Date & Set Meeting toggle
+  - Preferred Platform (Text, Phone, Email, In-Person, IG DM, LinkedIn, Video Call)
+  - Location & Power Leverage
+  - Social Media (LinkedIn, Instagram, Twitter, Website, YouTube, TikTok)
+  - Engagement Types buttons (DMs, Replies to Comments, Shares Posts, Collaborates on Posts)
+  - Reciprocity Notes
+- [x] **"Show Advanced Fields" toggle** for non-wormhole contacts
 
 ### Profile & Social
 - [x] **Profile emoji picker** (16 options)
@@ -108,9 +119,9 @@
 - GET/PUT /api/goals/{id}
 
 ## Testing Status
-- Backend: 100% passing (16/16)
-- Frontend: 100% passing (24/24)
-- Latest: /app/test_reports/iteration_9.json
+- Backend: 87% passing
+- Frontend: 100% passing (44/44 tests)
+- Latest: /app/test_reports/iteration_10.json
 
 ## Upcoming Tasks
 - [ ] Daily Goal Progress check-in prompt
