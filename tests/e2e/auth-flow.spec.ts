@@ -44,7 +44,7 @@ test.describe('Core Authentication Flow', () => {
     // The expected behavior is to navigate to the Today page after successful login
     try {
       // Wait up to 10 seconds for the Today page to appear
-      await expect(page.getByText('Determination Level').or(page.getByText('TODAY'))).toBeVisible({ timeout: 10000 });
+      await expect(page.getByTestId('determination-slider')).toBeVisible({ timeout: 10000 });
       await page.screenshot({ path: 'test-results/after-login-success.jpeg', quality: 20 });
     } catch (e) {
       // If navigation didn't happen, capture what we see

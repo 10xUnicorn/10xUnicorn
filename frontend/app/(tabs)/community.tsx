@@ -102,13 +102,22 @@ export default function CommunityScreen() {
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Community</Text>
-        <TouchableOpacity
-          testID="profile-icon-btn"
-          style={styles.profileIconBtn}
-          onPress={() => router.push('/(tabs)/profile')}
-        >
-          <Ionicons name="person-circle-outline" size={32} color={Colors.brand.primary} />
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity
+            testID="messages-btn"
+            style={styles.headerBtn}
+            onPress={() => router.push('/(main)/messages')}
+          >
+            <Ionicons name="chatbubbles-outline" size={24} color={Colors.brand.primary} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            testID="profile-icon-btn"
+            style={styles.profileIconBtn}
+            onPress={() => router.push('/(tabs)/profile')}
+          >
+            <Ionicons name="person-circle-outline" size={32} color={Colors.brand.primary} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Tab Bar */}
@@ -461,6 +470,8 @@ const styles = StyleSheet.create({
   },
   pageTitle: { fontSize: FontSize.xxxl, fontWeight: '900', color: Colors.text.primary, letterSpacing: -0.5 },
   profileIconBtn: { padding: 4 },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  headerBtn: { padding: 8 },
   
   // Tab Bar
   tabBar: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 12, gap: 8 },

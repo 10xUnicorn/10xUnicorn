@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, ActivityIndicator, Alert, Modal, KeyboardAvoidingView, Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../src/context/AuthContext';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
@@ -28,8 +30,11 @@ export default function ProfileScreen() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
   const [saving, setSaving] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [notificationSettings, setNotificationSettings] = useState<any>({});
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  useEffect(() => { loadProfile(); }, []);
+  useEffect(() => { loadProfile(); loadNotificationSettings(); }, []);
 
   const loadProfile = async () => {
     try {
@@ -45,6 +50,55 @@ export default function ProfileScreen() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadNotificationSettings = async () => {
+    try {
+      const settings = await api.get('/notifications/settings');
+      setNotificationSettings(settings);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const saveNotificationSettings = async () => {
+    try {
+      await api.put('/notifications/settings', notificationSettings);
+      setShowNotificationSettings(false);
+      Alert.alert('Success', 'Notification settings saved');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your photos');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets[0].base64) {
+      setUploadingPhoto(true);
+      try {
+        const base64Uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+        await api.put('/profiles/photo', { base64: base64Uri });
+        await loadProfile();
+        Alert.alert('Success', 'Profile photo updated');
+      } catch (e: any) {
+        Alert.alert('Error', e.message);
+      } finally {
+        setUploadingPhoto(false);
+      }
     }
   };
 
@@ -66,6 +120,7 @@ export default function ProfileScreen() {
       good_connection_for: memberProfile?.good_connection_for || '',
       warm_connection: memberProfile?.warm_connection || '',
       golden_connection: memberProfile?.golden_connection || '',
+      show_status_ring: memberProfile?.show_status_ring ?? true,
     });
     setShowEditProfile(true);
   };
@@ -138,19 +193,40 @@ export default function ProfileScreen() {
 
         {/* Header Card */}
         <LinearGradient colors={[Colors.brand.primary + '20', 'transparent']} style={styles.headerCard}>
-          <View style={styles.bigAvatar}>
-            <Text style={styles.bigAvatarText}>
-              {(profile?.display_name || user?.email || '?')[0]?.toUpperCase()}
-            </Text>
-          </View>
+          <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={uploadingPhoto}>
+            {memberProfile?.profile_photo_url ? (
+              <Image source={{ uri: memberProfile.profile_photo_url }} style={styles.profilePhoto} />
+            ) : (
+              <View style={styles.bigAvatar}>
+                <Text style={styles.bigAvatarText}>
+                  {(profile?.display_name || user?.email || '?')[0]?.toUpperCase()}
+                </Text>
+              </View>
+            )}
+            {uploadingPhoto ? (
+              <View style={styles.photoOverlay}>
+                <ActivityIndicator color={Colors.text.primary} />
+              </View>
+            ) : (
+              <View style={styles.cameraIcon}>
+                <Ionicons name="camera" size={16} color={Colors.text.primary} />
+              </View>
+            )}
+          </TouchableOpacity>
           <Text style={styles.displayName}>{profile?.display_name || 'Set your name'}</Text>
           {memberProfile?.company_name && <Text style={styles.companyName}>{memberProfile.company_name}</Text>}
           <Text style={styles.email}>{user?.email}</Text>
           
-          <TouchableOpacity testID="edit-profile-btn" style={styles.editProfileBtn} onPress={openEditProfile}>
-            <Ionicons name="create-outline" size={16} color={Colors.text.primary} />
-            <Text style={styles.editProfileText}>Edit Profile</Text>
-          </TouchableOpacity>
+          <View style={styles.profileActions}>
+            <TouchableOpacity testID="edit-profile-btn" style={styles.editProfileBtn} onPress={openEditProfile}>
+              <Ionicons name="create-outline" size={16} color={Colors.text.primary} />
+              <Text style={styles.editProfileText}>Edit Profile</Text>
+            </TouchableOpacity>
+            <TouchableOpacity testID="notification-settings-btn" style={styles.notificationBtn} onPress={() => setShowNotificationSettings(true)}>
+              <Ionicons name="notifications-outline" size={16} color={Colors.text.primary} />
+              <Text style={styles.editProfileText}>Notifications</Text>
+            </TouchableOpacity>
+          </View>
         </LinearGradient>
 
         {/* Quick Info */}
@@ -337,6 +413,94 @@ export default function ProfileScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* Notification Settings Modal */}
+      <Modal visible={showNotificationSettings} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Notifications</Text>
+              <TouchableOpacity onPress={() => setShowNotificationSettings(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            
+            <Text style={styles.formSection}>Daily Check-in</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Daily Check-in Reminder</Text>
+                <Text style={styles.settingDesc}>Get reminded to complete your daily check-in</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.toggle, notificationSettings.daily_checkin_enabled && styles.toggleOn]} 
+                onPress={() => setNotificationSettings({...notificationSettings, daily_checkin_enabled: !notificationSettings.daily_checkin_enabled})}
+              >
+                <View style={[styles.toggleKnob, notificationSettings.daily_checkin_enabled && styles.toggleKnobOn]} />
+              </TouchableOpacity>
+            </View>
+
+            {notificationSettings.daily_checkin_enabled && (
+              <View style={styles.timeRow}>
+                <Text style={styles.timeLabel}>Reminder Time</Text>
+                <TextInput
+                  style={styles.timeInput}
+                  value={notificationSettings.daily_checkin_time || '09:00'}
+                  onChangeText={t => setNotificationSettings({...notificationSettings, daily_checkin_time: t})}
+                  placeholder="09:00"
+                  placeholderTextColor={Colors.text.tertiary}
+                />
+              </View>
+            )}
+
+            <Text style={styles.formSection}>Deal Reminders</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Deal Close Date Reminders</Text>
+                <Text style={styles.settingDesc}>Get smart notifications about upcoming deal deadlines</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.toggle, notificationSettings.deal_reminders_enabled && styles.toggleOn]} 
+                onPress={() => setNotificationSettings({...notificationSettings, deal_reminders_enabled: !notificationSettings.deal_reminders_enabled})}
+              >
+                <View style={[styles.toggleKnob, notificationSettings.deal_reminders_enabled && styles.toggleKnobOn]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.formSection}>Community</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Community Notifications</Text>
+                <Text style={styles.settingDesc}>Get notified about community activity</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.toggle, notificationSettings.community_notifications_enabled && styles.toggleOn]} 
+                onPress={() => setNotificationSettings({...notificationSettings, community_notifications_enabled: !notificationSettings.community_notifications_enabled})}
+              >
+                <View style={[styles.toggleKnob, notificationSettings.community_notifications_enabled && styles.toggleKnobOn]} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Message Notifications</Text>
+                <Text style={styles.settingDesc}>Get notified about new messages</Text>
+              </View>
+              <TouchableOpacity 
+                style={[styles.toggle, notificationSettings.message_notifications_enabled && styles.toggleOn]} 
+                onPress={() => setNotificationSettings({...notificationSettings, message_notifications_enabled: !notificationSettings.message_notifications_enabled})}
+              >
+                <View style={[styles.toggleKnob, notificationSettings.message_notifications_enabled && styles.toggleKnobOn]} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.saveBtn} onPress={saveNotificationSettings}>
+              <Text style={styles.saveBtnText}>Save Settings</Text>
+            </TouchableOpacity>
+
+            <View style={{ height: 40 }} />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -349,12 +513,18 @@ const styles = StyleSheet.create({
   
   // Header Card
   headerCard: { borderRadius: Radius.lg, padding: 24, alignItems: 'center', marginBottom: 20 },
-  bigAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
+  avatarContainer: { position: 'relative', marginBottom: 12 },
+  profilePhoto: { width: 80, height: 80, borderRadius: 40 },
+  bigAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center' },
   bigAvatarText: { color: Colors.text.primary, fontSize: 32, fontWeight: '800' },
+  photoOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 40, justifyContent: 'center', alignItems: 'center' },
+  cameraIcon: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.brand.secondary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.bg.default },
   displayName: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '700' },
   companyName: { color: Colors.text.secondary, fontSize: FontSize.base, marginTop: 4 },
   email: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4 },
-  editProfileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 16, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.brand.primary, borderRadius: Radius.md },
+  profileActions: { flexDirection: 'row', gap: 8, marginTop: 16 },
+  editProfileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.brand.primary, borderRadius: Radius.md },
+  notificationBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.bg.card, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border.default },
   editProfileText: { color: Colors.text.primary, fontSize: FontSize.sm, fontWeight: '600' },
   
   // Cards
@@ -387,7 +557,7 @@ const styles = StyleSheet.create({
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
   modalWrap: { maxHeight: '90%' },
-  modal: { backgroundColor: Colors.bg.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: 24, maxHeight: '100%' },
+  modal: { backgroundColor: Colors.bg.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: 24, maxHeight: '90%' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
   
@@ -403,4 +573,17 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16, alignItems: 'center', marginTop: 24 },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
+
+  // Notification Settings
+  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
+  settingInfo: { flex: 1, marginRight: 16 },
+  settingLabel: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
+  settingDesc: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2 },
+  toggle: { width: 50, height: 30, borderRadius: 15, backgroundColor: Colors.bg.input, padding: 3, borderWidth: 1, borderColor: Colors.border.default },
+  toggleOn: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.text.tertiary },
+  toggleKnobOn: { backgroundColor: Colors.text.primary, transform: [{ translateX: 20 }] },
+  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+  timeLabel: { color: Colors.text.secondary, fontSize: FontSize.sm },
+  timeInput: { backgroundColor: Colors.bg.input, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 8, color: Colors.text.primary, fontSize: FontSize.base, width: 80, textAlign: 'center' },
 });

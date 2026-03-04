@@ -118,6 +118,12 @@ class WormholeContactInput(BaseModel):
     # Contact Label - required classification
     label: str = "prospect"  # prospect, referral_partner, strategic_partner, client, wormhole, resource
     
+    # Connection Level (colored pill in UI)
+    connection_level: str = "warm_local"  # active_professional, building, warm_local, warm_intl, close_personal, mid_aspirational, new_connection
+    
+    # Tags (multi-select)
+    tags: Optional[List[str]] = []  # business_owner, influencer, speaker, access, mindset, future_self, community_partner, motivation, thought_leader, investor, mentor, connector
+    
     # Contact Info
     website: Optional[str] = ""
     email: Optional[str] = ""
@@ -131,21 +137,66 @@ class WormholeContactInput(BaseModel):
     tiktok: Optional[str] = ""
     other_social: Optional[str] = ""
     
-    # Leverage Potential
-    leverage_categories: Optional[List[str]] = []
-    leverage_description: Optional[str] = ""
+    # Workflow & Tracking
+    activation_next_step: Optional[str] = ""
+    last_contact_date: Optional[str] = None  # MM/DD/YY
+    set_meeting: Optional[bool] = False
+    preferred_platform: Optional[str] = ""  # text, phone, email, in_person, dm_instagram, dm_linkedin, video_call
+    
+    # Power Leverage & Business
+    power_leverage: Optional[str] = ""  # Description of their influence/reach
+    leverage_categories: Optional[List[str]] = []  # capital, marketing, network, expertise, audience, speaking, partnerships
+    leverage_description: Optional[str] = ""  # Detailed leverage description
     
     # Best Contact Method
-    best_contact_method: Optional[str] = ""
+    best_contact_method: Optional[str] = ""  # Preferred contact method
     
-    # Relationship Intelligence
-    connection_level: Optional[str] = "warm"
-    tags: Optional[List[str]] = []
-    engagement_strength: Optional[int] = 5
+    # Engagement Tracking
+    engagement_level: Optional[str] = "moderate"  # none, low, moderate, high, very_high
+    engagement_strength: Optional[int] = 5  # 1-10 scale
+    engagement_types: Optional[List[str]] = []  # dms, replies_to_comments, shares_posts, collaborates_on_posts, tags_in_posts, tags_in_comments
+    tagging_in_posts: Optional[bool] = False
+    tagging_in_comments: Optional[bool] = False
     
-    # Next Steps
-    activation_next_step: Optional[str] = ""
+    # Relationship Notes
+    reciprocity_notes: Optional[str] = ""  # What value exchange exists
     notes: Optional[str] = ""
+
+# Connection level options with colors for frontend
+CONNECTION_LEVELS = [
+    {"key": "new_connection", "label": "New Connection", "color": "#6B7280"},
+    {"key": "building", "label": "Building", "color": "#F59E0B"},
+    {"key": "warm_local", "label": "Warm / Local", "color": "#10B981"},
+    {"key": "warm_intl", "label": "Warm / International", "color": "#3B82F6"},
+    {"key": "active_professional", "label": "Active / Professional", "color": "#8B5CF6"},
+    {"key": "close_personal", "label": "Close / Personal", "color": "#EC4899"},
+    {"key": "mid_aspirational", "label": "Mid-Aspirational", "color": "#F97316"},
+]
+
+# Contact tags
+CONTACT_TAGS = [
+    "business_owner", "influencer", "speaker", "access", "mindset", 
+    "future_self", "community_partner", "motivation", "thought_leader", 
+    "investor", "mentor", "connector", "podcast_host", "author"
+]
+
+# Platform options
+PLATFORM_OPTIONS = [
+    "text", "phone", "email", "in_person", "dm_instagram", "dm_linkedin", 
+    "dm_twitter", "video_call", "voice_call", "meetings_app"
+]
+
+# Engagement types
+ENGAGEMENT_TYPES = [
+    "dms", "replies_to_comments", "shares_posts", "collaborates_on_posts",
+    "tags_in_posts", "tags_in_comments", "mentions_in_stories"
+]
+
+# Leverage categories
+LEVERAGE_CATEGORIES = [
+    "capital", "marketing", "network", "expertise", "audience", 
+    "speaking", "partnerships", "media", "technology", "operations"
+]
 
 
 class WormholeContactUpdate(BaseModel):
@@ -154,6 +205,8 @@ class WormholeContactUpdate(BaseModel):
     title: Optional[str] = None
     location: Optional[str] = None
     label: Optional[str] = None  # Contact label
+    connection_level: Optional[str] = None
+    tags: Optional[List[str]] = None
     website: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -163,14 +216,45 @@ class WormholeContactUpdate(BaseModel):
     youtube: Optional[str] = None
     tiktok: Optional[str] = None
     other_social: Optional[str] = None
-    leverage_categories: Optional[List[str]] = None
-    leverage_description: Optional[str] = None
-    best_contact_method: Optional[str] = None
-    connection_level: Optional[str] = None
-    tags: Optional[List[str]] = None
-    engagement_strength: Optional[int] = None
     activation_next_step: Optional[str] = None
+    last_contact_date: Optional[str] = None
+    set_meeting: Optional[bool] = None
+    preferred_platform: Optional[str] = None
+    power_leverage: Optional[str] = None
+    leverage_categories: Optional[List[str]] = None
+    engagement_level: Optional[str] = None
+    engagement_types: Optional[List[str]] = None
+    tagging_in_posts: Optional[bool] = None
+    tagging_in_comments: Optional[bool] = None
+    reciprocity_notes: Optional[str] = None
     notes: Optional[str] = None
+
+class WormholeLogInput(BaseModel):
+    contact_id: str
+    action_type: str  # call, meeting, dm, email, collaboration, coffee_chat, intro_made, follow_up, tagged_in_post, scheduled_meeting
+    notes: str
+    date: Optional[str] = None  # MM/DD/YY
+
+class MessageInput(BaseModel):
+    content: str
+    recipient_id: Optional[str] = None  # For direct messages
+    group_id: Optional[str] = None  # For group messages
+
+class GroupChatInput(BaseModel):
+    name: str
+    description: Optional[str] = ""
+    member_ids: List[str]
+
+class NotificationSettingsInput(BaseModel):
+    daily_checkin_enabled: Optional[bool] = True
+    daily_checkin_time: Optional[str] = "09:00"  # HH:MM format
+    deal_reminders_enabled: Optional[bool] = True
+    community_notifications_enabled: Optional[bool] = True
+    message_notifications_enabled: Optional[bool] = True
+
+class PushTokenInput(BaseModel):
+    token: str
+    device_type: Optional[str] = "unknown"  # ios, android, web
 
 class InteractionInput(BaseModel):
     contact_id: str
@@ -871,6 +955,128 @@ async def list_contacts(label: Optional[str] = None, user: dict = Depends(get_cu
 async def get_contact_labels():
     """Get available contact labels"""
     return CONTACT_LABELS
+
+@api_router.get("/wormhole-contacts/options")
+async def get_contact_options():
+    """Get all available options for contact fields"""
+    return {
+        "labels": CONTACT_LABELS,
+        "connection_levels": CONNECTION_LEVELS,
+        "tags": CONTACT_TAGS,
+        "platforms": PLATFORM_OPTIONS,
+        "engagement_types": ENGAGEMENT_TYPES,
+        "leverage_categories": LEVERAGE_CATEGORIES
+    }
+
+# ─── Wormhole Logs ───
+
+@api_router.post("/wormhole-contacts/{contact_id}/logs")
+async def add_wormhole_log(contact_id: str, input_data: WormholeLogInput, user: dict = Depends(get_current_user)):
+    """Add a log entry to a wormhole contact"""
+    contact = await db.wormhole_contacts.find_one(
+        {"id": contact_id, "user_id": user['id']}
+    )
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    log_entry = {
+        "id": str(uuid.uuid4()),
+        "contact_id": contact_id,
+        "user_id": user['id'],
+        "action_type": input_data.action_type,
+        "notes": input_data.notes,
+        "date": input_data.date or datetime.now(timezone.utc).strftime("%m/%d/%y"),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.wormhole_logs.insert_one(log_entry)
+    
+    # Update last_contact_date on the contact
+    await db.wormhole_contacts.update_one(
+        {"id": contact_id, "user_id": user['id']},
+        {"$set": {"last_contact_date": log_entry['date']}}
+    )
+    
+    # Update engagement score
+    await db.wormhole_contacts.update_one(
+        {"id": contact_id, "user_id": user['id']},
+        {"$inc": {"engagement_score": 1}}
+    )
+    
+    return {k: v for k, v in log_entry.items() if k != '_id'}
+
+@api_router.get("/wormhole-contacts/{contact_id}/logs")
+async def get_wormhole_logs(contact_id: str, user: dict = Depends(get_current_user)):
+    """Get all logs for a wormhole contact"""
+    contact = await db.wormhole_contacts.find_one(
+        {"id": contact_id, "user_id": user['id']}
+    )
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    logs = await db.wormhole_logs.find(
+        {"contact_id": contact_id, "user_id": user['id']},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    
+    # Get days where this contact was selected in daily checklist
+    daily_selections = await db.daily_entries.find(
+        {"user_id": user['id'], "wormhole_contact_id": contact_id},
+        {"_id": 0, "date": 1, "wormhole_notes": 1}
+    ).to_list(100)
+    
+    return {
+        "logs": logs,
+        "daily_selections": daily_selections,
+        "total_logs": len(logs),
+        "total_selections": len(daily_selections)
+    }
+
+@api_router.get("/wormhole-contacts/{contact_id}/timeline")
+async def get_wormhole_timeline(contact_id: str, user: dict = Depends(get_current_user)):
+    """Get complete timeline for a wormhole contact (logs + daily selections combined)"""
+    contact = await db.wormhole_contacts.find_one(
+        {"id": contact_id, "user_id": user['id']}
+    )
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    logs = await db.wormhole_logs.find(
+        {"contact_id": contact_id, "user_id": user['id']},
+        {"_id": 0}
+    ).to_list(200)
+    
+    daily_selections = await db.daily_entries.find(
+        {"user_id": user['id'], "wormhole_contact_id": contact_id},
+        {"_id": 0, "date": 1, "wormhole_notes": 1}
+    ).to_list(100)
+    
+    # Combine into timeline
+    timeline = []
+    for log in logs:
+        timeline.append({
+            "type": "log",
+            "date": log.get('date'),
+            "created_at": log.get('created_at'),
+            "action_type": log.get('action_type'),
+            "notes": log.get('notes'),
+            "id": log.get('id')
+        })
+    
+    for selection in daily_selections:
+        timeline.append({
+            "type": "daily_selection",
+            "date": selection.get('date'),
+            "created_at": selection.get('date'),
+            "notes": selection.get('wormhole_notes', '')
+        })
+    
+    # Sort by date descending
+    timeline.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    
+    return {
+        "contact": {k: v for k, v in contact.items() if k != '_id'},
+        "timeline": timeline
+    }
 
 @api_router.get("/wormhole-contacts/{contact_id}")
 async def get_contact(contact_id: str, user: dict = Depends(get_current_user)):
@@ -2287,6 +2493,296 @@ async def find_providers_for_deal(deal_id: str, user: dict = Depends(get_current
     
     matches.sort(key=lambda x: (x['match_score'], x['total_points']), reverse=True)
     return matches[:20]
+
+# ─── Direct & Group Messaging ───
+
+@api_router.post("/messages/direct")
+async def send_direct_message(input_data: MessageInput, user: dict = Depends(get_current_user)):
+    """Send a direct message to another user"""
+    if not input_data.recipient_id:
+        raise HTTPException(status_code=400, detail="recipient_id is required")
+    
+    recipient = await db.users.find_one({"id": input_data.recipient_id})
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient not found")
+    
+    message = {
+        "id": str(uuid.uuid4()),
+        "type": "direct",
+        "sender_id": user['id'],
+        "recipient_id": input_data.recipient_id,
+        "content": input_data.content,
+        "read": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.messages.insert_one(message)
+    
+    # Send push notification to recipient
+    await send_message_notification(input_data.recipient_id, user['id'], input_data.content[:50])
+    
+    return {k: v for k, v in message.items() if k != '_id'}
+
+@api_router.get("/messages/direct/{user_id}")
+async def get_direct_messages(user_id: str, user: dict = Depends(get_current_user)):
+    """Get direct message thread with another user"""
+    messages = await db.messages.find(
+        {
+            "type": "direct",
+            "$or": [
+                {"sender_id": user['id'], "recipient_id": user_id},
+                {"sender_id": user_id, "recipient_id": user['id']}
+            ]
+        },
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    
+    # Mark messages as read
+    await db.messages.update_many(
+        {"type": "direct", "sender_id": user_id, "recipient_id": user['id'], "read": False},
+        {"$set": {"read": True}}
+    )
+    
+    return messages
+
+@api_router.get("/messages/conversations")
+async def get_conversations(user: dict = Depends(get_current_user)):
+    """Get list of all conversations"""
+    # Get all unique users this user has messaged with
+    messages = await db.messages.find(
+        {
+            "type": "direct",
+            "$or": [
+                {"sender_id": user['id']},
+                {"recipient_id": user['id']}
+            ]
+        },
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(500)
+    
+    conversations = {}
+    for msg in messages:
+        other_id = msg['recipient_id'] if msg['sender_id'] == user['id'] else msg['sender_id']
+        if other_id not in conversations:
+            profile = await db.profiles.find_one({"user_id": other_id}, {"_id": 0})
+            unread_count = await db.messages.count_documents({
+                "type": "direct",
+                "sender_id": other_id,
+                "recipient_id": user['id'],
+                "read": False
+            })
+            conversations[other_id] = {
+                "user_id": other_id,
+                "display_name": profile.get('display_name', 'Unknown') if profile else 'Unknown',
+                "last_message": msg['content'][:50],
+                "last_message_at": msg['created_at'],
+                "unread_count": unread_count
+            }
+    
+    return list(conversations.values())
+
+# Group Chat
+@api_router.post("/messages/groups")
+async def create_group_chat(input_data: GroupChatInput, user: dict = Depends(get_current_user)):
+    """Create a new group chat"""
+    group = {
+        "id": str(uuid.uuid4()),
+        "name": input_data.name,
+        "description": input_data.description or "",
+        "created_by": user['id'],
+        "members": [user['id']] + input_data.member_ids,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.group_chats.insert_one(group)
+    return {k: v for k, v in group.items() if k != '_id'}
+
+@api_router.get("/messages/groups")
+async def get_user_groups(user: dict = Depends(get_current_user)):
+    """Get all groups user is a member of"""
+    groups = await db.group_chats.find(
+        {"members": user['id']},
+        {"_id": 0}
+    ).to_list(50)
+    
+    # Add last message and unread count for each group
+    for group in groups:
+        last_msg = await db.messages.find_one(
+            {"type": "group", "group_id": group['id']},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        if last_msg:
+            group['last_message'] = last_msg['content'][:50]
+            group['last_message_at'] = last_msg['created_at']
+    
+    return groups
+
+@api_router.post("/messages/groups/{group_id}")
+async def send_group_message(group_id: str, input_data: MessageInput, user: dict = Depends(get_current_user)):
+    """Send a message to a group"""
+    group = await db.group_chats.find_one({"id": group_id, "members": user['id']})
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found or you are not a member")
+    
+    message = {
+        "id": str(uuid.uuid4()),
+        "type": "group",
+        "group_id": group_id,
+        "sender_id": user['id'],
+        "content": input_data.content,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.messages.insert_one(message)
+    
+    # Notify all other members
+    sender_profile = await db.profiles.find_one({"user_id": user['id']}, {"_id": 0})
+    sender_name = sender_profile.get('display_name', 'Someone') if sender_profile else 'Someone'
+    for member_id in group['members']:
+        if member_id != user['id']:
+            await send_message_notification(member_id, user['id'], f"[{group['name']}] {sender_name}: {input_data.content[:30]}")
+    
+    return {k: v for k, v in message.items() if k != '_id'}
+
+@api_router.get("/messages/groups/{group_id}")
+async def get_group_messages(group_id: str, user: dict = Depends(get_current_user)):
+    """Get messages from a group"""
+    group = await db.group_chats.find_one({"id": group_id, "members": user['id']})
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found or you are not a member")
+    
+    messages = await db.messages.find(
+        {"type": "group", "group_id": group_id},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(200)
+    
+    # Enrich with sender names
+    for msg in messages:
+        profile = await db.profiles.find_one({"user_id": msg['sender_id']}, {"_id": 0})
+        msg['sender_name'] = profile.get('display_name', 'Unknown') if profile else 'Unknown'
+    
+    return {"group": {k: v for k, v in group.items() if k != '_id'}, "messages": messages}
+
+# ─── Push Notifications ───
+
+async def send_message_notification(recipient_id: str, sender_id: str, preview: str):
+    """Send push notification for new message"""
+    settings = await db.notification_settings.find_one({"user_id": recipient_id})
+    if settings and not settings.get('message_notifications_enabled', True):
+        return
+    
+    tokens = await db.push_tokens.find({"user_id": recipient_id}, {"_id": 0}).to_list(10)
+    if not tokens:
+        return
+    
+    sender_profile = await db.profiles.find_one({"user_id": sender_id}, {"_id": 0})
+    sender_name = sender_profile.get('display_name', 'Someone') if sender_profile else 'Someone'
+    
+    # Store notification for sending (in production, integrate with Expo Push Service)
+    notification = {
+        "id": str(uuid.uuid4()),
+        "user_id": recipient_id,
+        "type": "message",
+        "title": f"Message from {sender_name}",
+        "body": preview,
+        "data": {"sender_id": sender_id},
+        "sent": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notifications.insert_one(notification)
+
+@api_router.post("/notifications/push-token")
+async def register_push_token(input_data: PushTokenInput, user: dict = Depends(get_current_user)):
+    """Register a push notification token"""
+    await db.push_tokens.update_one(
+        {"user_id": user['id'], "token": input_data.token},
+        {
+            "$set": {
+                "user_id": user['id'],
+                "token": input_data.token,
+                "device_type": input_data.device_type,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            },
+            "$setOnInsert": {"created_at": datetime.now(timezone.utc).isoformat()}
+        },
+        upsert=True
+    )
+    return {"message": "Push token registered"}
+
+@api_router.get("/notifications/settings")
+async def get_notification_settings(user: dict = Depends(get_current_user)):
+    """Get user's notification settings"""
+    settings = await db.notification_settings.find_one({"user_id": user['id']}, {"_id": 0})
+    if not settings:
+        # Default settings
+        settings = {
+            "user_id": user['id'],
+            "daily_checkin_enabled": True,
+            "daily_checkin_time": "09:00",
+            "deal_reminders_enabled": True,
+            "community_notifications_enabled": True,
+            "message_notifications_enabled": True
+        }
+        await db.notification_settings.insert_one(settings)
+    return {k: v for k, v in settings.items() if k != '_id'}
+
+@api_router.put("/notifications/settings")
+async def update_notification_settings(input_data: NotificationSettingsInput, user: dict = Depends(get_current_user)):
+    """Update notification settings"""
+    updates = {k: v for k, v in input_data.dict().items() if v is not None}
+    if updates:
+        await db.notification_settings.update_one(
+            {"user_id": user['id']},
+            {"$set": updates},
+            upsert=True
+        )
+    settings = await db.notification_settings.find_one({"user_id": user['id']}, {"_id": 0})
+    return {k: v for k, v in settings.items() if k != '_id'}
+
+@api_router.get("/notifications/pending")
+async def get_pending_notifications(user: dict = Depends(get_current_user)):
+    """Get pending notifications for user"""
+    notifications = await db.notifications.find(
+        {"user_id": user['id'], "sent": False},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    return notifications
+
+# ─── Profile Photo Upload ───
+
+@api_router.post("/profiles/photo")
+async def upload_profile_photo(user: dict = Depends(get_current_user)):
+    """Generate a presigned URL for profile photo upload or accept base64"""
+    # For simplicity, we'll store base64 directly in member_profiles
+    # In production, use cloud storage like S3
+    return {
+        "message": "Use PUT /api/profiles/photo with base64 data",
+        "max_size_kb": 500
+    }
+
+@api_router.put("/profiles/photo")
+async def save_profile_photo(photo_data: dict, user: dict = Depends(get_current_user)):
+    """Save profile photo (base64 or URL)"""
+    photo_url = photo_data.get('photo_url') or photo_data.get('base64')
+    
+    if not photo_url:
+        raise HTTPException(status_code=400, detail="photo_url or base64 is required")
+    
+    # Update member profile with photo URL
+    await db.member_profiles.update_one(
+        {"user_id": user['id']},
+        {"$set": {"profile_photo_url": photo_url}},
+        upsert=True
+    )
+    
+    return {"message": "Profile photo updated", "photo_url": photo_url[:100] + "..." if len(photo_url) > 100 else photo_url}
+
+@api_router.delete("/profiles/photo")
+async def delete_profile_photo(user: dict = Depends(get_current_user)):
+    """Remove profile photo"""
+    await db.member_profiles.update_one(
+        {"user_id": user['id']},
+        {"$unset": {"profile_photo_url": ""}}
+    )
+    return {"message": "Profile photo removed"}
 
 # ─── Health Check ───
 

@@ -30,10 +30,45 @@ const CONTACT_LABELS = [
   { key: 'resource', label: 'Resource', color: Colors.text.tertiary },
 ];
 
-const NEEDS = [
-  'capital', 'marketing', 'social_media', 'community_management', 'operations',
-  'tech_development', 'podcast_booking', 'speaking', 'sponsorships', 'events',
-  'communities', 'financial_services', 'coaching', 'design', 'sales', 'legal', 'hr'
+// Connection levels with colors
+const CONNECTION_LEVELS = [
+  { key: 'new_connection', label: 'New', color: '#6B7280' },
+  { key: 'building', label: 'Building', color: '#F59E0B' },
+  { key: 'warm_local', label: 'Warm/Local', color: '#10B981' },
+  { key: 'warm_intl', label: 'Warm/Intl', color: '#3B82F6' },
+  { key: 'active_professional', label: 'Active/Pro', color: '#8B5CF6' },
+  { key: 'close_personal', label: 'Close', color: '#EC4899' },
+  { key: 'mid_aspirational', label: 'Aspirational', color: '#F97316' },
+];
+
+// Contact tags
+const CONTACT_TAGS = [
+  'business_owner', 'influencer', 'speaker', 'access', 'mindset', 
+  'future_self', 'community_partner', 'motivation', 'thought_leader', 
+  'investor', 'mentor', 'connector', 'podcast_host', 'author'
+];
+
+// Platform options
+const PLATFORM_OPTIONS = [
+  { key: 'text', label: 'Text' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'email', label: 'Email' },
+  { key: 'in_person', label: 'In-Person' },
+  { key: 'dm_instagram', label: 'IG DM' },
+  { key: 'dm_linkedin', label: 'LinkedIn' },
+  { key: 'video_call', label: 'Video Call' },
+];
+
+// Log action types
+const LOG_ACTION_TYPES = [
+  { key: 'call', label: 'Call', icon: 'call' },
+  { key: 'meeting', label: 'Meeting', icon: 'people' },
+  { key: 'dm', label: 'DM', icon: 'chatbubble' },
+  { key: 'email', label: 'Email', icon: 'mail' },
+  { key: 'coffee_chat', label: 'Coffee Chat', icon: 'cafe' },
+  { key: 'collaboration', label: 'Collaboration', icon: 'hand-left' },
+  { key: 'intro_made', label: 'Intro Made', icon: 'git-branch' },
+  { key: 'follow_up', label: 'Follow Up', icon: 'refresh' },
 ];
 
 export default function CRMScreen() {
@@ -57,6 +92,13 @@ export default function CRMScreen() {
   const [contactForm, setContactForm] = useState<any>({});
   const [contactFormLoading, setContactFormLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [showAllFields, setShowAllFields] = useState(false);
+  
+  // Wormhole detail state
+  const [showWormholeDetail, setShowWormholeDetail] = useState<any>(null);
+  const [wormholeLogs, setWormholeLogs] = useState<any[]>([]);
+  const [showAddLog, setShowAddLog] = useState(false);
+  const [logForm, setLogForm] = useState({ action_type: 'call', notes: '' });
 
   const resetDealForm = () => {
     setDealForm({
@@ -68,9 +110,14 @@ export default function CRMScreen() {
 
   const resetContactForm = () => {
     setContactForm({
-      name: '', company: '', title: '', email: '', phone: '',
-      label: 'prospect', notes: '', connection_level: 'warm'
+      name: '', company: '', title: '', location: '', email: '', phone: '',
+      label: 'prospect', connection_level: 'new_connection', tags: [],
+      website: '', linkedin: '', instagram: '', twitter: '', 
+      activation_next_step: '', preferred_platform: '', power_leverage: '',
+      engagement_level: 'moderate', reciprocity_notes: '', notes: '',
+      set_meeting: false, tagging_in_posts: false, tagging_in_comments: false,
     });
+    setShowAllFields(false);
   };
 
   const loadData = useCallback(async () => {
@@ -90,6 +137,41 @@ export default function CRMScreen() {
   }, []);
 
   useEffect(() => { loadData(); }, []);
+
+  // Load wormhole logs when detail view opens
+  const loadWormholeLogs = async (contactId: string) => {
+    try {
+      const data = await api.get(`/wormhole-contacts/${contactId}/logs`);
+      setWormholeLogs(data.logs || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Add wormhole log
+  const addWormholeLog = async () => {
+    if (!logForm.notes?.trim() || !showWormholeDetail) return;
+    try {
+      await api.post(`/wormhole-contacts/${showWormholeDetail.id}/logs`, {
+        contact_id: showWormholeDetail.id,
+        action_type: logForm.action_type,
+        notes: logForm.notes,
+      });
+      setLogForm({ action_type: 'call', notes: '' });
+      setShowAddLog(false);
+      loadWormholeLogs(showWormholeDetail.id);
+      loadData();
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    }
+  };
+
+  // Open wormhole detail view
+  const openWormholeDetail = async (contact: any) => {
+    setShowWormholeDetail(contact);
+    setContactForm({ ...contact });
+    loadWormholeLogs(contact.id);
+  };
 
   // Deal handlers
   const saveDeal = async (isNew = true) => {
@@ -148,11 +230,15 @@ export default function CRMScreen() {
     if (!contactForm.name?.trim()) return;
     setContactFormLoading(true);
     try {
+      const contactId = showWormholeDetail?.id || showContactDetail?.id;
       if (isNew) {
         await api.post('/wormhole-contacts', contactForm);
         setShowAddContact(false);
+      } else if (showWormholeDetail) {
+        await api.put(`/wormhole-contacts/${contactId}`, contactForm);
+        setShowWormholeDetail(null);
       } else {
-        await api.put(`/wormhole-contacts/${showContactDetail.id}`, contactForm);
+        await api.put(`/wormhole-contacts/${contactId}`, contactForm);
         setShowContactDetail(null);
       }
       resetContactForm();
@@ -182,6 +268,8 @@ export default function CRMScreen() {
 
   const getStageColor = (stage: string) => STAGES.find(s => s.key === stage)?.color || Colors.text.tertiary;
   const getLabelColor = (label: string) => CONTACT_LABELS.find(l => l.key === label)?.color || Colors.text.tertiary;
+  const getConnectionColor = (level: string) => CONNECTION_LEVELS.find(l => l.key === level)?.color || '#6B7280';
+  const getConnectionLabel = (level: string) => CONNECTION_LEVELS.find(l => l.key === level)?.label || 'New';
 
   const formatValue = (value: number) => {
     if (!value) return '';
@@ -204,6 +292,25 @@ export default function CRMScreen() {
     } catch {
       return dateStr;
     }
+  };
+
+  const formatTagLabel = (tag: string) => tag.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  // Determine which fields to show based on contact label
+  const shouldShowField = (field: string, label: string) => {
+    const wormholeFields = ['power_leverage', 'reciprocity_notes', 'tagging_in_posts', 'tagging_in_comments', 'engagement_level'];
+    const clientFields = ['last_contact_date', 'set_meeting'];
+    const prospectFields = ['activation_next_step', 'preferred_platform'];
+    
+    if (showAllFields) return true;
+    
+    if (label === 'wormhole') {
+      return true; // Show all fields for wormholes
+    }
+    if (wormholeFields.includes(field) && label !== 'wormhole') {
+      return false;
+    }
+    return true;
   };
 
   if (loading) {
@@ -393,25 +500,60 @@ export default function CRMScreen() {
             keyExtractor={item => item.id}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={Colors.brand.primary} />}
             renderItem={({ item }) => (
-              <TouchableOpacity testID={`contact-${item.id}`} style={styles.card} onPress={() => openEditContact(item)}>
+              <TouchableOpacity 
+                testID={`contact-${item.id}`} 
+                style={styles.card} 
+                onPress={() => item.label === 'wormhole' ? openWormholeDetail(item) : openEditContact(item)}
+              >
                 <View style={styles.contactRow}>
                   <View style={[styles.avatar, { backgroundColor: getLabelColor(item.label) }]}>
                     <Text style={styles.avatarText}>{item.name?.[0]?.toUpperCase() || '?'}</Text>
                   </View>
                   <View style={styles.contactInfo}>
-                    <Text style={styles.cardTitle}>{item.name}</Text>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.cardTitle}>{item.name}</Text>
+                      {/* Connection Level Pill */}
+                      <View style={[styles.connectionPill, { backgroundColor: getConnectionColor(item.connection_level) }]}>
+                        <Text style={styles.connectionPillText}>{getConnectionLabel(item.connection_level)}</Text>
+                      </View>
+                    </View>
                     {item.company && <Text style={styles.cardSubtitle}>{item.company}{item.title ? ` • ${item.title}` : ''}</Text>}
-                    <View style={[styles.labelBadge, { backgroundColor: getLabelColor(item.label) + '20' }]}>
-                      <Text style={[styles.labelText, { color: getLabelColor(item.label) }]}>
-                        {CONTACT_LABELS.find(l => l.key === item.label)?.label || item.label || 'Prospect'}
-                      </Text>
+                    {/* Tags Row */}
+                    {item.tags?.length > 0 && (
+                      <View style={styles.tagsRow}>
+                        {item.tags.slice(0, 3).map((tag: string) => (
+                          <View key={tag} style={styles.tagChip}>
+                            <Text style={styles.tagChipText}>{formatTagLabel(tag)}</Text>
+                          </View>
+                        ))}
+                        {item.tags.length > 3 && <Text style={styles.moreTagsText}>+{item.tags.length - 3}</Text>}
+                      </View>
+                    )}
+                    <View style={styles.labelRow}>
+                      <View style={[styles.labelBadge, { backgroundColor: getLabelColor(item.label) + '20' }]}>
+                        <Text style={[styles.labelText, { color: getLabelColor(item.label) }]}>
+                          {CONTACT_LABELS.find(l => l.key === item.label)?.label || item.label || 'Prospect'}
+                        </Text>
+                      </View>
+                      {item.last_contact_date && (
+                        <Text style={styles.lastContactText}>Last: {item.last_contact_date}</Text>
+                      )}
                     </View>
                   </View>
                   <View style={styles.contactMeta}>
                     <Text style={styles.score}>{item.engagement_score || 0}</Text>
                     <Text style={styles.scoreLabel}>touches</Text>
+                    {item.label === 'wormhole' && (
+                      <Ionicons name="chevron-forward" size={18} color={Colors.text.tertiary} style={{ marginTop: 4 }} />
+                    )}
                   </View>
                 </View>
+                {item.activation_next_step && (
+                  <View style={styles.nextStepRow}>
+                    <Ionicons name="arrow-forward-circle" size={14} color={Colors.brand.accent} />
+                    <Text style={styles.nextStepText} numberOfLines={1}>{item.activation_next_step}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             )}
             ListEmptyComponent={
@@ -577,6 +719,244 @@ export default function CRMScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* Wormhole Detail Modal */}
+      <Modal visible={!!showWormholeDetail} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.fullModal}>
+            <View style={styles.wormholeModal}>
+              <View style={styles.modalHeader}>
+                <View>
+                  <Text style={styles.modalTitle}>{showWormholeDetail?.name}</Text>
+                  <Text style={styles.wormholeSubtitle}>{showWormholeDetail?.company} • {showWormholeDetail?.title}</Text>
+                </View>
+                <TouchableOpacity onPress={() => { setShowWormholeDetail(null); setContactForm({}); }}>
+                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Wormhole Tabs */}
+              <View style={styles.wormholeTabs}>
+                <TouchableOpacity 
+                  style={[styles.wormholeTab, !showAddLog && styles.wormholeTabActive]}
+                  onPress={() => setShowAddLog(false)}
+                >
+                  <Text style={[styles.wormholeTabText, !showAddLog && styles.wormholeTabTextActive]}>Profile</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.wormholeTab, showAddLog && styles.wormholeTabActive]}
+                  onPress={() => setShowAddLog(true)}
+                >
+                  <Text style={[styles.wormholeTabText, showAddLog && styles.wormholeTabTextActive]}>Logs ({wormholeLogs.length})</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                {!showAddLog ? (
+                  /* Profile Tab */
+                  <>
+                    {/* Connection Level */}
+                    <Text style={styles.inputLabel}>Connection Level</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.optionRow}>
+                        {CONNECTION_LEVELS.map(level => (
+                          <TouchableOpacity
+                            key={level.key}
+                            style={[styles.connectionBtn, contactForm.connection_level === level.key && { backgroundColor: level.color }]}
+                            onPress={() => setContactForm({...contactForm, connection_level: level.key})}
+                          >
+                            <Text style={[styles.connectionBtnText, contactForm.connection_level === level.key && { color: '#fff' }]}>{level.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+
+                    {/* Tags */}
+                    <Text style={styles.inputLabel}>Tags</Text>
+                    <View style={styles.tagsWrap}>
+                      {CONTACT_TAGS.map(tag => (
+                        <TouchableOpacity
+                          key={tag}
+                          style={[styles.tagOption, contactForm.tags?.includes(tag) && styles.tagOptionActive]}
+                          onPress={() => {
+                            const tags = contactForm.tags || [];
+                            const newTags = tags.includes(tag) ? tags.filter((t: string) => t !== tag) : [...tags, tag];
+                            setContactForm({...contactForm, tags: newTags});
+                          }}
+                        >
+                          <Text style={[styles.tagOptionText, contactForm.tags?.includes(tag) && styles.tagOptionTextActive]}>
+                            {formatTagLabel(tag)}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {/* Activation Next Step */}
+                    <Text style={styles.inputLabel}>Activation Next Step</Text>
+                    <TextInput style={styles.input} value={contactForm.activation_next_step} onChangeText={t => setContactForm({...contactForm, activation_next_step: t})} placeholder="e.g., Schedule coffee chat" placeholderTextColor={Colors.text.tertiary} />
+
+                    {/* Platform */}
+                    <Text style={styles.inputLabel}>Preferred Platform</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.optionRow}>
+                        {PLATFORM_OPTIONS.map(p => (
+                          <TouchableOpacity
+                            key={p.key}
+                            style={[styles.optionBtn, contactForm.preferred_platform === p.key && styles.optionBtnActive]}
+                            onPress={() => setContactForm({...contactForm, preferred_platform: p.key})}
+                          >
+                            <Text style={[styles.optionText, contactForm.preferred_platform === p.key && styles.optionTextActive]}>{p.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+
+                    {/* Power Leverage */}
+                    <Text style={styles.inputLabel}>Power Leverage</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="e.g., 1M+ reach, speaker credibility" placeholderTextColor={Colors.text.tertiary} multiline />
+
+                    {/* Contact Info */}
+                    <Text style={styles.sectionTitle}>Contact Info</Text>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Email</Text>
+                        <TextInput style={styles.input} value={contactForm.email} onChangeText={t => setContactForm({...contactForm, email: t})} placeholder="email@example.com" placeholderTextColor={Colors.text.tertiary} keyboardType="email-address" autoCapitalize="none" />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Phone</Text>
+                        <TextInput style={styles.input} value={contactForm.phone} onChangeText={t => setContactForm({...contactForm, phone: t})} placeholder="+1 555-0000" placeholderTextColor={Colors.text.tertiary} keyboardType="phone-pad" />
+                      </View>
+                    </View>
+
+                    {/* Social Links */}
+                    <Text style={styles.sectionTitle}>Social Media</Text>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>LinkedIn</Text>
+                        <TextInput style={styles.input} value={contactForm.linkedin} onChangeText={t => setContactForm({...contactForm, linkedin: t})} placeholder="linkedin.com/in/..." placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Instagram</Text>
+                        <TextInput style={styles.input} value={contactForm.instagram} onChangeText={t => setContactForm({...contactForm, instagram: t})} placeholder="@handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                    </View>
+                    <View style={styles.fieldRow}>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Twitter</Text>
+                        <TextInput style={styles.input} value={contactForm.twitter} onChangeText={t => setContactForm({...contactForm, twitter: t})} placeholder="@handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                      <View style={styles.fieldHalf}>
+                        <Text style={styles.inputLabel}>Website</Text>
+                        <TextInput style={styles.input} value={contactForm.website} onChangeText={t => setContactForm({...contactForm, website: t})} placeholder="example.com" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+                      </View>
+                    </View>
+
+                    {/* Engagement */}
+                    <Text style={styles.sectionTitle}>Engagement</Text>
+                    <View style={styles.toggleRow}>
+                      <TouchableOpacity style={styles.toggleItem} onPress={() => setContactForm({...contactForm, tagging_in_posts: !contactForm.tagging_in_posts})}>
+                        <View style={[styles.toggleBox, contactForm.tagging_in_posts && styles.toggleBoxActive]}>
+                          {contactForm.tagging_in_posts && <Ionicons name="checkmark" size={14} color={Colors.text.primary} />}
+                        </View>
+                        <Text style={styles.toggleLabel}>Tag in Posts</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.toggleItem} onPress={() => setContactForm({...contactForm, tagging_in_comments: !contactForm.tagging_in_comments})}>
+                        <View style={[styles.toggleBox, contactForm.tagging_in_comments && styles.toggleBoxActive]}>
+                          {contactForm.tagging_in_comments && <Ionicons name="checkmark" size={14} color={Colors.text.primary} />}
+                        </View>
+                        <Text style={styles.toggleLabel}>Tag in Comments</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.toggleItem} onPress={() => setContactForm({...contactForm, set_meeting: !contactForm.set_meeting})}>
+                        <View style={[styles.toggleBox, contactForm.set_meeting && styles.toggleBoxActive]}>
+                          {contactForm.set_meeting && <Ionicons name="checkmark" size={14} color={Colors.text.primary} />}
+                        </View>
+                        <Text style={styles.toggleLabel}>Set Meeting</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Reciprocity Notes */}
+                    <Text style={styles.inputLabel}>Reciprocity Notes</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.reciprocity_notes} onChangeText={t => setContactForm({...contactForm, reciprocity_notes: t})} placeholder="What value exchange exists?" placeholderTextColor={Colors.text.tertiary} multiline />
+
+                    {/* Notes */}
+                    <Text style={styles.inputLabel}>Notes</Text>
+                    <TextInput style={[styles.input, { minHeight: 80 }]} value={contactForm.notes} onChangeText={t => setContactForm({...contactForm, notes: t})} placeholder="General notes..." placeholderTextColor={Colors.text.tertiary} multiline />
+
+                    <TouchableOpacity style={styles.saveBtn} onPress={() => saveContact(false)} disabled={contactFormLoading}>
+                      {contactFormLoading ? <ActivityIndicator color={Colors.text.primary} /> : <Text style={styles.saveBtnText}>Save Changes</Text>}
+                    </TouchableOpacity>
+
+                    <TouchableOpacity style={styles.deleteBtn} onPress={() => deleteContact(showWormholeDetail.id)}>
+                      <Ionicons name="trash-outline" size={18} color={Colors.status.error} />
+                      <Text style={styles.deleteBtnText}>Delete Contact</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  /* Logs Tab */
+                  <>
+                    {/* Quick Log Form */}
+                    <View style={styles.quickLogCard}>
+                      <Text style={styles.quickLogTitle}>Log an Action</Text>
+                      <View style={styles.logActionTypes}>
+                        {LOG_ACTION_TYPES.map(action => (
+                          <TouchableOpacity
+                            key={action.key}
+                            style={[styles.logTypeBtn, logForm.action_type === action.key && styles.logTypeBtnActive]}
+                            onPress={() => setLogForm({...logForm, action_type: action.key})}
+                          >
+                            <Ionicons name={action.icon as any} size={16} color={logForm.action_type === action.key ? Colors.text.primary : Colors.text.tertiary} />
+                            <Text style={[styles.logTypeBtnText, logForm.action_type === action.key && styles.logTypeBtnTextActive]}>{action.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      <TextInput
+                        style={[styles.input, { marginTop: 12 }]}
+                        value={logForm.notes}
+                        onChangeText={t => setLogForm({...logForm, notes: t})}
+                        placeholder="What happened?"
+                        placeholderTextColor={Colors.text.tertiary}
+                        multiline
+                      />
+                      <TouchableOpacity style={[styles.addLogBtn, !logForm.notes?.trim() && styles.saveBtnDisabled]} onPress={addWormholeLog} disabled={!logForm.notes?.trim()}>
+                        <Ionicons name="add" size={18} color={Colors.text.primary} />
+                        <Text style={styles.addLogBtnText}>Add Log</Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Logs Timeline */}
+                    <Text style={styles.sectionTitle}>Activity Timeline</Text>
+                    {wormholeLogs.length === 0 ? (
+                      <View style={styles.emptyLogs}>
+                        <Ionicons name="document-text-outline" size={40} color={Colors.text.tertiary} />
+                        <Text style={styles.emptyLogsText}>No logs yet</Text>
+                      </View>
+                    ) : (
+                      wormholeLogs.map((log, index) => (
+                        <View key={log.id || index} style={styles.logItem}>
+                          <View style={styles.logIcon}>
+                            <Ionicons 
+                              name={(LOG_ACTION_TYPES.find(a => a.key === log.action_type)?.icon || 'ellipse') as any} 
+                              size={16} 
+                              color={Colors.brand.primary} 
+                            />
+                          </View>
+                          <View style={styles.logContent}>
+                            <Text style={styles.logType}>{LOG_ACTION_TYPES.find(a => a.key === log.action_type)?.label || log.action_type}</Text>
+                            <Text style={styles.logNotes}>{log.notes}</Text>
+                            <Text style={styles.logDate}>{log.date}</Text>
+                          </View>
+                        </View>
+                      ))
+                    )}
+                  </>
+                )}
+
+                <View style={{ height: 40 }} />
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -674,4 +1054,74 @@ const styles = StyleSheet.create({
   saveBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 16, padding: 14, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.status.error },
   deleteBtnText: { color: Colors.status.error, fontSize: FontSize.base },
+
+  // New Contact Card Styles
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  connectionPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  connectionPillText: { color: '#fff', fontSize: FontSize.xs, fontWeight: '600' },
+  tagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+  tagChip: { backgroundColor: Colors.bg.input, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
+  tagChipText: { color: Colors.text.tertiary, fontSize: 10 },
+  moreTagsText: { color: Colors.text.tertiary, fontSize: 10, marginLeft: 4 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 },
+  lastContactText: { color: Colors.text.tertiary, fontSize: FontSize.xs },
+  nextStepRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: Colors.border.default },
+  nextStepText: { color: Colors.brand.accent, fontSize: FontSize.sm, flex: 1 },
+
+  // Wormhole Modal
+  fullModal: { flex: 1 },
+  wormholeModal: { flex: 1, backgroundColor: Colors.bg.default, paddingTop: 50, paddingHorizontal: 20 },
+  wormholeSubtitle: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
+  wormholeTabs: { flexDirection: 'row', gap: 8, marginVertical: 16 },
+  wormholeTab: { flex: 1, paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.bg.card, alignItems: 'center' },
+  wormholeTabActive: { backgroundColor: Colors.brand.primary + '20', borderWidth: 1, borderColor: Colors.brand.primary },
+  wormholeTabText: { color: Colors.text.tertiary, fontSize: FontSize.sm, fontWeight: '600' },
+  wormholeTabTextActive: { color: Colors.brand.primary },
+
+  // Connection Level Buttons
+  connectionBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.md, backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default, marginRight: 8 },
+  connectionBtnText: { color: Colors.text.secondary, fontSize: FontSize.sm },
+
+  // Tags
+  tagsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  tagOption: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default },
+  tagOptionActive: { backgroundColor: Colors.brand.primary + '30', borderColor: Colors.brand.primary },
+  tagOptionText: { color: Colors.text.secondary, fontSize: FontSize.sm },
+  tagOptionTextActive: { color: Colors.brand.primary },
+
+  // Option Button Active State
+  optionBtnActive: { backgroundColor: Colors.brand.primary + '30', borderColor: Colors.brand.primary },
+  optionTextActive: { color: Colors.brand.primary },
+
+  // Section Title
+  sectionTitle: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700', marginTop: 20, marginBottom: 8 },
+
+  // Field Rows
+  fieldRow: { flexDirection: 'row', gap: 12 },
+  fieldHalf: { flex: 1 },
+
+  // Toggle Row
+  toggleRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 8 },
+  toggleItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+
+  // Quick Log
+  quickLogCard: { backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16, borderWidth: 1, borderColor: Colors.border.default, marginBottom: 20 },
+  quickLogTitle: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '700', marginBottom: 12 },
+  logActionTypes: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  logTypeBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default },
+  logTypeBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  logTypeBtnText: { color: Colors.text.tertiary, fontSize: FontSize.sm },
+  logTypeBtnTextActive: { color: Colors.text.primary },
+  addLogBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 12, marginTop: 12 },
+  addLogBtnText: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
+
+  // Logs Timeline
+  emptyLogs: { alignItems: 'center', paddingVertical: 40 },
+  emptyLogsText: { color: Colors.text.tertiary, fontSize: FontSize.base, marginTop: 8 },
+  logItem: { flexDirection: 'row', gap: 12, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
+  logIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.brand.primary + '20', justifyContent: 'center', alignItems: 'center' },
+  logContent: { flex: 1 },
+  logType: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
+  logNotes: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
+  logDate: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginTop: 4 },
 });
