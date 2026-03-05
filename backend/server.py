@@ -767,6 +767,12 @@ async def get_profile(user: dict = Depends(get_current_user)):
     profile = await db.profiles.find_one({"user_id": user['id']}, {"_id": 0})
     goal = await db.goals.find_one({"user_id": user['id'], "active": True}, {"_id": 0})
     habit = await db.compound_habits.find_one({"user_id": user['id']}, {"_id": 0})
+    
+    # Calculate current_value from progress_history for the goal
+    if goal:
+        progress_history = goal.get('progress_history', [])
+        goal['current_value'] = progress_history[-1]['value'] if progress_history else 0
+    
     return {
         "profile": profile,
         "goal": goal,

@@ -213,12 +213,16 @@ export default function ProfileScreen() {
   };
 
   const openEditGoal = () => {
+    // Get current value from progress_history or directly from goal
+    const currentValue = goal?.current_value || 
+      (goal?.progress_history?.length ? goal.progress_history[goal.progress_history.length - 1].value : 0);
+    
     setGoalForm({
       title: goal?.title || '',
       description: goal?.description || '',
       deadline: goal?.deadline ? new Date(goal.deadline).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '',
       target_number: goal?.target_number?.toString() || '',
-      current_value: goal?.current_value?.toString() || '0',
+      current_value: currentValue?.toString() || '0',
     });
     setShowEditGoal(true);
   };
@@ -230,14 +234,22 @@ export default function ProfileScreen() {
         title: goalForm.title,
         description: goalForm.description,
         target_number: goalForm.target_number ? parseInt(goalForm.target_number) : null,
-        current_value: goalForm.current_value ? parseInt(goalForm.current_value) : 0,
       };
       if (goalForm.deadline) {
         const [m, d, y] = goalForm.deadline.split('/');
         const year = parseInt(y) < 50 ? 2000 + parseInt(y) : 1900 + parseInt(y);
         goalData.deadline = new Date(year, parseInt(m) - 1, parseInt(d)).toISOString();
       }
+      
+      // Update goal details
       await api.put('/goal', goalData);
+      
+      // Update current progress separately via the progress endpoint
+      const currentValue = goalForm.current_value ? parseInt(goalForm.current_value) : 0;
+      if (currentValue > 0) {
+        await api.post('/goals/progress', { current_value: currentValue, notes: 'Updated from Profile' });
+      }
+      
       await loadProfile();
       setShowEditGoal(false);
       Alert.alert('Success', 'Goal updated');

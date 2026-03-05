@@ -26,7 +26,7 @@ const formatDateMMDDYY = (d: Date) => {
   return `${mm}/${dd}/${yy}`;
 };
 
-const STATUS_OPTIONS = ['ready', 'priority_win', 'unicorn_win', 'loss', 'lesson', 'course_corrected'];
+const STATUS_OPTIONS = ['ready', 'priority_win', '10x_unicorn_win', 'loss', 'lesson', 'course_corrected'];
 
 export default function TodayScreen() {
   const router = useRouter();
@@ -210,10 +210,27 @@ export default function TodayScreen() {
     const current = entry?.five_item_statuses || {};
     const newStatuses = { ...current, [key]: !current[key] };
     const updates: any = { five_item_statuses: newStatuses };
+    
     // Sync top_action with top_priority
     if (key === 'top_action') {
       updates.top_priority_completed = !current[key];
     }
+    
+    // Auto-update final_status based on completed items
+    const allDone = FIVE_CORE_ACTIONS.every(a => newStatuses[a.key]);
+    const topDone = newStatuses['top_action'];
+    
+    if (allDone) {
+      // All 5 items completed = 10x Unicorn Win
+      updates.final_status = '10x_unicorn_win';
+    } else if (topDone) {
+      // Just top action completed = Priority Win
+      updates.final_status = 'priority_win';
+    } else if (entry?.final_status === '10x_unicorn_win' || entry?.final_status === 'priority_win') {
+      // If unchecking items, reset to ready only if it was auto-set
+      updates.final_status = 'ready';
+    }
+    
     updateEntry(updates);
   };
 
@@ -270,7 +287,7 @@ export default function TodayScreen() {
         {/* Status Banner */}
         <LinearGradient
           colors={[
-            finalStatus === 'unicorn_win' ? 'rgba(168,85,247,0.2)' : 
+            finalStatus === '10x_unicorn_win' || finalStatus === 'unicorn_win' ? 'rgba(168,85,247,0.2)' : 
             finalStatus === 'priority_win' ? 'rgba(34,197,94,0.2)' : 
             'rgba(45,45,80,0.3)',
             'transparent'

@@ -69,7 +69,8 @@ export const FontSize = {
 export const STATUS_LABELS: Record<string, string> = {
   ready: 'Ready',
   priority_win: 'Priority Win',
-  unicorn_win: 'Unicorn Win',
+  '10x_unicorn_win': '10x Unicorn Win',
+  unicorn_win: '10x Unicorn Win',  // Keep for backwards compatibility
   loss: 'Loss',
   lesson: 'Lesson',
   course_corrected: 'Course Corrected',
@@ -78,7 +79,8 @@ export const STATUS_LABELS: Record<string, string> = {
 export const STATUS_COLORS: Record<string, string> = {
   ready: Colors.text.secondary,
   priority_win: Colors.status.success,
-  unicorn_win: Colors.brand.primary,
+  '10x_unicorn_win': Colors.brand.primary,
+  unicorn_win: Colors.brand.primary,  // Keep for backwards compatibility
   loss: Colors.status.error,
   lesson: Colors.status.warning,
   course_corrected: Colors.status.info,

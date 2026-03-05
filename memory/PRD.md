@@ -136,6 +136,9 @@
   - Resource: Expertise Areas, Rate, Availability
   - Wormhole: All advanced fields (15+ fields)
 - [x] **Profile Edit Goal** - Edit button with progress bar and deadline display
+- [x] **Auto 10x Unicorn Win** - Status automatically updates to "10x Unicorn Win" when all 5 checklist items completed
+- [x] **Auto Priority Win** - Status automatically updates to "Priority Win" when top 10x action completed
+- [x] **Goal Progress Save Fix** - Profile page now correctly displays and updates goal progress via /goals/progress API
 
 ## Upcoming Tasks
 - [ ] Daily Goal Progress check-in prompt
