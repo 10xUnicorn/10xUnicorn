@@ -309,8 +309,8 @@ export default function ProfileScreen() {
 
         {/* 10x Goal with Edit and Progress */}
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardIcon}>
+          <View style={styles.goalCardHeader}>
+            <View style={styles.goalIconWrap}>
               <Ionicons name="rocket" size={20} color={Colors.brand.primary} />
             </View>
             <TouchableOpacity testID="edit-goal-btn" style={styles.editGoalBtn} onPress={openEditGoal}>
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   
   // Cards
   card: { backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border.default },
-  cardIcon: { marginBottom: 8 },
+  cardIcon: { marginBottom: 8, width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.brand.primary + '20', justifyContent: 'center', alignItems: 'center' },
   cardLabel: { color: Colors.text.tertiary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 4 },
   cardValue: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '600' },
   cardDesc: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
@@ -765,6 +765,8 @@ const styles = StyleSheet.create({
   timeInput: { backgroundColor: Colors.bg.input, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 8, color: Colors.text.primary, fontSize: FontSize.base, width: 80, textAlign: 'center' },
   
   // Goal card styles
+  goalCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  goalIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.brand.primary + '20', justifyContent: 'center', alignItems: 'center' },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   editGoalBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: Colors.bg.input, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border.default },
   editGoalBtnText: { color: Colors.brand.accent, fontSize: FontSize.sm, fontWeight: '600' },
