@@ -75,13 +75,27 @@ export default function TodayScreen() {
       const completed = new Set((completionsData || []).map((c: any) => c.signal_id));
       setCompletedSignals(completed);
       
-      // Filter signals for today
+      // Filter signals for today - handle both YYYY-MM-DD and MM/DD/YY formats
       const todayFormatted = formatDateMMDDYY(new Date());
-      const todaySignals = (signalsData || []).filter((s: any) => s.due_date === todayFormatted || s.due_date === currentDate);
+      // Convert currentDate (YYYY-MM-DD) to MM/DD/YY format for comparison
+      const [year, month, day] = currentDate.split('-');
+      const currentDateMMDDYY = `${month}/${day}/${year.slice(-2)}`;
+      
+      const todaySignals = (signalsData || []).filter((s: any) => 
+        s.due_date === todayFormatted || 
+        s.due_date === currentDate || 
+        s.due_date === currentDateMMDDYY
+      );
       setSignals(todaySignals);
       
       // Find top 10x action signal for today
-      const top10x = (signalsData || []).find((s: any) => s.is_top_10x_action && (s.due_date === todayFormatted || s.due_date === currentDate));
+      const top10x = (signalsData || []).find((s: any) => 
+        s.is_top_10x_action && (
+          s.due_date === todayFormatted || 
+          s.due_date === currentDate || 
+          s.due_date === currentDateMMDDYY
+        )
+      );
       setTopSignal(top10x);
     } catch (e) {
       console.error(e);

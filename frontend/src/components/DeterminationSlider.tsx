@@ -25,26 +25,60 @@ const getEmoji = (value: number) => {
   return '😴';                    // Sleeping (level 1)
 };
 
-const MOTIVATIONAL_QUOTES = [
-  "You're building something extraordinary today! 💪",
-  "Every step forward counts. Keep pushing!",
-  "The unicorn is within you. Let it shine! 🦄",
-  "Small progress is still progress. You've got this!",
-  "Today is your opportunity to level up!",
-  "Champions are made in moments like this!",
-  "Your future self will thank you for showing up today!",
-  "Discipline is choosing between what you want now and what you want most.",
-  "Success is the sum of small efforts repeated daily.",
-  "The only bad workout is the one that didn't happen.",
-  "Be the person who decides to go for it!",
-  "You didn't come this far to only come this far!",
-];
+const MOTIVATIONAL_QUOTES = {
+  // Level 1-3: Low energy - encouraging quotes
+  low: [
+    "Even small steps forward count. You've got this! 🐢",
+    "Today's struggle is tomorrow's strength.",
+    "It's okay to start slow. What matters is you started.",
+    "Every champion was once a contender who refused to give up.",
+    "Rest if you must, but don't quit.",
+  ],
+  // Level 4-6: Building momentum - motivating quotes
+  building: [
+    "You're building momentum! Keep pushing! 💪",
+    "Discipline is choosing between what you want now and what you want most.",
+    "Success is the sum of small efforts repeated daily.",
+    "You didn't come this far to only come this far!",
+    "Your future self will thank you for showing up today!",
+  ],
+  // Level 7-9: High energy - fire quotes
+  high: [
+    "You're on FIRE today! Channel that energy! 🔥",
+    "Champions are made in moments like this!",
+    "This is where legends are born. Go all in!",
+    "You're in the zone! Nothing can stop you now!",
+    "Today you prove what you're made of!",
+  ],
+  // Level 10: Unicorn mode - peak quotes
+  unicorn: [
+    "UNICORN MODE ACTIVATED! You're unstoppable! 🦄",
+    "10/10 energy! The universe is aligning for you!",
+    "This is YOUR day. Make it legendary!",
+    "You're operating at peak performance. Let's GO!",
+    "Unicorn level determination! Sky's the limit!",
+  ],
+};
+
+const getQuoteForLevel = (level: number) => {
+  let quotes: string[];
+  if (level <= 3) {
+    quotes = MOTIVATIONAL_QUOTES.low;
+  } else if (level <= 6) {
+    quotes = MOTIVATIONAL_QUOTES.building;
+  } else if (level <= 9) {
+    quotes = MOTIVATIONAL_QUOTES.high;
+  } else {
+    quotes = MOTIVATIONAL_QUOTES.unicorn;
+  }
+  return quotes[Math.floor(Math.random() * quotes.length)];
+};
 
 export function DeterminationSlider({ value, onChange, testID }: DeterminationSliderProps) {
   const animatedValue = useRef(new Animated.Value((value / 10) * SLIDER_WIDTH)).current;
   const currentValue = useRef(value);
   const isDragging = useRef(false);
-  const [quote] = useState(() => MOTIVATIONAL_QUOTES[Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)]);
+  const [quote, setQuote] = useState(() => getQuoteForLevel(value));
   
   React.useEffect(() => {
     if (!isDragging.current) {
@@ -56,6 +90,8 @@ export function DeterminationSlider({ value, onChange, testID }: DeterminationSl
       }).start();
     }
     currentValue.current = value;
+    // Update quote when value changes
+    setQuote(getQuoteForLevel(value));
   }, [value]);
 
   const panResponder = React.useMemo(() => PanResponder.create({

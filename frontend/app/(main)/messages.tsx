@@ -132,7 +132,11 @@ export default function MessagesScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* Header with Back Button */}
       <View style={styles.header}>
+        <TouchableOpacity testID="back-btn" style={styles.backBtn} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
+        </TouchableOpacity>
         <Text style={styles.pageTitle}>Messages</Text>
         <TouchableOpacity testID="new-group-btn" style={styles.addBtn} onPress={() => setShowNewGroup(true)}>
           <Ionicons name="add" size={22} color={Colors.text.primary} />
@@ -364,7 +368,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.bg.default },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 8, marginBottom: 12 },
-  pageTitle: { fontSize: FontSize.xxxl, fontWeight: '900', color: Colors.text.primary, letterSpacing: -0.5 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg.card, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: Colors.border.default },
+  pageTitle: { fontSize: FontSize.xxxl, fontWeight: '900', color: Colors.text.primary, letterSpacing: -0.5, flex: 1, textAlign: 'center' },
   addBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center' },
 
   // Tabs

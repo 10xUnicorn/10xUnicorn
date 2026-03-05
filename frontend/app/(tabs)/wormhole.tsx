@@ -53,6 +53,12 @@ export default function WormholeScreen() {
   const [formData, setFormData] = useState<any>({});
   const [formLoading, setFormLoading] = useState(false);
 
+  // Contact picker state
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [phoneContacts, setPhoneContacts] = useState<any[]>([]);
+  const [selectedPhoneContacts, setSelectedPhoneContacts] = useState<Set<number>>(new Set());
+  const [contactsLoading, setContactsLoading] = useState(false);
+
   // Interaction state
   const [interactionType, setInteractionType] = useState('');
   const [interactionText, setInteractionText] = useState('');
@@ -110,9 +116,11 @@ export default function WormholeScreen() {
 
   const importFromPhone = async () => {
     try {
+      setContactsLoading(true);
       const { status } = await Contacts.requestPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission needed', 'Please grant contacts permission to import');
+        setContactsLoading(false);
         return;
       }
       const { data } = await Contacts.getContactsAsync({ 
@@ -120,20 +128,56 @@ export default function WormholeScreen() {
       });
       if (!data.length) {
         Alert.alert('No contacts', 'No contacts found on device');
+        setContactsLoading(false);
         return;
       }
-      const toImport = data.slice(0, 20).filter(c => c.name).map(c => ({
+      // Filter and prepare contacts for selection
+      const validContacts = data.filter(c => c.name).map((c, index) => ({
+        id: index,
         name: c.name || 'Unknown',
         phone: c.phoneNumbers?.[0]?.number || '',
         email: c.emails?.[0]?.email || '',
         company: c.company || '',
       }));
+      setPhoneContacts(validContacts);
+      setSelectedPhoneContacts(new Set());
+      setShowContactPicker(true);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to load contacts');
+    } finally {
+      setContactsLoading(false);
+    }
+  };
+
+  const importSelectedContacts = async () => {
+    if (selectedPhoneContacts.size === 0) return;
+    try {
+      const toImport = phoneContacts
+        .filter((_, index) => selectedPhoneContacts.has(index))
+        .map(c => ({
+          name: c.name,
+          phone: c.phone,
+          email: c.email,
+          company: c.company,
+        }));
       await api.post('/wormhole-contacts/import-bulk', toImport);
       loadContacts();
-      Alert.alert('Imported', `${toImport.length} contacts imported`);
+      setShowContactPicker(false);
+      setSelectedPhoneContacts(new Set());
+      Alert.alert('Success', `${toImport.length} contact(s) imported`);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to import contacts');
     }
+  };
+
+  const toggleContactSelection = (index: number) => {
+    const newSelected = new Set(selectedPhoneContacts);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedPhoneContacts(newSelected);
   };
 
   const logInteraction = async () => {
@@ -720,6 +764,61 @@ export default function WormholeScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* Contact Picker Modal */}
+      <Modal visible={showContactPicker} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modal, { maxHeight: '85%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Select Contacts</Text>
+              <TouchableOpacity onPress={() => setShowContactPicker(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.pickerSubtitle}>
+              {selectedPhoneContacts.size} contact(s) selected
+            </Text>
+            <FlatList
+              data={phoneContacts}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity
+                  style={[styles.pickerItem, selectedPhoneContacts.has(index) && styles.pickerItemSelected]}
+                  onPress={() => toggleContactSelection(index)}
+                >
+                  <View style={[styles.pickerAvatar, selectedPhoneContacts.has(index) && styles.pickerAvatarSelected]}>
+                    {selectedPhoneContacts.has(index) ? (
+                      <Ionicons name="checkmark" size={20} color={Colors.text.primary} />
+                    ) : (
+                      <Text style={styles.pickerAvatarText}>{item.name[0]?.toUpperCase()}</Text>
+                    )}
+                  </View>
+                  <View style={styles.pickerInfo}>
+                    <Text style={styles.pickerName}>{item.name}</Text>
+                    {item.company && <Text style={styles.pickerCompany}>{item.company}</Text>}
+                    {item.phone && <Text style={styles.pickerDetail}>{item.phone}</Text>}
+                    {item.email && <Text style={styles.pickerDetail}>{item.email}</Text>}
+                  </View>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.pickerEmpty}>
+                  <Text style={styles.emptyText}>No contacts found</Text>
+                </View>
+              }
+              contentContainerStyle={{ paddingBottom: 20 }}
+            />
+            <TouchableOpacity
+              style={[styles.importBtn, selectedPhoneContacts.size === 0 && styles.saveBtnDisabled]}
+              onPress={importSelectedContacts}
+              disabled={selectedPhoneContacts.size === 0}
+            >
+              <Ionicons name="download" size={20} color={Colors.text.primary} />
+              <Text style={styles.importBtnText}>Import {selectedPhoneContacts.size} Contact(s)</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -833,4 +932,19 @@ const styles = StyleSheet.create({
   histText: { color: Colors.text.primary, fontSize: FontSize.base },
   deleteBtn: { marginTop: 32, padding: 16, alignItems: 'center', borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.status.error },
   deleteBtnText: { color: Colors.status.error, fontSize: FontSize.base, fontWeight: '600' },
+  
+  // Contact Picker styles
+  pickerSubtitle: { color: Colors.text.secondary, fontSize: FontSize.sm, marginBottom: 12 },
+  pickerItem: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: Radius.md, marginBottom: 8, backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default, gap: 12 },
+  pickerItemSelected: { backgroundColor: Colors.brand.primary + '20', borderColor: Colors.brand.primary },
+  pickerAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg.card, justifyContent: 'center', alignItems: 'center' },
+  pickerAvatarSelected: { backgroundColor: Colors.brand.primary },
+  pickerAvatarText: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '700' },
+  pickerInfo: { flex: 1 },
+  pickerName: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
+  pickerCompany: { color: Colors.text.secondary, fontSize: FontSize.sm },
+  pickerDetail: { color: Colors.text.tertiary, fontSize: FontSize.xs },
+  pickerEmpty: { alignItems: 'center', paddingVertical: 40 },
+  importBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16, marginTop: 12 },
+  importBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
 });

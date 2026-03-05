@@ -839,7 +839,119 @@ export default function CRMScreen() {
                 <Text style={styles.inputLabel}>Title</Text>
                 <TextInput style={styles.input} value={contactForm.title} onChangeText={t => setContactForm({...contactForm, title: t})} placeholder="Job title" placeholderTextColor={Colors.text.tertiary} />
 
-                {/* Show expanded fields for wormhole contacts or when toggled */}
+                {/* PROSPECT - Show: Potential Value, Interest Level, Next Step */}
+                {contactForm.label === 'prospect' && (
+                  <>
+                    <Text style={styles.inputLabel}>Potential Value</Text>
+                    <TextInput style={styles.input} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="e.g., $10K deal potential" placeholderTextColor={Colors.text.tertiary} />
+                    <Text style={styles.inputLabel}>Interest Level</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.optionRow}>
+                        {[{key: 'cold', label: 'Cold'}, {key: 'warm', label: 'Warm'}, {key: 'hot', label: 'Hot'}].map(level => (
+                          <TouchableOpacity
+                            key={level.key}
+                            style={[styles.optionBtn, contactForm.connection_level === level.key && styles.optionBtnActive]}
+                            onPress={() => setContactForm({...contactForm, connection_level: level.key})}
+                          >
+                            <Text style={[styles.optionText, contactForm.connection_level === level.key && styles.optionTextActive]}>{level.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+                    <Text style={styles.inputLabel}>Next Step</Text>
+                    <TextInput style={styles.input} value={contactForm.activation_next_step} onChangeText={t => setContactForm({...contactForm, activation_next_step: t})} placeholder="e.g., Send proposal, Schedule demo" placeholderTextColor={Colors.text.tertiary} />
+                  </>
+                )}
+
+                {/* REFERRAL_PARTNER - Show: Referral History, Commission %, Mutual Value */}
+                {contactForm.label === 'referral_partner' && (
+                  <>
+                    <Text style={styles.inputLabel}>Referral History</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.notes} onChangeText={t => setContactForm({...contactForm, notes: t})} placeholder="Past referrals given/received..." placeholderTextColor={Colors.text.tertiary} multiline />
+                    <Text style={styles.inputLabel}>Commission/Value Exchange</Text>
+                    <TextInput style={styles.input} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="e.g., 10% commission, mutual intros" placeholderTextColor={Colors.text.tertiary} />
+                    <Text style={styles.inputLabel}>Reciprocity Notes</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.reciprocity_notes} onChangeText={t => setContactForm({...contactForm, reciprocity_notes: t})} placeholder="What have you done for each other?" placeholderTextColor={Colors.text.tertiary} multiline />
+                  </>
+                )}
+
+                {/* STRATEGIC_PARTNER - Show: Partnership Details, Mutual Goals, Collaboration Notes */}
+                {contactForm.label === 'strategic_partner' && (
+                  <>
+                    <Text style={styles.inputLabel}>Partnership Type</Text>
+                    <View style={styles.tagsWrap}>
+                      {[{key: 'co_marketing', label: 'Co-Marketing'}, {key: 'integration', label: 'Integration'}, {key: 'reseller', label: 'Reseller'}, {key: 'joint_venture', label: 'Joint Venture'}].map(tag => (
+                        <TouchableOpacity
+                          key={tag.key}
+                          style={[styles.tagOption, contactForm.tags?.includes(tag.key) && styles.tagOptionActive]}
+                          onPress={() => {
+                            const tags = contactForm.tags || [];
+                            const newTags = tags.includes(tag.key) ? tags.filter((t: string) => t !== tag.key) : [...tags, tag.key];
+                            setContactForm({...contactForm, tags: newTags});
+                          }}
+                        >
+                          <Text style={[styles.tagOptionText, contactForm.tags?.includes(tag.key) && styles.tagOptionTextActive]}>{tag.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <Text style={styles.inputLabel}>Mutual Value</Text>
+                    <TextInput style={[styles.input, { minHeight: 60 }]} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="What value does this partnership create?" placeholderTextColor={Colors.text.tertiary} multiline />
+                    <Text style={styles.inputLabel}>Next Collaboration Step</Text>
+                    <TextInput style={styles.input} value={contactForm.activation_next_step} onChangeText={t => setContactForm({...contactForm, activation_next_step: t})} placeholder="e.g., Joint webinar, Feature integration" placeholderTextColor={Colors.text.tertiary} />
+                  </>
+                )}
+
+                {/* CLIENT - Show: Contract Details, Revenue, Project History */}
+                {contactForm.label === 'client' && (
+                  <>
+                    <Text style={styles.inputLabel}>Contract/Revenue Value</Text>
+                    <TextInput style={styles.input} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="e.g., $5K/month retainer" placeholderTextColor={Colors.text.tertiary} />
+                    <Text style={styles.inputLabel}>Engagement Status</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                      <View style={styles.optionRow}>
+                        {[{key: 'active', label: 'Active'}, {key: 'paused', label: 'Paused'}, {key: 'churned', label: 'Churned'}, {key: 'upsell', label: 'Upsell Opp'}].map(level => (
+                          <TouchableOpacity
+                            key={level.key}
+                            style={[styles.optionBtn, contactForm.connection_level === level.key && styles.optionBtnActive]}
+                            onPress={() => setContactForm({...contactForm, connection_level: level.key})}
+                          >
+                            <Text style={[styles.optionText, contactForm.connection_level === level.key && styles.optionTextActive]}>{level.label}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </ScrollView>
+                    <Text style={styles.inputLabel}>Project History</Text>
+                    <TextInput style={[styles.input, { minHeight: 80 }]} value={contactForm.notes} onChangeText={t => setContactForm({...contactForm, notes: t})} placeholder="Projects completed, deliverables..." placeholderTextColor={Colors.text.tertiary} multiline />
+                  </>
+                )}
+
+                {/* RESOURCE - Show: Expertise, Hourly Rate, Availability */}
+                {contactForm.label === 'resource' && (
+                  <>
+                    <Text style={styles.inputLabel}>Expertise Areas</Text>
+                    <View style={styles.tagsWrap}>
+                      {[{key: 'design', label: 'Design'}, {key: 'development', label: 'Development'}, {key: 'marketing', label: 'Marketing'}, {key: 'operations', label: 'Operations'}, {key: 'legal', label: 'Legal'}, {key: 'finance', label: 'Finance'}].map(tag => (
+                        <TouchableOpacity
+                          key={tag.key}
+                          style={[styles.tagOption, contactForm.tags?.includes(tag.key) && styles.tagOptionActive]}
+                          onPress={() => {
+                            const tags = contactForm.tags || [];
+                            const newTags = tags.includes(tag.key) ? tags.filter((t: string) => t !== tag.key) : [...tags, tag.key];
+                            setContactForm({...contactForm, tags: newTags});
+                          }}
+                        >
+                          <Text style={[styles.tagOptionText, contactForm.tags?.includes(tag.key) && styles.tagOptionTextActive]}>{tag.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <Text style={styles.inputLabel}>Rate / Cost</Text>
+                    <TextInput style={styles.input} value={contactForm.power_leverage} onChangeText={t => setContactForm({...contactForm, power_leverage: t})} placeholder="e.g., $150/hr, $2K/project" placeholderTextColor={Colors.text.tertiary} />
+                    <Text style={styles.inputLabel}>Availability</Text>
+                    <TextInput style={styles.input} value={contactForm.activation_next_step} onChangeText={t => setContactForm({...contactForm, activation_next_step: t})} placeholder="e.g., Part-time, On-demand" placeholderTextColor={Colors.text.tertiary} />
+                  </>
+                )}
+
+                {/* WORMHOLE - Show all wormhole-specific fields */}
                 {(contactForm.label === 'wormhole' || showAllFields) && (
                   <>
                     {/* Connection Level */}

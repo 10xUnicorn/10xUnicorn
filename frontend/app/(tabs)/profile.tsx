@@ -36,6 +36,8 @@ export default function ProfileScreen() {
   const [notificationSettings, setNotificationSettings] = useState<any>({});
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showEditGoal, setShowEditGoal] = useState(false);
+  const [goalForm, setGoalForm] = useState<any>({});
 
   useEffect(() => { loadProfile(); loadNotificationSettings(); }, []);
 
@@ -210,6 +212,42 @@ export default function ProfileScreen() {
     ]);
   };
 
+  const openEditGoal = () => {
+    setGoalForm({
+      title: goal?.title || '',
+      description: goal?.description || '',
+      deadline: goal?.deadline ? new Date(goal.deadline).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '',
+      target_number: goal?.target_number?.toString() || '',
+      current_value: goal?.current_value?.toString() || '0',
+    });
+    setShowEditGoal(true);
+  };
+
+  const saveGoal = async () => {
+    setSaving(true);
+    try {
+      const goalData: any = {
+        title: goalForm.title,
+        description: goalForm.description,
+        target_number: goalForm.target_number ? parseInt(goalForm.target_number) : null,
+        current_value: goalForm.current_value ? parseInt(goalForm.current_value) : 0,
+      };
+      if (goalForm.deadline) {
+        const [m, d, y] = goalForm.deadline.split('/');
+        const year = parseInt(y) < 50 ? 2000 + parseInt(y) : 1900 + parseInt(y);
+        goalData.deadline = new Date(year, parseInt(m) - 1, parseInt(d)).toISOString();
+      }
+      await api.put('/goal', goalData);
+      await loadProfile();
+      setShowEditGoal(false);
+      Alert.alert('Success', 'Goal updated');
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -269,14 +307,46 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* 10x Goal */}
+        {/* 10x Goal with Edit and Progress */}
         <View style={styles.card}>
-          <View style={styles.cardIcon}>
-            <Ionicons name="rocket" size={20} color={Colors.brand.primary} />
+          <View style={styles.cardHeader}>
+            <View style={styles.cardIcon}>
+              <Ionicons name="rocket" size={20} color={Colors.brand.primary} />
+            </View>
+            <TouchableOpacity testID="edit-goal-btn" style={styles.editGoalBtn} onPress={openEditGoal}>
+              <Ionicons name="create-outline" size={16} color={Colors.brand.accent} />
+              <Text style={styles.editGoalBtnText}>Edit</Text>
+            </TouchableOpacity>
           </View>
           <Text style={styles.cardLabel}>10x Goal</Text>
           <Text style={styles.cardValue}>{goal?.title || 'Not set'}</Text>
           {goal?.description && <Text style={styles.cardDesc}>{goal.description}</Text>}
+          
+          {/* Goal Progress Display */}
+          {goal?.target_number && (
+            <View style={styles.goalProgressContainer}>
+              <View style={styles.goalProgressHeader}>
+                <Text style={styles.goalProgressLabel}>Progress</Text>
+                <Text style={styles.goalProgressNumbers}>
+                  {goal.current_value || 0} / {goal.target_number}
+                </Text>
+              </View>
+              <View style={styles.goalProgressBarBg}>
+                <View style={[
+                  styles.goalProgressBarFill,
+                  { width: `${Math.min(100, ((goal.current_value || 0) / goal.target_number) * 100)}%` }
+                ]} />
+              </View>
+              {goal.deadline && (
+                <View style={styles.goalDeadlineRow}>
+                  <Ionicons name="calendar-outline" size={14} color={Colors.text.tertiary} />
+                  <Text style={styles.goalDeadlineText}>
+                    Due: {new Date(goal.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Compound Habit */}
@@ -533,6 +603,81 @@ export default function ProfileScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Edit Goal Modal */}
+      <Modal visible={showEditGoal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
+            <View style={styles.modal}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit 10x Goal</Text>
+                <TouchableOpacity onPress={() => setShowEditGoal(false)}>
+                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <Text style={styles.formSection}>Goal Title</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={goalForm.title} 
+                  onChangeText={t => setGoalForm({...goalForm, title: t})} 
+                  placeholder="Your 10x goal" 
+                  placeholderTextColor={Colors.text.tertiary} 
+                />
+
+                <Text style={styles.formSection}>Description</Text>
+                <TextInput 
+                  style={[styles.input, { minHeight: 80 }]} 
+                  value={goalForm.description} 
+                  onChangeText={t => setGoalForm({...goalForm, description: t})} 
+                  placeholder="Describe your goal in detail..." 
+                  placeholderTextColor={Colors.text.tertiary} 
+                  multiline 
+                />
+
+                <Text style={styles.formSection}>Deadline (MM/DD/YY)</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={goalForm.deadline} 
+                  onChangeText={t => setGoalForm({...goalForm, deadline: t})} 
+                  placeholder="03/31/26" 
+                  placeholderTextColor={Colors.text.tertiary} 
+                />
+
+                <View style={styles.goalNumberRow}>
+                  <View style={styles.goalNumberField}>
+                    <Text style={styles.formSection}>Target Number</Text>
+                    <TextInput 
+                      style={styles.input} 
+                      value={goalForm.target_number} 
+                      onChangeText={t => setGoalForm({...goalForm, target_number: t})} 
+                      placeholder="e.g., 100" 
+                      placeholderTextColor={Colors.text.tertiary}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                  <View style={styles.goalNumberField}>
+                    <Text style={styles.formSection}>Current Progress</Text>
+                    <TextInput 
+                      style={styles.input} 
+                      value={goalForm.current_value} 
+                      onChangeText={t => setGoalForm({...goalForm, current_value: t})} 
+                      placeholder="0" 
+                      placeholderTextColor={Colors.text.tertiary}
+                      keyboardType="numeric"
+                    />
+                  </View>
+                </View>
+
+                <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={saveGoal} disabled={saving}>
+                  {saving ? <ActivityIndicator color={Colors.text.primary} /> : <Text style={styles.saveBtnText}>Save Goal</Text>}
+                </TouchableOpacity>
+                <View style={{ height: 40 }} />
+              </ScrollView>
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -618,4 +763,21 @@ const styles = StyleSheet.create({
   timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
   timeLabel: { color: Colors.text.secondary, fontSize: FontSize.sm },
   timeInput: { backgroundColor: Colors.bg.input, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 8, color: Colors.text.primary, fontSize: FontSize.base, width: 80, textAlign: 'center' },
+  
+  // Goal card styles
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  editGoalBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: Colors.bg.input, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border.default },
+  editGoalBtnText: { color: Colors.brand.accent, fontSize: FontSize.sm, fontWeight: '600' },
+  
+  goalProgressContainer: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border.default },
+  goalProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  goalProgressLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
+  goalProgressNumbers: { color: Colors.brand.primary, fontSize: FontSize.base, fontWeight: '700' },
+  goalProgressBarBg: { height: 8, backgroundColor: Colors.bg.input, borderRadius: 4, overflow: 'hidden' },
+  goalProgressBarFill: { height: '100%', backgroundColor: Colors.brand.primary, borderRadius: 4 },
+  goalDeadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
+  goalDeadlineText: { color: Colors.text.tertiary, fontSize: FontSize.sm },
+  
+  goalNumberRow: { flexDirection: 'row', gap: 16 },
+  goalNumberField: { flex: 1 },
 });
