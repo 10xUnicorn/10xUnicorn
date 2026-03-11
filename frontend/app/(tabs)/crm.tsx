@@ -10,6 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 import { Linking } from 'react-native';
+import { CalendarPicker, getSmartDefaultDate } from '../../src/components/CalendarPicker';
 
 const STAGES = [
   { key: 'lead', label: 'Lead', color: Colors.text.tertiary },
@@ -105,8 +106,9 @@ export default function CRMScreen() {
   // Signal state
   const [showAddSignal, setShowAddSignal] = useState(false);
   const [showEditSignal, setShowEditSignal] = useState<any>(null);
-  const [signalForm, setSignalForm] = useState<any>({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', signal_type: '10x_action' });
+  const [signalForm, setSignalForm] = useState<any>({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', signal_type: '10x_action', due_date: '' });
   const [signalFormLoading, setSignalFormLoading] = useState(false);
+  const [showSignalCalendar, setShowSignalCalendar] = useState(false);
   
   // Deal state
   const [showAddDeal, setShowAddDeal] = useState(false);
@@ -428,7 +430,7 @@ export default function CRMScreen() {
           style={styles.addBtn} 
           onPress={() => {
             if (activeTab === 'signals') {
-              setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', signal_type: '10x_action' });
+              setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', signal_type: '10x_action', due_date: '' });
               setShowAddSignal(true);
             } else if (activeTab === 'deals') {
               resetDealForm();
@@ -501,6 +503,8 @@ export default function CRMScreen() {
                   impact_rating: item.impact_rating || 5,
                   deal_id: item.deal_id || '',
                   notes: item.notes || '',
+                  signal_type: item.signal_type || '10x_action',
+                  due_date: item.due_date || '',
                 });
                 setShowEditSignal(item);
               }}
@@ -1421,6 +1425,24 @@ export default function CRMScreen() {
                   ))}
                 </View>
 
+                <Text style={styles.inputLabel}>Due Date</Text>
+                <TouchableOpacity
+                  testID="crm-signal-due-date-btn"
+                  style={styles.datePickerBtn}
+                  onPress={() => {
+                    if (!signalForm.due_date) setSignalForm({...signalForm, due_date: getSmartDefaultDate()});
+                    setShowSignalCalendar(true);
+                  }}
+                >
+                  <Ionicons name="calendar" size={18} color={Colors.brand.accent} />
+                  <Text style={styles.datePickerText}>
+                    {signalForm.due_date 
+                      ? new Date(signalForm.due_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                      : 'Select date (defaults smart)'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color={Colors.text.tertiary} />
+                </TouchableOpacity>
+
                 <Text style={styles.inputLabel}>Impact Rating (1-10)</Text>
                 <View style={styles.optionRow}>
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
@@ -1491,6 +1513,14 @@ export default function CRMScreen() {
           </KeyboardAvoidingView>
         </View>
       </Modal>
+
+      {/* Calendar Picker for Signal Date */}
+      <CalendarPicker
+        visible={showSignalCalendar}
+        onClose={() => setShowSignalCalendar(false)}
+        onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
+        selectedDate={signalForm.due_date || getSmartDefaultDate()}
+      />
     </SafeAreaView>
   );
 }
@@ -1704,4 +1734,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12, marginTop: 16,
   },
   showMoreBtnText: { color: Colors.brand.accent, fontSize: FontSize.sm, fontWeight: '600' },
+  // Date Picker
+  datePickerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: Colors.bg.input, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: Colors.border.default,
+    paddingHorizontal: 14, paddingVertical: 12, marginTop: 4, marginBottom: 4,
+  },
+  datePickerText: {
+    flex: 1, color: Colors.text.primary, fontSize: FontSize.base,
+  },
 });

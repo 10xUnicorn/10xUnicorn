@@ -1,0 +1,89 @@
+{
+  "summary": "Full testing of 3 new features: (1) Signal due date editing with CalendarPicker, (2) Backend date normalization, (3) Dashboard heatmap. All 13 backend tests passed (100%). Frontend verified: calendar picker opens, date selection works, smart default button present, signals created successfully, dashboard Activity heatmap visible with month grid.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Console", "issues": ["React Native Web deprecation warnings: 'shadow* style props are deprecated. Use boxShadow'", "Unexpected text node warnings - minor but should be cleaned up"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_17_signal_calendar_features.py",
+    "/app/test_reports/pytest/pytest_results_iteration13.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_17_signal_calendar_features.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "email: testbug@test.com, password: test123456",
+  "seed_data_creation": "Created test signals during testing, cleaned up via API",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 new features verified: (1) CalendarPicker component works on Today screen signal modal - shows month grid, day selection, Smart Default button, prev/next month navigation. (2) Backend normalize_date_to_iso() converts MM/DD/YY to YYYY-MM-DD and strips time from ISO datetime. (3) Dashboard Activity heatmap renders with month labels and color-coded grid. Signal CRUD with due_date fully working.",
+  "features_verified": {
+    "feature1_signal_due_date_editing": {
+      "status": "WORKING",
+      "backend_tests": [
+        "POST /api/signals with ISO due_date preserves format",
+        "POST /api/signals with MM/DD/YY normalizes to YYYY-MM-DD",
+        "PUT /api/signals/{id} updates due_date correctly",
+        "PUT /api/signals/{id} with MM/DD/YY normalizes properly"
+      ],
+      "frontend_tests": [
+        "CalendarPicker component opens from Due Date button",
+        "Month/year navigation works (March 2026 displayed)",
+        "Day selection highlights selected date",
+        "Smart Default button present",
+        "Cancel button closes picker",
+        "Selected date displayed in form (Thu, Mar 12)"
+      ]
+    },
+    "feature2_date_normalization": {
+      "status": "WORKING",
+      "tests": [
+        "03/15/26 -> 2026-03-15",
+        "12/31/25 -> 2025-12-31",
+        "01/01/26 -> 2026-01-01",
+        "2026-07-04 stays 2026-07-04 (already ISO)",
+        "2026-05-20T15:30:00Z -> 2026-05-20 (strips time)"
+      ]
+    },
+    "feature3_dashboard_heatmap_autoscroll": {
+      "status": "WORKING",
+      "tests": [
+        "Activity section visible on Dashboard",
+        "Heatmap grid renders with month labels (Mon through Dec)",
+        "Color-coded activity indicators visible",
+        "ScrollView with auto-scroll behavior implemented in code"
+      ]
+    },
+    "signal_update_flow": {
+      "status": "WORKING",
+      "tests": [
+        "Create signal with due_date",
+        "Update signal due_date via PUT",
+        "Multi-field update including due_date",
+        "Full CRUD flow verified"
+      ]
+    }
+  },
+  "data_testids_verified": [
+    "add-signal-btn",
+    "signal-name-input",
+    "signal-due-date-btn",
+    "signal-desc-input",
+    "save-signal-btn",
+    "cal-prev-month",
+    "cal-next-month",
+    "cal-day-YYYY-MM-DD",
+    "cal-today-btn",
+    "cal-cancel-btn",
+    "rating-1 through rating-10"
+  ]
+}

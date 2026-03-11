@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl,
   TouchableOpacity, Modal, TextInput, KeyboardAvoidingView, Platform,
@@ -251,7 +251,11 @@ export default function DashboardScreen() {
                 ))}
               </View>
               {/* Cells */}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                ref={(ref) => { if (ref) setTimeout(() => ref.scrollToEnd({ animated: false }), 100); }}
+              >
                 <View style={styles.heatmapCells}>
                   {Array.from({ length: 52 }).map((_, weekIdx) => (
                     <View key={weekIdx} style={styles.heatmapWeek}>

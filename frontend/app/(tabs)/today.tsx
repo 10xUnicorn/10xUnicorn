@@ -11,6 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize, DETERMINATION_EMOJIS, STATUS_LABELS, STATUS_COLORS, FIVE_CORE_ACTIONS } from '../../src/constants/theme';
 import { DeterminationSlider } from '../../src/components/DeterminationSlider';
+import { CalendarPicker, getSmartDefaultDate } from '../../src/components/CalendarPicker';
 
 const getToday = () => new Date().toISOString().split('T')[0];
 const formatDate = (d: string) => {
@@ -42,10 +43,12 @@ export default function TodayScreen() {
   const [signals, setSignals] = useState<any[]>([]);
   const [showAddSignal, setShowAddSignal] = useState(false);
   const [showEditSignal, setShowEditSignal] = useState<any>(null);
-  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '' });
+  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', due_date: '' });
   const [deals, setDeals] = useState<any[]>([]);
   const [topSignal, setTopSignal] = useState<any>(null);
   const [completedSignals, setCompletedSignals] = useState<Set<string>>(new Set());
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [editCalendar, setEditCalendar] = useState(false);
   
   // Wormhole contacts state
   const [wormholeContacts, setWormholeContacts] = useState<any[]>([]);
@@ -196,21 +199,18 @@ export default function TodayScreen() {
     if (!signalForm.name?.trim()) return;
     setSaving(true);
     try {
-      const now = new Date();
-      const hour = now.getHours();
-      const defaultDate = hour >= 15 ? new Date(now.getTime() + 86400000) : now;
-      
       await api.post('/signals', {
         name: signalForm.name,
         description: signalForm.description || '',
         impact_rating: signalForm.impact_rating,
-        due_date: toISODate(defaultDate),
+        due_date: signalForm.due_date || getSmartDefaultDate(),
         deal_id: signalForm.deal_id || null,
+        notes: signalForm.notes || '',
         is_public: true,
         is_top_10x_action: false,
       });
       setShowAddSignal(false);
-      setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '' });
+      setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', due_date: '' });
       loadEntry();
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -856,6 +856,24 @@ export default function TodayScreen() {
               placeholder="What will you accomplish?"
               placeholderTextColor={Colors.text.tertiary}
             />
+
+            <Text style={styles.inputLabel}>Due Date</Text>
+            <TouchableOpacity
+              testID="signal-due-date-btn"
+              style={styles.datePickerBtn}
+              onPress={() => {
+                if (!signalForm.due_date) setSignalForm({...signalForm, due_date: getSmartDefaultDate()});
+                setShowCalendar(true);
+              }}
+            >
+              <Ionicons name="calendar" size={18} color={Colors.brand.accent} />
+              <Text style={styles.datePickerText}>
+                {signalForm.due_date 
+                  ? new Date(signalForm.due_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                  : 'Select date (defaults smart)'}
+              </Text>
+              <Ionicons name="chevron-down" size={16} color={Colors.text.tertiary} />
+            </TouchableOpacity>
             
             <Text style={styles.inputLabel}>Description</Text>
             <TextInput
@@ -918,6 +936,14 @@ export default function TodayScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Calendar Picker for Add Signal */}
+      <CalendarPicker
+        visible={showCalendar}
+        onClose={() => setShowCalendar(false)}
+        onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
+        selectedDate={signalForm.due_date || getSmartDefaultDate()}
+      />
 
       {/* Compound Habit Counter Modal */}
       <Modal visible={showCompoundCounter} animationType="fade" transparent>
@@ -1017,6 +1043,21 @@ export default function TodayScreen() {
                 placeholder="What will you accomplish?"
                 placeholderTextColor={Colors.text.tertiary}
               />
+
+              <Text style={styles.inputLabel}>Due Date</Text>
+              <TouchableOpacity
+                testID="edit-signal-due-date-btn"
+                style={styles.datePickerBtn}
+                onPress={() => setEditCalendar(true)}
+              >
+                <Ionicons name="calendar" size={18} color={Colors.brand.accent} />
+                <Text style={styles.datePickerText}>
+                  {showEditSignal?.due_date 
+                    ? new Date(normalizeDate(showEditSignal.due_date) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+                    : 'No date set'}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={Colors.text.tertiary} />
+              </TouchableOpacity>
               
               <Text style={styles.inputLabel}>Description</Text>
               <TextInput
@@ -1064,7 +1105,6 @@ export default function TodayScreen() {
                     onPress={async () => {
                       if (showEditSignal?.id) {
                         await uncompleteSignal(showEditSignal.id);
-                        // Also update entry if this is the top 10x action
                         if (showEditSignal.is_top_10x_action) {
                           updateEntry({ 
                             top_priority_completed: false,
@@ -1091,6 +1131,7 @@ export default function TodayScreen() {
                       description: showEditSignal.description,
                       notes: showEditSignal.notes,
                       impact_rating: showEditSignal.impact_rating,
+                      due_date: showEditSignal.due_date,
                     });
                   }
                 }}
@@ -1103,6 +1144,14 @@ export default function TodayScreen() {
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Calendar Picker for Edit Signal */}
+      <CalendarPicker
+        visible={editCalendar}
+        onClose={() => setEditCalendar(false)}
+        onSelect={(date) => setShowEditSignal({ ...showEditSignal, due_date: date })}
+        selectedDate={showEditSignal?.due_date ? normalizeDate(showEditSignal.due_date) : getSmartDefaultDate()}
+      />
     </SafeAreaView>
   );
 }
@@ -1667,5 +1716,15 @@ const styles = StyleSheet.create({
   },
   wormholePickCompany: {
     color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2,
+  },
+  // Date Picker
+  datePickerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: Colors.bg.input, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: Colors.border.default,
+    paddingHorizontal: 14, paddingVertical: 12, marginTop: 4, marginBottom: 4,
+  },
+  datePickerText: {
+    flex: 1, color: Colors.text.primary, fontSize: FontSize.base,
   },
 });

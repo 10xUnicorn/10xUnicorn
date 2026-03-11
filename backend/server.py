@@ -1810,6 +1810,8 @@ async def get_signal(signal_id: str, user: dict = Depends(get_current_user)):
 @api_router.put("/signals/{signal_id}")
 async def update_signal(signal_id: str, input_data: SignalUpdate, user: dict = Depends(get_current_user)):
     updates = {k: v for k, v in input_data.dict().items() if v is not None}
+    if 'due_date' in updates and updates['due_date']:
+        updates['due_date'] = normalize_date_to_iso(updates['due_date'])
     if updates:
         await db.signals.update_one(
             {"id": signal_id, "user_id": user['id']},
