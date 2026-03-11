@@ -402,7 +402,6 @@ class SignalUpdate(BaseModel):
     notes: Optional[str] = None
 
 class SignalCompletionInput(BaseModel):
-    signal_id: str
     notes: Optional[str] = ""
 
 # Contact Labels

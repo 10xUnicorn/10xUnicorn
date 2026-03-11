@@ -11,7 +11,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize, DETERMINATION_EMOJIS, STATUS_LABELS, STATUS_COLORS, FIVE_CORE_ACTIONS } from '../../src/constants/theme';
 import { DeterminationSlider } from '../../src/components/DeterminationSlider';
-import { CalendarPicker, getSmartDefaultDate } from '../../src/components/CalendarPicker';
+import { CalendarContent, getSmartDefaultDate } from '../../src/components/CalendarPicker';
 
 const getToday = () => new Date().toISOString().split('T')[0];
 const formatDate = (d: string) => {
@@ -164,7 +164,7 @@ export default function TodayScreen() {
       await api.post(`/signals/${signalId}/complete`, { notes: '' });
       loadEntry();
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Error', typeof e === 'string' ? e : e?.message || e?.detail || 'Failed to complete signal');
     }
   };
 
@@ -933,17 +933,20 @@ export default function TodayScreen() {
             >
               <Text style={styles.saveSignalBtnText}>Add Signal</Text>
             </TouchableOpacity>
+
+            {/* Inline Calendar for Add Signal */}
+            {showCalendar && (
+              <View style={styles.calendarOverlay}>
+                <CalendarContent
+                  onClose={() => setShowCalendar(false)}
+                  onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
+                  selectedDate={signalForm.due_date || getSmartDefaultDate()}
+                />
+              </View>
+            )}
           </View>
         </View>
       </Modal>
-
-      {/* Calendar Picker for Add Signal */}
-      <CalendarPicker
-        visible={showCalendar}
-        onClose={() => setShowCalendar(false)}
-        onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
-        selectedDate={signalForm.due_date || getSmartDefaultDate()}
-      />
 
       {/* Compound Habit Counter Modal */}
       <Modal visible={showCompoundCounter} animationType="fade" transparent>
@@ -1139,19 +1142,23 @@ export default function TodayScreen() {
               >
                 <Text style={styles.saveSignalBtnText}>Save Changes</Text>
               </TouchableOpacity>
+
+              {/* Inline Calendar for Edit Signal */}
+              {editCalendar && (
+                <View style={styles.calendarOverlay}>
+                  <CalendarContent
+                    onClose={() => setEditCalendar(false)}
+                    onSelect={(date) => setShowEditSignal({ ...showEditSignal, due_date: date })}
+                    selectedDate={showEditSignal?.due_date ? normalizeDate(showEditSignal.due_date) : getSmartDefaultDate()}
+                  />
+                </View>
+              )}
+
               <View style={{ height: 50 }} />
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
-
-      {/* Calendar Picker for Edit Signal */}
-      <CalendarPicker
-        visible={editCalendar}
-        onClose={() => setEditCalendar(false)}
-        onSelect={(date) => setShowEditSignal({ ...showEditSignal, due_date: date })}
-        selectedDate={showEditSignal?.due_date ? normalizeDate(showEditSignal.due_date) : getSmartDefaultDate()}
-      />
     </SafeAreaView>
   );
 }
@@ -1726,5 +1733,11 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     flex: 1, color: Colors.text.primary, fontSize: FontSize.base,
+  },
+  calendarOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center', alignItems: 'center',
+    padding: 16, zIndex: 100,
   },
 });

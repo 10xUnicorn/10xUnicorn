@@ -10,7 +10,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../src/utils/api';
 import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
 import { Linking } from 'react-native';
-import { CalendarPicker, getSmartDefaultDate } from '../../src/components/CalendarPicker';
+import { CalendarContent, getSmartDefaultDate } from '../../src/components/CalendarPicker';
 
 const STAGES = [
   { key: 'lead', label: 'Lead', color: Colors.text.tertiary },
@@ -1514,13 +1514,16 @@ export default function CRMScreen() {
         </View>
       </Modal>
 
-      {/* Calendar Picker for Signal Date */}
-      <CalendarPicker
-        visible={showSignalCalendar}
-        onClose={() => setShowSignalCalendar(false)}
-        onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
-        selectedDate={signalForm.due_date || getSmartDefaultDate()}
-      />
+      {/* Calendar Picker for Signal Date - inline overlay */}
+      {showSignalCalendar && (
+        <View style={styles.calendarOverlayFull}>
+          <CalendarContent
+            onClose={() => setShowSignalCalendar(false)}
+            onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
+            selectedDate={signalForm.due_date || getSmartDefaultDate()}
+          />
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1743,5 +1746,11 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     flex: 1, color: Colors.text.primary, fontSize: FontSize.base,
+  },
+  calendarOverlayFull: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center', alignItems: 'center',
+    padding: 16, zIndex: 100,
   },
 });

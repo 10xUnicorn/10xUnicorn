@@ -19,14 +19,14 @@ export const getSmartDefaultDate = (): string => {
   return target.toISOString().split('T')[0];
 };
 
-interface CalendarPickerProps {
-  visible: boolean;
+interface CalendarContentProps {
   onClose: () => void;
   onSelect: (date: string) => void;
   selectedDate?: string;
 }
 
-export const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, onClose, onSelect, selectedDate }) => {
+// The core calendar UI — no Modal wrapper
+export const CalendarContent: React.FC<CalendarContentProps> = ({ onClose, onSelect, selectedDate }) => {
   const initial = selectedDate || getSmartDefaultDate();
   const [viewYear, setViewYear] = useState(parseInt(initial.split('-')[0]));
   const [viewMonth, setViewMonth] = useState(parseInt(initial.split('-')[1]) - 1);
@@ -38,18 +38,15 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, onClose
     const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
     const cells: { day: number; dateStr: string; isCurrentMonth: boolean }[] = [];
-    // Previous month trailing days
     for (let i = firstDay - 1; i >= 0; i--) {
       const d = daysInPrevMonth - i;
       const m = viewMonth === 0 ? 11 : viewMonth - 1;
       const y = viewMonth === 0 ? viewYear - 1 : viewYear;
       cells.push({ day: d, dateStr: `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, isCurrentMonth: false });
     }
-    // Current month days
     for (let d = 1; d <= daysInMonth; d++) {
       cells.push({ day: d, dateStr: `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`, isCurrentMonth: true });
     }
-    // Next month leading days
     const remaining = 42 - cells.length;
     for (let d = 1; d <= remaining; d++) {
       const m = viewMonth === 11 ? 0 : viewMonth + 1;
@@ -63,78 +60,70 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, onClose
     if (viewMonth === 0) { setViewMonth(11); setViewYear(viewYear - 1); }
     else setViewMonth(viewMonth - 1);
   };
-
   const goToNextMonth = () => {
     if (viewMonth === 11) { setViewMonth(0); setViewYear(viewYear + 1); }
     else setViewMonth(viewMonth + 1);
   };
 
   return (
+    <View style={s.container}>
+      <View style={s.header}>
+        <TouchableOpacity testID="cal-prev-month" onPress={goToPrevMonth} style={s.navBtn}>
+          <Ionicons name="chevron-back" size={22} color={Colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={s.monthTitle}>{MONTHS[viewMonth]} {viewYear}</Text>
+        <TouchableOpacity testID="cal-next-month" onPress={goToNextMonth} style={s.navBtn}>
+          <Ionicons name="chevron-forward" size={22} color={Colors.text.primary} />
+        </TouchableOpacity>
+      </View>
+      <View style={s.weekRow}>
+        {WEEKDAYS.map(d => <Text key={d} style={s.weekDay}>{d}</Text>)}
+      </View>
+      <View style={s.grid}>
+        {days.map((cell, idx) => {
+          const isSelected = cell.dateStr === selectedDate;
+          const isToday = cell.dateStr === todayStr;
+          return (
+            <TouchableOpacity
+              key={idx}
+              testID={`cal-day-${cell.dateStr}`}
+              style={[s.dayCell, isSelected && s.dayCellSelected, isToday && !isSelected && s.dayCellToday]}
+              onPress={() => { onSelect(cell.dateStr); onClose(); }}
+            >
+              <Text style={[s.dayText, !cell.isCurrentMonth && s.dayTextOther, isSelected && s.dayTextSelected, isToday && !isSelected && s.dayTextToday]}>
+                {cell.day}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <View style={s.footer}>
+        <TouchableOpacity testID="cal-today-btn" style={s.todayBtn} onPress={() => {
+          const smart = getSmartDefaultDate();
+          onSelect(smart);
+          onClose();
+        }}>
+          <Text style={s.todayBtnText}>Smart Default</Text>
+        </TouchableOpacity>
+        <TouchableOpacity testID="cal-cancel-btn" style={s.cancelBtn} onPress={onClose}>
+          <Text style={s.cancelBtnText}>Cancel</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+// Standalone version with Modal wrapper (for use outside other modals)
+interface CalendarPickerProps extends CalendarContentProps {
+  visible: boolean;
+}
+
+export const CalendarPicker: React.FC<CalendarPickerProps> = ({ visible, ...rest }) => {
+  if (!visible) return null;
+  return (
     <Modal visible={visible} animationType="fade" transparent>
       <View style={s.overlay}>
-        <View style={s.container}>
-          {/* Header */}
-          <View style={s.header}>
-            <TouchableOpacity testID="cal-prev-month" onPress={goToPrevMonth} style={s.navBtn}>
-              <Ionicons name="chevron-back" size={22} color={Colors.text.primary} />
-            </TouchableOpacity>
-            <Text style={s.monthTitle}>{MONTHS[viewMonth]} {viewYear}</Text>
-            <TouchableOpacity testID="cal-next-month" onPress={goToNextMonth} style={s.navBtn}>
-              <Ionicons name="chevron-forward" size={22} color={Colors.text.primary} />
-            </TouchableOpacity>
-          </View>
-
-          {/* Weekday headers */}
-          <View style={s.weekRow}>
-            {WEEKDAYS.map(d => <Text key={d} style={s.weekDay}>{d}</Text>)}
-          </View>
-
-          {/* Days grid */}
-          <View style={s.grid}>
-            {days.map((cell, idx) => {
-              const isSelected = cell.dateStr === selectedDate;
-              const isToday = cell.dateStr === todayStr;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  testID={`cal-day-${cell.dateStr}`}
-                  style={[
-                    s.dayCell,
-                    isSelected && s.dayCellSelected,
-                    isToday && !isSelected && s.dayCellToday,
-                  ]}
-                  onPress={() => { onSelect(cell.dateStr); onClose(); }}
-                >
-                  <Text style={[
-                    s.dayText,
-                    !cell.isCurrentMonth && s.dayTextOther,
-                    isSelected && s.dayTextSelected,
-                    isToday && !isSelected && s.dayTextToday,
-                  ]}>
-                    {cell.day}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Footer */}
-          <View style={s.footer}>
-            <TouchableOpacity testID="cal-today-btn" style={s.todayBtn} onPress={() => {
-              const smart = getSmartDefaultDate();
-              const d = new Date(smart + 'T12:00:00');
-              setViewYear(d.getFullYear());
-              setViewMonth(d.getMonth());
-              onSelect(smart);
-              onClose();
-            }}>
-              <Text style={s.todayBtnText}>Smart Default</Text>
-            </TouchableOpacity>
-            <TouchableOpacity testID="cal-cancel-btn" style={s.cancelBtn} onPress={onClose}>
-              <Text style={s.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <CalendarContent {...rest} />
       </View>
     </Modal>
   );

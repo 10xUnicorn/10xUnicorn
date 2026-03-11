@@ -1,0 +1,85 @@
+{
+  "summary": "All 3 bug fixes verified working. Bug 1 (Signal Completion Error): Backend POST /api/signals/{id}/complete now correctly accepts {notes: ''} body only (signal_id from URL path). 8/8 backend tests passed. Bug 2 (Calendar Picker): CalendarContent renders inline as overlay inside Add Signal modal with month navigation, day selection, and Smart Default button all working. Bug 3 (Ghost Modal): After calendar interaction, navigation tabs (Daily, Dashboard, Community, CRM, Profile) remain clickable - no ghost modal blocking.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Console", "issues": ["React Native Web deprecation warnings: 'shadow* style props are deprecated. Use boxShadow' - cosmetic only"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_18_signal_completion_bug_fixes.py",
+    "/app/test_reports/pytest/pytest_results_iteration14.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_18_signal_completion_bug_fixes.py"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "email: testbug@test.com, password: test123456",
+  "seed_data_creation": "Created test signals during backend testing (cleaned up automatically)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 bugs from user report are fixed: (1) Signal completion API now works with body {notes:''} only - signal_id comes from URL path param, not body. (2) CalendarContent component (no Modal wrapper) is used inside signal modals as absolute-positioned overlay. (3) Ghost modal issue eliminated by using CalendarContent instead of CalendarPicker (which had its own Modal wrapper causing nested modals).",
+  "features_verified": {
+    "bug1_signal_completion": {
+      "status": "FIXED",
+      "root_cause": "SignalCompletionInput Pydantic model had signal_id field that caused 422 validation error since signal_id comes from URL path",
+      "fix": "Removed signal_id from SignalCompletionInput - now only has optional notes field",
+      "backend_tests": [
+        "POST /api/signals/{id}/complete with {notes: ''} returns 200",
+        "POST /api/signals/{id}/complete with {notes: 'content'} returns 200",
+        "POST /api/signals/{id}/complete for top_10x_action returns 200",
+        "POST /api/signals/invalid-id/complete returns 404",
+        "Signal complete->uncomplete flow works"
+      ],
+      "frontend_verification": "completeSignal() in today.tsx now sends only {notes: ''} without signal_id in body"
+    },
+    "bug2_calendar_picker_in_modal": {
+      "status": "FIXED",
+      "root_cause": "CalendarPicker component used nested Modal inside Add Signal Modal, causing touch event issues on mobile",
+      "fix": "Replaced CalendarPicker with CalendarContent (no Modal wrapper) rendered as absolute-positioned overlay inside existing modal",
+      "ui_tests": [
+        "Add Signal modal opens correctly",
+        "Clicking Due Date button shows CalendarContent overlay",
+        "Month navigation (prev/next) works",
+        "Day selection highlights and closes calendar",
+        "Smart Default button works",
+        "Cancel button closes calendar"
+      ],
+      "component_used": "CalendarContent from CalendarPicker.tsx (lines 29-114)"
+    },
+    "bug3_ghost_modal_blocking": {
+      "status": "FIXED",
+      "root_cause": "CalendarPicker's Modal wrapper would block touch events even when invisible after closing",
+      "fix": "Using inline CalendarContent eliminates the nested Modal issue entirely",
+      "ui_tests": [
+        "After calendar interaction, modal close button works",
+        "After calendar interaction, navigation tabs (Daily, Dashboard, CRM) are clickable",
+        "No invisible overlay blocking button clicks"
+      ]
+    }
+  },
+  "data_testids_verified": [
+    "add-signal-btn",
+    "signal-name-input",
+    "signal-due-date-btn",
+    "signal-desc-input",
+    "save-signal-btn",
+    "cal-prev-month",
+    "cal-next-month",
+    "cal-day-YYYY-MM-DD",
+    "cal-today-btn",
+    "cal-cancel-btn"
+  ],
+  "code_files_reviewed": {
+    "/app/backend/server.py": "SignalCompletionInput at line 404-405 has only notes field. complete_signal endpoint at line 1831 accepts signal_id from URL path.",
+    "/app/frontend/app/(tabs)/today.tsx": "CalendarContent import at line 14. Inline calendar overlays at lines 938-946 (Add Signal) and 1147-1154 (Edit Signal). completeSignal at line 162-168.",
+    "/app/frontend/src/components/CalendarPicker.tsx": "CalendarContent (lines 29-114) exports standalone calendar UI. CalendarPicker (lines 121-129) wraps CalendarContent in Modal for use outside other modals."
+  }
+}
