@@ -151,6 +151,11 @@
 - [x] **Smart Default Date** - Calendar picker defaults to today if before 3 PM, tomorrow if after 3 PM via `getSmartDefaultDate()`
 - [x] **Dashboard Heatmap Auto-Scroll** - Heatmap now auto-scrolls to most recent activity on load instead of showing oldest dates first
 
+## Bug Fixes (March 11, 2026 - Session 2)
+- [x] **Signal Completion "Error Object"** - Removed redundant `signal_id` from `SignalCompletionInput` Pydantic model (it comes from URL path). Also improved error handling in frontend to show readable messages instead of `[object Object]`
+- [x] **Calendar Not Opening in Modal** - Replaced nested `<CalendarPicker>` (uses Modal wrapper) with inline `<CalendarContent>` (no Modal) rendered as an absolute overlay inside existing modals. React Native Web doesn't handle nested Modals well
+- [x] **Ghost Modal Blocking Buttons** - Eliminated by removing nested Modal usage. CalendarContent renders inline, preventing invisible Modal from blocking touch events
+
 ## Upcoming Tasks
 - [ ] Daily Compound action targets
 - [ ] Weekly progress summary on dashboard
