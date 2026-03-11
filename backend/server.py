@@ -80,6 +80,26 @@ MIME_TYPES = {
     "gif": "image/gif", "webp": "image/webp", "heic": "image/heic"
 }
 
+def normalize_date_to_iso(date_str: str) -> str:
+    """Normalize any date string to YYYY-MM-DD format"""
+    if not date_str:
+        return None
+    date_str = date_str.strip()
+    # Already YYYY-MM-DD
+    if len(date_str) == 10 and date_str[4] == '-' and date_str[7] == '-':
+        return date_str
+    # MM/DD/YY format
+    if '/' in date_str:
+        parts = date_str.split('/')
+        if len(parts) == 3:
+            month, day, year = parts
+            year_full = f"20{year}" if len(year) <= 2 else year
+            return f"{year_full}-{month.zfill(2)}-{day.zfill(2)}"
+    # ISO datetime string
+    if 'T' in date_str:
+        return date_str[:10]
+    return date_str
+
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
 security = HTTPBearer()
@@ -1729,16 +1749,16 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
     
     # For top 10x action, check if one already exists for today
     today_iso = datetime.now(timezone.utc).strftime("%Y-%m-%d")  # ISO format
-    today_mmddyy = datetime.now(timezone.utc).strftime("%m/%d/%y")  # MM/DD/YY format
+    today_mmddyy = datetime.now(timezone.utc).strftime("%m/%d/%y")  # MM/DD/YY format (legacy)
     if input_data.is_top_10x_action:
-        # Check both date formats for existing top 10x action
+        # Check all possible date formats for existing top 10x action
         existing_top = await db.signals.find_one({
             "user_id": user['id'],
             "is_top_10x_action": True,
             "$or": [
                 {"due_date": today_mmddyy},
                 {"due_date": today_iso},
-                {"due_date": {"$regex": f"^{today_iso}"}}  # Also check ISO datetime strings
+                {"due_date": {"$regex": f"^{today_iso}"}}
             ]
         })
         if existing_top:
@@ -1752,7 +1772,7 @@ async def create_signal(input_data: SignalInput, user: dict = Depends(get_curren
         "description": input_data.description or "",
         "signal_type": input_data.signal_type or "10x_action",  # 10x_action, revenue, wormhole
         "impact_rating": 10 if input_data.is_top_10x_action else input_data.impact_rating,  # Top 10x = 10 pts
-        "due_date": input_data.due_date,  # MM/DD/YY format
+        "due_date": normalize_date_to_iso(input_data.due_date) if input_data.due_date else None,
         "deal_id": input_data.deal_id,  # Associated deal
         "is_public": input_data.is_public,
         "is_top_10x_action": input_data.is_top_10x_action,  # Mark as top 10x action
@@ -1833,7 +1853,8 @@ async def complete_signal(signal_id: str, input_data: SignalCompletionInput, use
     
     if due_date and created_at:
         try:
-            due = datetime.fromisoformat(due_date.replace('Z', '+00:00')) if 'T' in due_date else datetime.strptime(due_date, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+            normalized_due = normalize_date_to_iso(due_date)
+            due = datetime.strptime(normalized_due, '%Y-%m-%d').replace(tzinfo=timezone.utc) if normalized_due else None
             created = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
             # If due date is at least 1 day after creation, it was planned ahead
             if (due.date() - created.date()).days >= 1:
@@ -2239,7 +2260,7 @@ async def get_member_profile(user: dict = Depends(get_current_user)):
     member_profile = await db.member_profiles.find_one({"user_id": user['id']}, {"_id": 0})
     points = await db.user_points.find_one({"user_id": user['id']}, {"_id": 0})
     
-    return {
+    result = {
         "user_id": user['id'],
         "display_name": profile.get('display_name', '') if profile else '',
         "company": profile.get('company', '') if profile else '',
@@ -2251,6 +2272,10 @@ async def get_member_profile(user: dict = Depends(get_current_user)):
         "total_points": points.get('total_points', 0) if points else 0,
         **(member_profile or {})
     }
+    # Construct profile photo URL from storage path if not already set
+    if member_profile and member_profile.get('profile_photo_path') and not result.get('profile_photo_url'):
+        result['profile_photo_url'] = f"/api/photos/{user['id']}"
+    return result
 
 @api_router.put("/member/profile")
 async def update_member_profile(input_data: MemberProfileUpdate, user: dict = Depends(get_current_user)):
@@ -3173,14 +3198,18 @@ async def upload_profile_photo(file: UploadFile = File(...), user: dict = Depend
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         
-        # Update member profile with storage path
+        # Update member profile with storage path and photo URL
+        photo_url = f"/api/photos/{user['id']}"
         await db.member_profiles.update_one(
             {"user_id": user['id']},
-            {"$set": {"profile_photo_path": result["path"]}},
+            {"$set": {
+                "profile_photo_path": result["path"],
+                "profile_photo_url": photo_url,
+            }},
             upsert=True
         )
         
-        return {"message": "Profile photo uploaded", "path": result["path"]}
+        return {"message": "Profile photo uploaded", "path": result["path"], "profile_photo_url": photo_url}
     except Exception as e:
         logger.error(f"Photo upload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -3219,14 +3248,18 @@ async def save_profile_photo(photo_data: dict, user: dict = Depends(get_current_
             "created_at": datetime.now(timezone.utc).isoformat()
         })
         
-        # Update member profile with storage path
+        # Update member profile with storage path and photo URL
+        photo_url = f"/api/photos/{user['id']}"
         await db.member_profiles.update_one(
             {"user_id": user['id']},
-            {"$set": {"profile_photo_path": result["path"]}},
+            {"$set": {
+                "profile_photo_path": result["path"],
+                "profile_photo_url": photo_url,
+            }},
             upsert=True
         )
         
-        return {"message": "Profile photo updated", "path": result["path"]}
+        return {"message": "Profile photo updated", "path": result["path"], "profile_photo_url": photo_url}
     except Exception as e:
         logger.error(f"Photo save failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -3247,6 +3280,19 @@ async def download_file(path: str, authorization: str = Header(None), auth: str 
         logger.error(f"File download failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/photos/{user_id}")
+async def get_profile_photo(user_id: str):
+    """Public endpoint to serve profile photos without auth"""
+    member = await db.member_profiles.find_one({"user_id": user_id})
+    if not member or not member.get('profile_photo_path'):
+        raise HTTPException(status_code=404, detail="No photo found")
+    try:
+        data, content_type = get_object(member['profile_photo_path'])
+        return Response(content=data, media_type=content_type)
+    except Exception as e:
+        logger.error(f"Photo fetch failed: {e}")
+        raise HTTPException(status_code=404, detail="Photo not found")
+
 @api_router.delete("/profiles/photo")
 async def delete_profile_photo(user: dict = Depends(get_current_user)):
     """Remove profile photo (soft delete)"""
@@ -3257,7 +3303,7 @@ async def delete_profile_photo(user: dict = Depends(get_current_user)):
     )
     await db.member_profiles.update_one(
         {"user_id": user['id']},
-        {"$unset": {"profile_photo_path": ""}}
+        {"$unset": {"profile_photo_path": "", "profile_photo_url": ""}}
     )
     return {"message": "Profile photo removed"}
 

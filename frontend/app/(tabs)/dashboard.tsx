@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   monthLabel: { 
     color: Colors.text.tertiary, 
     fontSize: 10, 
-    width: 30,
+    flex: 1,
     textAlign: 'center',
   },
   heatmapGrid: { 
@@ -597,13 +597,14 @@ const styles = StyleSheet.create({
   },
   heatmapDays: { 
     width: 30, 
-    justifyContent: 'space-between',
-    paddingVertical: 2,
+    paddingVertical: 0,
+    gap: 3,
   },
   dayLabelSmall: { 
     color: Colors.text.tertiary, 
     fontSize: 10,
     height: 12,
+    lineHeight: 12,
   },
   heatmapCells: { 
     flexDirection: 'row' 

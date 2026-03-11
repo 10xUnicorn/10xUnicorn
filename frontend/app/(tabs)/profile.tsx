@@ -277,7 +277,7 @@ export default function ProfileScreen() {
         <LinearGradient colors={[Colors.brand.primary + '20', 'transparent']} style={styles.headerCard}>
           <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={uploadingPhoto}>
             {memberProfile?.profile_photo_url ? (
-              <Image source={{ uri: memberProfile.profile_photo_url }} style={styles.profilePhoto} />
+              <Image source={{ uri: `${process.env.EXPO_PUBLIC_BACKEND_URL}${memberProfile.profile_photo_url}` }} style={styles.profilePhoto} />
             ) : (
               <View style={styles.bigAvatar}>
                 <Text style={styles.bigAvatarText}>

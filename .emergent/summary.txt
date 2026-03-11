@@ -1,197 +1,143 @@
 <analysis>**original_problem_statement:**
-The user wants to build a 10x Unicorn mobile application, which is an integrated goal execution dashboard, relationship intelligence system, and community performance platform for business owners.
+The user wants to build a 10x Unicorn mobile application, an integrated goal execution dashboard, relationship intelligence system, and community performance platform for business owners.
 
 **PRODUCT REQUIREMENTS (Summary of all user requests):**
-- **UI/UX:** A dark, futuristic theme with navy, purple, and cyan accents. Mobile-first design.
-- **Authentication:** Standard email/password login.
-- **Onboarding:** A flow to capture user's name, timezone, and primary 10x Goal.
-- **Today Screen:**
-    - A fluid determination slider with gradient and custom emoji thumb (fire, diamond, unicorn).
-    - A single Top 10x Action for the day, which functions as a special Signal worth 10 points.
-    - A checklist of 5 core actions with updated descriptions, leading to a 10x Unicorn Win.
-- **Dashboard Screen (New Tab):**
-    - A new tab between Today and Community.
-    - Display user stats: streaks, Unicorn Days, last 7-day performance, determination trend.
-    - An activity heatmap similar to GitHub's contribution graph.
-- **10x Goal Tracking:**
-    - Goals must have a deadline and a measurable target. Daily progress check-ins with a progress bar and status.
-    - A status ring around the user's profile picture indicating goal progress.
-    - A Help Request system triggered when a user is significantly off track.
-- **Signals System:**
-    - Signals have an impact rating, a due date (via calendar picker), and can be associated with a Deal.
-- **CRM System (CRM Tab):**
-    - Consolidates Deals and Wormhole (Contacts) into a single tab.
-    - **Contacts:**
-        - Extensive profile fields (social media, leverage, engagement score, etc.), connection levels, and tags.
-        - A detailed view with an activity log ().
-        - Contacts can be labeled as Prospect, Client, Wormhole, etc.
-    - **Deals:**
-        - Track opportunities with value, stage, and a .
-        - Push notifications for  reminders.
-- **Community Features:**
-    - A public feed, leaderboard, searchable member directory, and extensive member profiles.
-    - Profile photo upload feature.
-    - Real-time direct and group messaging.
-- **Push Notifications:**
-    - For Deal reminders and daily check-ins.
-    - User-configurable notification settings in their profile.
+*   **UI/UX:** Dark, futuristic theme (navy, purple, cyan). Mobile-first design.
+*   **Authentication:** Email/password, Google Sign-In, and password reset.
+*   **Onboarding:** Capture user's name, timezone, and primary 10x Goal.
+*   **Today Screen:**
+    *   Determination slider with dynamic emojis and motivational quotes.
+    *   Editable Top 10x Action with completion tracking.
+    *   A 5-item checklist that automatically triggers a 10x Unicorn Win or Priority Win status update.
+    *   A Daily Compound habit tracker with an up/down counter and a user-settable target.
+*   **Dashboard Screen:**
+    *   User stats: streaks, win counts, performance charts, and an activity heatmap (currently has rendering issues).
+    *   A goal progress bar showing on/off-track status.
+    *   A Wormhole Network section to display top-priority contacts.
+*   **10x Goal Tracking:**
+    *   Goals with a deadline, measurable target, and progress history.
+    *   The profile screen should display goal progress and have an edit button.
+*   **CRM System (CRM Tab):**
+    *   Consolidates Signals, Contacts, and Deals.
+    *   **Contacts:** Extensive profiles with dynamic fields that change based on contact type (e.g., Wormhole, Prospect, Client).
+    *   **Contact Import:** Allow importing a specific contact from the user's phone via a picker.
+    *   **Signals:** Show on the correct date; fix Invalid Date issue. Associate signals created from the Today screen with the current day.
+*   **Community & Profile:**
+    *   Users can post wins and content with a rich text editor and image/file uploads.
+    *   Users can react and comment on feed posts.
+    *   Profile photo upload needs to be fixed to show the updated image.
+    *   Implement an 8 Pillars of 10x Unicorn blueprint/roadmap within the user profile.
+*   **Navigation:** Fix issue where the Messages screen loses the main app navigation.
 
 **User's preferred language**: English
 
 **what currently exists?**
-The application is a full-stack Expo (React Native) and FastAPI app. A massive number of features were implemented in the last session. The backend now supports enhanced CRM contacts, wormhole logging, basic messaging, push token registration, and profile photo uploads. The frontend has been updated with a consolidated CRM tab, a highly detailed contact management UI, stubs for messaging, and UI for profile photo uploads and notification settings. The backend has been tested via the testing agent, and several bugs were found and fixed. The frontend build is successful, but end-to-end UI verification was hampered by Expo tunnel instability.
+The application is a full-stack Expo (React Native) and FastAPI app. A significant number of features have been implemented and major bugs fixed. This includes Google authentication, password reset, a functional Today screen with dynamic quotes, a working Edit Goal modal, automatic win-state updates, and dynamic forms in the CRM for Wormhole contacts. However, the user has identified a new set of bugs related to date formatting on signals, UI rendering on the dashboard, and data association for contacts. The user has also requested a substantial number of new features centered around community engagement and a comprehensive user roadmap based on their 8 Pillars concept.
 
 **Last working item**:
-    - Last item agent was working: The user asked for the exact captions that were provided with a set of screenshots in a previous message. The agent provided these captions and asked for confirmation to proceed with implementing the next set of features (Dashboard, Push Notifications, Real-time messaging).
-    - Status: USER VERIFICATION PENDING
-    - Agent Testing Done: N/A
-    - Which testing method agent to use? N/A
+    - Last item agent was working: The user reported a new set of bugs and feature requests. Following the user's direction to fix bugs first, the agent was about to start investigating the first bug on the list: why a wormhole contact isn't being set as the focused relationship for the day when added.
+    - Status: NOT STARTED
+    - Agent Testing Done: N
+    - Which testing method agent to use? backend testing agent to verify API logic and frontend testing agent to check the UI flow.
     - User Testing Done: N
 
 **All Pending/In progress Issue list**:
-  Issue 1: ESLint is not configured for TypeScript (P2)
+  Issue 1:  Wormhole contact not getting added as the focused relationship for the day (P0)
+  Issue 2:  Signals show an Invalid Date error (P0)
+  Issue 3:  Profile photo does not update after saving (P1)
+  Issue 4:  Activity tracker heatmap on the dashboard is cut off/not rendering correctly (P1)
   
   Issues Detail:
   - Issue 1: 
-     - Description: The  file is not set up to parse  files, so  fails on frontend files. This has been ignored to focus on feature development.
-     - Attempted fixes: None.
+     - Description: When a user adds a wormhole contact, it's not being correctly associated with the current day as the focused wormhole relationship.
+     - Next debug checklist: 
+       - Examine the frontend logic in  or a related component that handles adding/setting the daily focused contact.
+       - Check the backend endpoint that receives this data to ensure it's being saved correctly with the right date association.
+     - Why fix this issue and what will be achieved with the fix? This is a core part of the daily workflow for relationship management.
+     - Status:  NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? both
+  - Issue 2: 
+     - Description: Signals in the CRM are showing an Invalid Date, suggesting a date formatting or parsing error.
      - Next debug checklist:
-       - Update  to use  and .
-       - Run 
-/app/frontend/app/(auth)/login.tsx
-    9:18  warning  'Spacing' is defined but never used                              @typescript-eslint/no-unused-vars
-  122:20  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-
-/app/frontend/app/(auth)/register.tsx
-  9:18  warning  'Spacing' is defined but never used  @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(main)/messages.tsx
-   5:51  warning  'Image' is defined but never used                                                                            @typescript-eslint/no-unused-vars
-  17:9   warning  'router' is assigned a value but never used                                                                  @typescript-eslint/no-unused-vars
-  56:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/(tabs)/_layout.tsx
-  4:10  warning  'View' is defined but never used  @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(tabs)/community.tsx
-   12:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
-   56:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  254:54  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
-  254:73  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
-  261:68  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
-  261:81  error    `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`                                              react/no-unescaped-entities
-
-/app/frontend/app/(tabs)/crm.tsx
-    9:10  warning  'LinearGradient' is defined but never used                                                                   @typescript-eslint/no-unused-vars
-   11:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
-  139:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  284:13  warning  'parts' is assigned a value but never used                                                                   @typescript-eslint/no-unused-vars
-  300:9   warning  'shouldShowField' is assigned a value but never used                                                         @typescript-eslint/no-unused-vars
-  302:11  warning  'clientFields' is assigned a value but never used                                                            @typescript-eslint/no-unused-vars
-  303:11  warning  'prospectFields' is assigned a value but never used                                                          @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(tabs)/dashboard.tsx
-   7:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
-  27:37  warning  React Hook useEffect has a missing dependency: 'loadStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/(tabs)/deals.tsx
-    9:10  warning  'LinearGradient' is defined but never used                                                                   @typescript-eslint/no-unused-vars
-   11:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
-   72:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  110:9   warning  'updateStage' is assigned a value but never used                                                             @typescript-eslint/no-unused-vars
-  425:67  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                              react/no-unescaped-entities
-
-/app/frontend/app/(tabs)/profile.tsx
-  14:18  warning  'Spacing' is defined but never used  @typescript-eslint/no-unused-vars
-
-/app/frontend/app/(tabs)/signals.tsx
-    4:34  warning  'FlatList' is defined but never used                                                                         @typescript-eslint/no-unused-vars
-   11:18  warning  'Spacing' is defined but never used                                                                          @typescript-eslint/no-unused-vars
-   13:7   warning  'IMPACT_LABELS' is assigned a value but never used                                                           @typescript-eslint/no-unused-vars
-   77:36  warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  208:21  warning  'impact' is assigned a value but never used                                                                  @typescript-eslint/no-unused-vars
-  275:52  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                              react/no-unescaped-entities
-
-/app/frontend/app/(tabs)/today.tsx
-   11:18  warning  'Spacing' is defined but never used                                                                           @typescript-eslint/no-unused-vars
-   11:45  warning  'DETERMINATION_EMOJIS' is defined but never used                                                              @typescript-eslint/no-unused-vars
-   40:10  warning  'profileData' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
-   85:6   warning  React Hook useEffect has a missing dependency: 'loadEntry'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  187:9   warning  'topActionDone' is assigned a value but never used                                                            @typescript-eslint/no-unused-vars
-  550:51  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                               react/no-unescaped-entities
-
-/app/frontend/app/(tabs)/wormhole.tsx
-  12:18  warning  'Spacing' is defined but never used                                                                              @typescript-eslint/no-unused-vars
-  86:40  warning  React Hook useEffect has a missing dependency: 'loadContacts'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/ai-chat.tsx
-   27:6   warning  React Hook useEffect has a missing dependency: 'loadExistingSession'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  138:77  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`                                                         react/no-unescaped-entities
-
-/app/frontend/app/index.tsx
-  20:6  warning  React Hook useEffect has a missing dependency: 'router'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-
-/app/frontend/app/onboarding.tsx
-   10:18  warning  'Spacing' is defined but never used                              @typescript-eslint/no-unused-vars
-   72:57  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-  108:46  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-  108:76  error    `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`  react/no-unescaped-entities
-
-/app/frontend/src/components/DeterminationSlider.tsx
-  26:6  warning  React Hook React.useEffect has a missing dependency: 'animatedValue'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
-  49:7  warning  React Hook React.useMemo has a missing dependency: 'animatedValue'. Either include it or remove the dependency array    react-hooks/exhaustive-deps
-
-✖ 51 problems (12 errors, 39 warnings) to verify.
-     - Why fix this issue and what will be achieved with the fix? To enable automated code quality checks, prevent syntax errors, and maintain consistency in the frontend codebase.
+       - Inspect the  data being passed to the frontend component in .
+       - Check the backend  to see how  is stored in MongoDB and returned in the API. It's likely a  vs.  or ISO string mismatch.
+       - Ensure the frontend uses a consistent date formatting utility to parse and display the date.
+     - Why fix this issue and what will be achieved with the fix? Makes the signals system usable, as due dates are critical.
      - Status:  NOT STARTED
      - Is recurring issue? Y
+     - Should Test frontend/backend/both after fix? both
+  - Issue 3: 
+     - Description: After a user uploads a new profile photo and saves, the UI does not reflect the change.
+     - Next debug checklist:
+       - Review the  or equivalent function in .
+       - Ensure that after a successful upload to object storage and a DB update, the local state holding the  is being refreshed, or that  is being called to refetch the user data.
+     - Why fix this issue and what will be achieved with the fix? A basic and expected user profile functionality.
+     - Status:  NOT STARTED
+     - Is recurring issue? N
      - Should Test frontend/backend/both after fix? frontend
-     - Blocked on other issue: None
+  - Issue 4: 
+     - Description: The activity heatmap component on  is being cut off or not displaying all data points correctly.
+     - Next debug checklist:
+       - Inspect the styling of the heatmap component and its container in .
+       - Check for  issues, fixed heights, or  properties that could be causing the truncation.
+       - Verify the data being passed to the heatmap is complete.
+     - Why fix this issue and what will be achieved with the fix? Improves the visual presentation and utility of the dashboard.
+     - Status:  NOT STARTED
+     - Is recurring issue? N
+     - Should Test frontend/backend/both after fix? frontend
 
 **In progress Task List**:
-  Task 1:  Implement the next phase of features (P0)
-  
- Task Detail:
-  - Task 1: 
-     - Where to resume: The user needs to confirm the plan to proceed. Once confirmed, the agent should start implementing the new Dashboard, Push Notifications, and Real-time Messaging features. The first step will be backend implementation.
-     - What will be achieved with this? This will add the new Dashboard, deliver push notifications for reminders, and enable real-time messaging, which are core parts of the user's latest request.
-     - Status:  BLOCKED (Awaiting user confirmation)
-     - Should Test frontend/backend/both after fix? both
-     - Blocked on something: User confirmation.
+  - None.
 
 **Upcoming and Future Tasks**
-**Upcoming Tasks (P0 - Sequentially):**
-1.  **Push Notification Integration (Backend):** Implement the logic to send push notifications using Expo's push service for deal reminders and daily check-ins.
-2.  **Real-time Messaging (Backend):** Implement WebSocket support in FastAPI for real-time direct and group messaging.
-3.  **Dashboard Data (Backend):** Create new endpoints to serve data for the dashboard (streaks, activity heatmap, determination trends, etc.).
-4.  **Dashboard Screen (Frontend):** Create a new  file and add it to the tab layout. Implement the UI with all the stat boxes and the activity heatmap as per the user's screenshots.
-5.  **Today Screen UI Update (Frontend):**
-    - Implement the new fluid gradient determination slider with the custom fire/diamond/unicorn thumb.
-    - Update the text for the 10x Unicorn Checklist.
-6.  **Real-time Messaging (Frontend):** Update the  screen to connect to the WebSocket and build out the chat interface.
+**Upcoming Tasks:**
+*   **Dashboard Enhancements (P1):**
+    *   Add a target-setting feature for the Daily Compound actions.
+    *   Implement a weekly progress summary section showing completed compound actions, wins, and signals.
+    *   Create a Wormhole Network section that intelligently suggests priority contacts to reach out to based on last contact date and other factors.
+*   **Community Feed Implementation (P1):**
+    *   Allow users to post individual wins and other content.
+    *   Implement a post-type selection (e.g., Win, Question).
+    *   Integrate a full rich text editor for posts, including image and file upload capabilities.
+    *   Add functionality for users to react and comment on feed items.
+*   **Dynamic CRM Fields (P2):**
+    *   Expand the dynamic contact form logic in  to define which fields are shown/hidden for all other label types (Prospect, Client, etc.), not just Wormhole.
 
 **Future Tasks:**
-- **Refactor  (P1):** Break down the monolithic  into modular  files (e.g., , ) to improve maintainability.
-- **Refactor  (P2):** The  file is now very large. Break it down into smaller components (e.g., , , ).
-- **Premium Tiers:** Introduce paid features and coaching integrations.
+*   **8 Pillars User Blueprint (P1):**
+    *   Design and implement a multi-step user roadmap/checklist in the profile based on the 8 Pillars concept (Vision, Goal, Letting Go, System Audits, 80/20 Analysis, etc.).
+    *   This includes building an AI-assisted strategic planner.
+*   **Technical Debt Refactoring (P2):**
+    *   Refactor  into modular  files.
+    *   Decompose large components like  and  into smaller, manageable files.
+*   **Premium Tiers & Messaging (P2):**
+    *   Introduce paid features and coaching integrations.
+    *   Fully implement the real-time messaging WebSocket connection.
 
 **Completed work in this session**
-- **Backend Feature Implementation:**
-  - **Enhanced CRM:** Updated  model with numerous new fields (connection level, tags, location, etc.). Added endpoints for managing these fields and logging actions ().
-  - **Goal & Community Updates:** Added endpoints for goal progress tracking () and a Help Request system (). User profiles now support a .
-  - **Messaging & Notifications:** Added foundational endpoints for direct/group messaging and registering push notification tokens.
-  - **File Uploads:** Created a  endpoint to handle profile photo uploads.
-- **Frontend Feature Implementation:**
-  - **Tab Consolidation:** Merged Deals and Wormhole into a single CRM tab with sub-navigation.
-  - **CRM UI Overhaul:** Rebuilt  to include a detailed contact list and a comprehensive modal for viewing/editing the new contact fields and activity logs.
-  - **Profile Updates:** Added UI for profile photo upload and a modal for managing notification settings on .
-  - **Community Updates:** Added a profile icon in the header and status rings around user avatars in the feed on . Created a placeholder  screen.
-- **Testing and Bug Fixes:**
-  - Used the testing agent to validate the massive backend changes. The agent found and fixed bugs related to missing Pydantic model fields and a missing  dependency.
-  - Fixed all Python linting errors in .
+- **Critical Bug Fixes:**
+    - Resolved the app-breaking  on the Today screen by clearing the metro cache.
+    - Fixed the non-working pencil icon on the Top 10x Action by adding the missing .
+    - Fixed the keyboard covering the Edit Goal modal in .
+- **Authentication:**
+    - Implemented Google Sign-In using .
+    - Implemented a full password reset flow (request and confirm).
+- **Today Screen Enhancements:**
+    - Implemented dynamic motivational quotes on the determination slider that change based on the selected level.
+    - Added logic to automatically update the day's status to 10x Unicorn Win or Priority Win when the checklist items are completed.
+- **Profile & Goal Management:**
+    - Added an Edit button and a full modal to the 10x Goal card on the  screen.
+    - Fixed the bug where goal progress updates were not reflected on the profile page by ensuring the backend returns the calculated  and the frontend refetches data.
+- **CRM & Contacts:**
+    - Implemented a dynamic contact creation/edit modal in  that shows an expanded set of fields when the Wormhole label is selected.
+    - Fixed the contact import feature to show a contact picker modal instead of auto-importing.
+- **Navigation:**
+    - Fixed the Messages screen to include a back button and retain the main app navigation context.
+- **Testing:** Successfully used the testing agent to validate backend and frontend changes, passing all tests after fixes.
 
 **Earlier issues found/mentioned but not fixed**
-   - **Issue 1:** ESLint Configuration for TypeScript (see All Pending/In progress Issue list for details).
+   - Issue 1: ESLint is not configured for TypeScript ( files). The  file needs to be updated to use  to enable proper linting.
 
 **Known issue recurrence from previous fork**
   - None.
@@ -200,87 +146,87 @@ The application is a full-stack Expo (React Native) and FastAPI app. A massive n
 
 
 **Key Technical Concepts**
-- **Backend:** FastAPI, MongoDB (via ), Pydantic, JWT.
+- **Backend:** FastAPI, MongoDB (), Pydantic, JWT.
 - **Frontend:** Expo SDK, React Native, TypeScript, Expo Router.
-- **Planned Tech:** Expo Push Notifications, WebSockets for real-time features.
-- **State Management:** React Context ().
+- **Integrations:** Expo Push Notifications, Emergent Object Storage, Expo Auth Session (for Google Auth).
+- **State Management:** React Context (),  within components.
 - **Styling:** , custom theme in .
 
 **key DB schema**
 - **users**: 
-- **wormhole_contacts**:  (many new fields added)
-- **wormhole_logs**:  (New Collection)
-- **messages**:  (New Collection, schema to be defined)
-- **deals**: 
-- **goals**: 
 - **signals**: 
+- **daily_entries**: 
+- **goals**: 
+- **contacts**: 
 
 **changes in tech stack**
--  was added as a dependency.
-- Planning to use .
+-  and  were integrated and used to implement Google Sign-In.
 
 **All files of reference**
-- : All backend logic resides here. Heavily modified.
-- : Updated to add the CRM tab and remove old tabs.
-- : New, very large file for the consolidated CRM feature.
-- : Updated with photo upload and notification settings UI.
-- : Updated with status rings and a messages icon.
-- : Will need updates for the new slider and checklist text.
-- : New placeholder file for messaging.
+-  (Heavily modified with new auth and goal endpoints)
+-  (Heavily modified for modals, status updates)
+-  (Heavily modified for dynamic contact form)
+-  (Heavily modified for goal editing and display)
+-  (Modified for Google Auth)
+-  (Modified for Google Auth)
+-  (New file)
+-  (Modified for navigation)
+-  (Modified for new status labels/colors)
 
 **Areas that need refactoring**:
-- **:** CRITICAL. This file is now unmanageably large and complex. It must be broken down into  modules for maintainability.
-- **:** This new screen is very large and handles list views, modals, and data fetching for both contacts and deals. It should be decomposed into smaller, reusable components.
+- **:** Critically oversized. Refactoring into routers is a high-priority technical debt item to improve maintainability.
+- ** & :** Both files are extremely large and manage complex state and UI logic. They should be broken down into smaller, reusable components to reduce complexity and improve performance.
 
 **key api endpoints**
-- , , ,  (All updated)
 -  (New)
 -  (New)
 -  (New)
--  (New)
--  (New)
-- ,  (New)
--  (New)
--  (New)
+-  (New endpoint for updating goal progress)
+-  (Updated to auto-set win status)
+-  (Updated to return calculated  for the goal)
 
 **Critical Info for New Agent**
-- **Await User Confirmation:** Do not proceed until the user confirms the plan to implement the Dashboard and other features. The last agent action was asking for this confirmation.
-- **Prioritize New Features:** Once unblocked, the next set of tasks is implementing the new Dashboard, Push Notifications, and Real-time Messaging, as detailed in the Upcoming Tasks list.
-- **Expo Tunnel Instability:** Frontend preview via Expo tunnel can be unreliable. The backend testing passed, so trust the backend is working. If the frontend preview fails, check expo                             STOPPED   Mar 04 06:22 PM and  the logs, but be aware it might be an external service issue.
-- **Backend Refactoring is Overdue:** The  monolith is a significant technical debt. Propose refactoring it after the current batch of features is delivered.
+- **Prioritize Bug Fixes:** The user has explicitly requested that all bugs be fixed before moving on to new features. The highest priority bugs are the wormhole contact association issue and the Invalid Date on signals.
+- **Plan New Features:** After fixing the bugs, you must propose a clear, phased plan to tackle the large list of new features (Community Feed, Dashboard widgets, 8 Pillars Roadmap). Get user approval before starting implementation.
+- **Refactoring is Urgent:** The main backend file () and key frontend screens (, ) are becoming unmanageable. Propose refactoring as a necessary step to ensure future development is stable and efficient.
+- **Cache Management:** The user has previously seen a stale frontend due to caching. Remember to advise the user to hard refresh and proactively clear the metro cache () when restarting the frontend service to avoid similar issues.
 
 **documents and test reports created in this job**
-  -  (updated)
-  -  (Latest test report from the testing agent)
+-  (Updated)
+- 
+- 
 
 **Last 10 User Messages and any pending HUMAN messages** 
-- **User (258):** Requested implementation of push notifications, real-time messaging, and a new Dashboard screen with specific stats boxes and an activity heatmap, providing screenshots for reference.
-- **Agent (259):** Acknowledged the request and began analyzing the new requirements.
-- **User (263):** Interrupted the agent to ask for the exact captions that were provided with the screenshots in the previous messages.
-- **Agent (264):** Provided the exact screenshot captions as requested and asked for confirmation to proceed with implementation. This is the last message and is awaiting a user response.
+- User requested automatic 10x Unicorn Win status updates and fixing a bug where goal progress doesn't update on the profile screen. (Both were fixed).
+- User requested to run the deployment agent and health checks. (Agent performed checks).
+- **User provided a large list of new bugs and features:**
+    - **Bugs:** Wormhole contact not being associated with the day, signals showing Invalid Date, dashboard activity tracker being cut off, profile photo not updating.
+    - **Features:** Daily compound action targets, weekly progress stats on dashboard, priority wormhole contacts on dashboard, a full community feed with rich text posts/comments/reactions, and a comprehensive 8 Pillars user roadmap in the profile.
+- User confirmed to fix bugs first.
 
 **Project Health Check:**
-- **Functional:** A vast number of backend features have been added and verified by the testing agent. The frontend code compiles, but E2E verification is pending.
-- **Mocked:** Real-time messaging and push notifications are only implemented as basic backend stubs. The new Dashboard does not exist.
+- **Functional:** Core features like login, registration, the Today screen checklist, and goal tracking are functional.
+- **Mocked:** The community feed and AI-powered strategic planning are not yet implemented.
 - **Broken:**
-    - ESLint configuration for TypeScript.
-    - Frontend E2E testing is frequently blocked by Expo tunnel instability.
+    - **Wormhole contact association:** A key daily action is not working.
+    - **Signal date display:** Invalid Date makes signals unusable.
+    - **Dashboard heatmap:** UI is visually broken.
+    - **Profile photo update:** A standard profile feature is failing.
 
 **3rd Party Integrations**
-- **OpenAI:** Used for an AI feature, accessed via Emergent LLM Key.
-- **Expo Push Notifications:** Planned for implementation.
-- **(Needed)** Cloud Storage (e.g., S3) for profile photos. The current implementation stores them insecurely on the local filesystem.
+- **Emergent Object Storage:** Used for profile photo uploads.
+- **Expo Push Notifications:** Used for sending streak milestone notifications.
+- **Expo Auth Session / Web Browser:** Used for Google Authentication flow.
+- **OpenAI:** Foundational integration, requires .
 
 **Testing status**
-  - Testing agent used after significant changes: YES. The agent was run twice in the last session to validate backend changes and fixed bugs identified in the reports.
+  - Testing agent used after significant changes: YES, the agent successfully used the testing agent to verify all major bug fixes and feature implementations in this session.
   - Troubleshoot agent used after agent stuck in loop: NO
-  - Test files created: Test files were generated by the testing agent but not committed to the repo.
-  - Known regressions: None.
+  - Test files created: Yes, via the testing agent, but they are not persisted in the source tree.
+  - Known regressions: The user has reported a new list of bugs that have appeared since the last successful test run.
 
 **Credentials to test flow:**
 Register a new user via the app's registration screen to test the full flow.
 
 **What agent forgot to execute**
-- The agent was about to begin the next major implementation phase (Dashboard, Push Notifications) but was interrupted by the user's request for screenshot captions. The implementation of these features is the immediate next step.
-- The need for persistent cloud storage for uploaded profile photos was introduced but not fully addressed; the current implementation is temporary.
-- The ESLint issue remains unresolved.</analysis>
+- The ESLint configuration for TypeScript ( files) has been pending since the initial handoff and was not addressed in this session. This should be prioritized to improve code quality and catch errors early.</analysis>

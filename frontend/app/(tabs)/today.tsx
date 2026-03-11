@@ -18,13 +18,8 @@ const formatDate = (d: string) => {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
-// Format date to MM/DD/YY
-const formatDateMMDDYY = (d: Date) => {
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  const yy = String(d.getFullYear()).slice(-2);
-  return `${mm}/${dd}/${yy}`;
-};
+// Format date to YYYY-MM-DD (ISO standard)
+const toISODate = (d: Date) => d.toISOString().split('T')[0];
 
 const STATUS_OPTIONS = ['ready', 'priority_win', '10x_unicorn_win', 'loss', 'lesson', 'course_corrected'];
 
@@ -51,18 +46,41 @@ export default function TodayScreen() {
   const [deals, setDeals] = useState<any[]>([]);
   const [topSignal, setTopSignal] = useState<any>(null);
   const [completedSignals, setCompletedSignals] = useState<Set<string>>(new Set());
+  
+  // Wormhole contacts state
+  const [wormholeContacts, setWormholeContacts] = useState<any[]>([]);
+  const [showWormholePicker, setShowWormholePicker] = useState(false);
 
   const isToday = currentDate === getToday();
 
+  // Helper to normalize date strings to YYYY-MM-DD
+  const normalizeDate = (d: string) => {
+    if (!d) return '';
+    // Already YYYY-MM-DD
+    if (d.length === 10 && d[4] === '-') return d;
+    // MM/DD/YY format
+    if (d.includes('/')) {
+      const parts = d.split('/');
+      if (parts.length === 3) {
+        const [mm, dd, yy] = parts;
+        return `20${yy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+      }
+    }
+    // ISO datetime
+    if (d.includes('T')) return d.split('T')[0];
+    return d;
+  };
+
   const loadEntry = useCallback(async () => {
     try {
-      const [entryData, streakData, profile, signalsData, dealsData, completionsData] = await Promise.all([
+      const [entryData, streakData, profile, signalsData, dealsData, completionsData, contactsData] = await Promise.all([
         api.get(`/daily-entry/${currentDate}`),
         api.get('/compound-streak'),
         api.get('/profile'),
         api.get('/signals'),
         api.get('/deals'),
         api.get(`/signal-completions?date=${currentDate}`),
+        api.get('/wormhole-contacts'),
       ]);
       setEntry(entryData);
       setCompoundStreak(streakData.streak);
@@ -70,32 +88,27 @@ export default function TodayScreen() {
       setHabitTarget(streakData.habit?.target_number || 0);
       setProfileData(profile);
       setDeals(dealsData || []);
+      setWormholeContacts(contactsData || []);
       
       // Track completed signals
       const completed = new Set((completionsData || []).map((c: any) => c.signal_id));
       setCompletedSignals(completed);
       
-      // Filter signals for today - handle both YYYY-MM-DD and MM/DD/YY formats
-      const todayFormatted = formatDateMMDDYY(new Date());
-      // Convert currentDate (YYYY-MM-DD) to MM/DD/YY format for comparison
-      const [year, month, day] = currentDate.split('-');
-      const currentDateMMDDYY = `${month}/${day}/${year.slice(-2)}`;
-      
-      const todaySignals = (signalsData || []).filter((s: any) => 
-        s.due_date === todayFormatted || 
-        s.due_date === currentDate || 
-        s.due_date === currentDateMMDDYY
-      );
+      // Filter signals for today - use YYYY-MM-DD format
+      const todaySignals = (signalsData || []).filter((s: any) => {
+        if (!s.due_date) return false;
+        // Normalize signal date to YYYY-MM-DD for comparison
+        const sDate = normalizeDate(s.due_date);
+        return sDate === currentDate;
+      });
       setSignals(todaySignals);
       
       // Find top 10x action signal for today
-      const top10x = (signalsData || []).find((s: any) => 
-        s.is_top_10x_action && (
-          s.due_date === todayFormatted || 
-          s.due_date === currentDate || 
-          s.due_date === currentDateMMDDYY
-        )
-      );
+      const top10x = (signalsData || []).find((s: any) => {
+        if (!s.is_top_10x_action || !s.due_date) return false;
+        const sDate = normalizeDate(s.due_date);
+        return sDate === currentDate;
+      });
       setTopSignal(top10x);
     } catch (e) {
       console.error(e);
@@ -126,7 +139,7 @@ export default function TodayScreen() {
   // Create Top 10x Action as a special signal
   const createTop10xSignal = async (actionText: string) => {
     try {
-      const today = formatDateMMDDYY(new Date());
+      const today = toISODate(new Date());
       const signal = await api.post('/signals', {
         name: actionText,
         description: 'Top 10x Action',
@@ -191,7 +204,7 @@ export default function TodayScreen() {
         name: signalForm.name,
         description: signalForm.description || '',
         impact_rating: signalForm.impact_rating,
-        due_date: formatDateMMDDYY(defaultDate),
+        due_date: toISODate(defaultDate),
         deal_id: signalForm.deal_id || null,
         is_public: true,
         is_top_10x_action: false,
@@ -541,7 +554,40 @@ export default function TodayScreen() {
               <Ionicons name="arrow-forward" size={14} color={Colors.brand.accent} />
             </TouchableOpacity>
           </View>
-          <Text style={styles.cardSub}>What did you do to leverage a relationship today?</Text>
+          
+          {/* Focused Wormhole Contact Picker */}
+          <Text style={styles.cardSub}>Today's focused relationship</Text>
+          <TouchableOpacity
+            testID="wormhole-contact-picker"
+            style={styles.wormholePickerBtn}
+            onPress={() => setShowWormholePicker(true)}
+          >
+            {entry?.wormhole_contact_id ? (
+              <View style={styles.wormholeSelected}>
+                <View style={styles.wormholeAvatar}>
+                  <Text style={styles.wormholeAvatarText}>
+                    {wormholeContacts.find((c: any) => c.id === entry.wormhole_contact_id)?.name?.[0]?.toUpperCase() || '?'}
+                  </Text>
+                </View>
+                <Text style={styles.wormholeSelectedName}>
+                  {wormholeContacts.find((c: any) => c.id === entry.wormhole_contact_id)?.name || 'Selected Contact'}
+                </Text>
+                <TouchableOpacity
+                  testID="clear-wormhole-contact"
+                  onPress={() => updateEntry({ wormhole_contact_id: null })}
+                >
+                  <Ionicons name="close-circle" size={20} color={Colors.text.tertiary} />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.wormholePlaceholder}>
+                <Ionicons name="person-add" size={18} color={Colors.text.tertiary} />
+                <Text style={styles.wormholePlaceholderText}>Select a contact to focus on today</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <Text style={[styles.cardSub, { marginTop: 12 }]}>What did you do to leverage this relationship?</Text>
           <TextInput
             testID="wormhole-action-input"
             style={styles.cardInput}
@@ -553,6 +599,51 @@ export default function TodayScreen() {
             multiline
           />
         </View>
+
+        {/* Wormhole Contact Picker Modal */}
+        <Modal visible={showWormholePicker} animationType="slide" transparent>
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modal, { maxHeight: '60%' }]}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Select Contact</Text>
+                <TouchableOpacity onPress={() => setShowWormholePicker(false)}>
+                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView>
+                {wormholeContacts.length === 0 ? (
+                  <Text style={styles.emptySignalsText}>No wormhole contacts yet. Add some from the Contacts screen.</Text>
+                ) : (
+                  wormholeContacts.map((contact: any) => (
+                    <TouchableOpacity
+                      key={contact.id}
+                      testID={`wormhole-pick-${contact.id}`}
+                      style={[
+                        styles.wormholePickItem,
+                        entry?.wormhole_contact_id === contact.id && styles.wormholePickItemActive,
+                      ]}
+                      onPress={() => {
+                        updateEntry({ wormhole_contact_id: contact.id });
+                        setShowWormholePicker(false);
+                      }}
+                    >
+                      <View style={styles.wormholeAvatar}>
+                        <Text style={styles.wormholeAvatarText}>{contact.name?.[0]?.toUpperCase()}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.wormholePickName}>{contact.name}</Text>
+                        {contact.company && <Text style={styles.wormholePickCompany}>{contact.company}</Text>}
+                      </View>
+                      {entry?.wormhole_contact_id === contact.id && (
+                        <Ionicons name="checkmark-circle" size={22} color={Colors.brand.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
 
         {/* Compound Habit */}
         <View style={styles.card}>
@@ -1531,5 +1622,50 @@ const styles = StyleSheet.create({
     color: '#F97316',
     fontSize: FontSize.sm,
     fontWeight: '600',
+  },
+  // Wormhole Picker
+  wormholePickerBtn: {
+    marginTop: 8,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    backgroundColor: Colors.bg.input,
+    overflow: 'hidden',
+  },
+  wormholeSelected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    gap: 10,
+  },
+  wormholeAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.brand.primary,
+    justifyContent: 'center', alignItems: 'center',
+  },
+  wormholeAvatarText: {
+    color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '700',
+  },
+  wormholeSelectedName: {
+    flex: 1, color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600',
+  },
+  wormholePlaceholder: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14,
+  },
+  wormholePlaceholderText: {
+    color: Colors.text.tertiary, fontSize: FontSize.base,
+  },
+  wormholePickItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    padding: 14, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
+  },
+  wormholePickItemActive: {
+    backgroundColor: 'rgba(168,85,247,0.1)',
+  },
+  wormholePickName: {
+    color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600',
+  },
+  wormholePickCompany: {
+    color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2,
   },
 });

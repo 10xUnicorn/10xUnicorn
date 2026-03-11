@@ -357,14 +357,20 @@ export default function CRMScreen() {
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
     try {
-      const parts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
+      // Normalize to YYYY-MM-DD first
+      let normalized = dateStr;
       if (dateStr.includes('/')) {
-        // MM/DD/YY format
-        return dateStr;
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const [mm, dd, yy] = parts;
+          normalized = `20${yy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+        }
       }
-      // YYYY-MM-DD to MM/DD/YY
-      const d = new Date(dateStr);
-      return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear().toString().slice(-2)}`;
+      if (dateStr.includes('T')) normalized = dateStr.split('T')[0];
+      // Format as readable date
+      const d = new Date(normalized + 'T12:00:00');
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
     } catch {
       return dateStr;
     }
@@ -505,7 +511,7 @@ export default function CRMScreen() {
                 </View>
                 <View style={styles.signalInfo}>
                   <Text style={[styles.signalName, item.completed_at && styles.signalNameCompleted]}>{item.name}</Text>
-                  {item.due_date && <Text style={styles.signalDue}>Due: {item.due_date}</Text>}
+                  {item.due_date && <Text style={styles.signalDue}>Due: {formatDate(item.due_date)}</Text>}
                   {item.is_top_10x_action && <Text style={styles.signalTop10x}>⭐ Top 10x Action</Text>}
                 </View>
                 {item.completed_at ? (

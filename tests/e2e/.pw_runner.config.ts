@@ -11,7 +11,7 @@ export default defineConfig({
     ['json', { outputFile: '/root/.emergent/automation_output/20260305_051407/results.json' }],
   ],
   use: {
-    baseURL: 'https://unicorn-dash.preview.emergentagent.com',
+    baseURL: 'https://wormhole-network-crm.preview.emergentagent.com',
     screenshot: 'only-on-failure',
     trace: 'off',
     headless: true,

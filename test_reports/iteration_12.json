@@ -1,0 +1,65 @@
+{
+  "summary": "Backend-only testing for 4 bug fixes: (1) Wormhole contact selection in daily entry - WORKING, (2) Signal date normalization MM/DD/YY to YYYY-MM-DD - WORKING, (3) Profile photo URL generation - WORKING, (4) Dashboard heatmap data - WORKING. All 16 tests passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "GET /api/dashboard/stats", "issue": "longest_streak returns null instead of 0 when no entries, minor UX issue"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_16_bug_fixes.py",
+    "/app/test_reports/pytest/pytest_results_bug_fixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": ["/app/backend/tests/test_16_bug_fixes.py"],
+  "success_rate": {"backend": "100%", "frontend": "not tested"},
+  "test_credentials": "email: testbug@test.com, password: test123456",
+  "seed_data_creation": "Created test user testbug@test.com with onboarding completed",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 4 bug fixes verified working: (1) wormhole_contact_id stored/retrieved in daily entry, (2) normalize_date_to_iso() converts MM/DD/YY to YYYY-MM-DD, (3) profile_photo_url constructed from user_id with /api/photos/{user_id} endpoint, (4) daily-entries limit=365 and dashboard/stats return proper data structures.",
+  "features_verified": {
+    "bug1_wormhole_contact_selection": {
+      "status": "WORKING",
+      "tests": [
+        "POST /api/wormhole-contacts creates contact successfully",
+        "PUT /api/daily-entry/{date} with wormhole_contact_id stores correctly",
+        "GET /api/daily-entry/{date} returns correct wormhole_contact_id"
+      ]
+    },
+    "bug2_signal_date_normalization": {
+      "status": "WORKING",
+      "tests": [
+        "POST /api/signals with MM/DD/YY stores as YYYY-MM-DD",
+        "POST /api/signals with ISO date preserves format",
+        "GET /api/signals returns normalized dates",
+        "POST /api/signals/{id}/complete works with normalized dates",
+        "Various date formats (12/31/25, 01/01/26, 2026-07-04) all normalize correctly"
+      ]
+    },
+    "bug3_profile_photo_url": {
+      "status": "WORKING",
+      "tests": [
+        "GET /api/member/profile includes profile_photo_url when photo exists",
+        "Profile photo URL correctly constructed as /api/photos/{user_id}",
+        "GET /api/photos/{user_id} returns 404 for non-existent users",
+        "Member profile has correct structure"
+      ]
+    },
+    "bug4_dashboard_heatmap": {
+      "status": "WORKING",
+      "tests": [
+        "GET /api/daily-entries?limit=365 returns entries list",
+        "GET /api/dashboard/stats returns expected fields",
+        "Dashboard stats have correct data types (integers)",
+        "Daily entries sorted by date descending"
+      ]
+    }
+  }
+}
