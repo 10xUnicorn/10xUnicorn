@@ -210,7 +210,7 @@ export default function TodayScreen() {
         is_top_10x_action: false,
       });
       setShowAddSignal(false);
-      setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '' });
+      setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '' });
       loadEntry();
     } catch (e: any) {
       Alert.alert('Error', e.message);

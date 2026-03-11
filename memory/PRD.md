@@ -121,7 +121,7 @@
 ## Testing Status
 - Backend: 100% passing
 - Frontend: 77%+ passing
-- Latest: /app/test_reports/iteration_11.json
+- Latest: /app/test_reports/iteration_12.json
 
 ## Implemented in Latest Session (March 5, 2026)
 - [x] **Dynamic Determination Quotes** - Quotes change based on slider level (low/building/high/unicorn)
@@ -140,11 +140,21 @@
 - [x] **Auto Priority Win** - Status automatically updates to "Priority Win" when top 10x action completed
 - [x] **Goal Progress Save Fix** - Profile page now correctly displays and updates goal progress via /goals/progress API
 
+## Bug Fixes (March 11, 2026)
+- [x] **Bug Fix: Wormhole Contact Focused Relationship** - Added contact picker to Today screen's Wormhole section. Users can now select a contact as their daily focused relationship, updating `wormhole_contact_id` on the daily entry
+- [x] **Bug Fix: Signal Invalid Date** - Standardized all signal dates to YYYY-MM-DD format with `normalize_date_to_iso()` backend helper. Frontend now uses ISO format for signal creation. CRM signal display uses proper date formatting
+- [x] **Bug Fix: Profile Photo Not Updating** - Fixed field name mismatch (`profile_photo_path` vs `profile_photo_url`). Added public `GET /api/photos/{user_id}` endpoint. Backend now stores both path and URL. Frontend constructs full URL for Image component
+- [x] **Bug Fix: Dashboard Heatmap Cut Off** - Fixed day label/cell height alignment by matching gap and height values. Month labels now use flex spacing
+
 ## Upcoming Tasks
-- [ ] Daily Goal Progress check-in prompt
-- [ ] Rich Text Editor for Signal notes
-- [ ] Profile Ring redesign
-- [ ] Dashboard goal on-track/off-track indicator
+- [ ] Daily Compound action targets
+- [ ] Weekly progress summary on dashboard
+- [ ] Wormhole Network priority contacts on dashboard
+- [ ] Community Feed with posts, reactions, comments
+- [ ] "8 Pillars" user roadmap/blueprint in profile
+- [ ] Dynamic CRM fields for all contact types
+- [ ] Technical debt: Refactor server.py into routers
+- [ ] Technical debt: Decompose crm.tsx and today.tsx
 
 ## Browser Cache Note
 **If changes don't appear, hard refresh:**
