@@ -146,6 +146,11 @@
 - [x] **Bug Fix: Profile Photo Not Updating** - Fixed field name mismatch (`profile_photo_path` vs `profile_photo_url`). Added public `GET /api/photos/{user_id}` endpoint. Backend now stores both path and URL. Frontend constructs full URL for Image component
 - [x] **Bug Fix: Dashboard Heatmap Cut Off** - Fixed day label/cell height alignment by matching gap and height values. Month labels now use flex spacing
 
+## Features (March 11, 2026)
+- [x] **Signal Due Date Editing** - Added CalendarPicker component to both Today and CRM signal modals. Users can now set and edit signal due dates via an interactive calendar
+- [x] **Smart Default Date** - Calendar picker defaults to today if before 3 PM, tomorrow if after 3 PM via `getSmartDefaultDate()`
+- [x] **Dashboard Heatmap Auto-Scroll** - Heatmap now auto-scrolls to most recent activity on load instead of showing oldest dates first
+
 ## Upcoming Tasks
 - [ ] Daily Compound action targets
 - [ ] Weekly progress summary on dashboard
