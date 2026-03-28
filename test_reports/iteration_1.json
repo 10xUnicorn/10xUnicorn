@@ -83,7 +83,7 @@
   "rca_of_issue": {
     "issue": "Login and Register buttons do not navigate after form submission",
     "reproduction_steps": [
-      "1. Open https://wormhole-network-crm.preview.emergentagent.com in mobile viewport",
+      "1. Open https://unicorn-dashboard.preview.emergentagent.com in mobile viewport",
       "2. Fill login form with test_unicorn_001@example.com / testpass123456",
       "3. Click 'Sign In' button",
       "4. Observe: Button shows loading briefly, then returns to normal. No navigation occurs, no error shown."

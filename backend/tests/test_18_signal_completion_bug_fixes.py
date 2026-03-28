@@ -12,7 +12,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://wormhole-network-crm.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('EXPO_PUBLIC_BACKEND_URL', 'https://unicorn-dashboard.preview.emergentagent.com').rstrip('/')
 
 
 class TestSignalCompletionBugFix:
