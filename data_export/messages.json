@@ -1,0 +1,301 @@
+[
+  {
+    "_id": "69a86b893f2d913f3462de5c",
+    "id": "7869e7d8-6010-4dc3-8117-a60da5cb73dc",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "7d65a383-ea6a-4399-92f9-09a78af5ce80",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T17:27:37.147949+00:00"
+  },
+  {
+    "_id": "69a86b893f2d913f3462de5e",
+    "id": "713efd12-48a9-4e11-aef8-1bc93be81a7c",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "3a48597a-f5e9-4952-a068-027f695bfd00",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T17:27:37.856686+00:00"
+  },
+  {
+    "_id": "69a86b8b3f2d913f3462de65",
+    "id": "de81e0e0-48a2-4a41-a945-ea9a796fe75f",
+    "type": "group",
+    "group_id": "78415bda-54bf-4c67-98bf-b4fef87eaae1",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T17:27:39.401703+00:00"
+  },
+  {
+    "_id": "69a86bb9c3c6343fcfdf84e5",
+    "id": "fe01d16d-6def-43d3-a771-32450a8e2857",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "a8537faf-bcb6-4eff-8a7e-23a596211ab5",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T17:28:25.625811+00:00"
+  },
+  {
+    "_id": "69a86bbac3c6343fcfdf84e7",
+    "id": "af2d5fc3-be62-4c46-8799-1a453c1ad771",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "4a583d4f-0b98-411f-89dc-72b2a026e7c9",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T17:28:26.271563+00:00"
+  },
+  {
+    "_id": "69a86bbbc3c6343fcfdf84ee",
+    "id": "af6f45ae-29c0-4198-a038-a797c4c421f6",
+    "type": "group",
+    "group_id": "bbc32f16-d10f-4122-a510-06b4ecfd0552",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T17:28:27.765111+00:00"
+  },
+  {
+    "_id": "69a86f43c3c6343fcfdf851e",
+    "id": "af59b99d-0a7a-4460-84e2-7507a197ec29",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "5e2d3196-9551-412a-9a19-14e2f5a70564",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T17:43:31.615630+00:00"
+  },
+  {
+    "_id": "69a86f44c3c6343fcfdf8520",
+    "id": "c1e52bb5-a7f2-4ebf-92c8-6d16e6daeec8",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "d6d8b8fc-ce49-406e-a7b9-401aac79bb86",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T17:43:32.331843+00:00"
+  },
+  {
+    "_id": "69a86f46c3c6343fcfdf8527",
+    "id": "97e43951-38d0-4446-b971-9b6119a292a5",
+    "type": "group",
+    "group_id": "f975169a-eaae-439f-98c0-a59d9de918da",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T17:43:34.031106+00:00"
+  },
+  {
+    "_id": "69a87c9e6d0aa8f180eb3a3e",
+    "id": "d979faf6-f479-4dda-acbc-4e60df3d3c48",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "28fdca90-d9bf-42a3-8d9a-41c1b96624db",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T18:40:30.511710+00:00"
+  },
+  {
+    "_id": "69a87c9f6d0aa8f180eb3a40",
+    "id": "b66a88b4-f194-4dea-83d2-003d08b44048",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "0f95d450-63d1-4ec6-990e-265d4094ab19",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T18:40:31.249424+00:00"
+  },
+  {
+    "_id": "69a87ca06d0aa8f180eb3a47",
+    "id": "afb35fea-ba1f-4e5b-87b9-2d55fa26072a",
+    "type": "group",
+    "group_id": "fb16ff31-3cf7-4781-bbf0-64d401d0886c",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T18:40:32.695601+00:00"
+  },
+  {
+    "_id": "69a87cc93e2bdd0b0b7cb0d3",
+    "id": "721211be-4e2f-4948-9783-006f9116d08e",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "3ab41d74-7099-4b1b-9dc1-95f71ab1eee0",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T18:41:13.151033+00:00"
+  },
+  {
+    "_id": "69a87cc93e2bdd0b0b7cb0d5",
+    "id": "cc97044b-0b11-43ad-89cc-4f94258ab046",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "73a7fbfe-fa7e-4e0b-94d6-1d5835b399a0",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T18:41:13.809816+00:00"
+  },
+  {
+    "_id": "69a87ccb3e2bdd0b0b7cb0dc",
+    "id": "995234c3-418f-4f86-875c-236212e3840b",
+    "type": "group",
+    "group_id": "ef70675e-431b-425d-9520-c9c6af4f4965",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T18:41:15.222207+00:00"
+  },
+  {
+    "_id": "69a87e6a3e2bdd0b0b7cb10e",
+    "id": "7c791592-9f0f-4929-a29f-80deeba646fb",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "e5cc2cd4-52ad-46bb-ae97-26ef2424efb1",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T18:48:10.208217+00:00"
+  },
+  {
+    "_id": "69a87e6a3e2bdd0b0b7cb110",
+    "id": "d9939b42-8765-41cf-9721-5541db91125b",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "f634d271-2dcf-4144-b0bb-aa1075a2f14d",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T18:48:10.846030+00:00"
+  },
+  {
+    "_id": "69a87e6c3e2bdd0b0b7cb117",
+    "id": "5508efbb-f200-4fd9-815b-ad2663881b5d",
+    "type": "group",
+    "group_id": "fb2e9d10-d845-4ccd-ab64-9b7564635d65",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T18:48:12.226516+00:00"
+  },
+  {
+    "_id": "69a87e973e2bdd0b0b7cb11a",
+    "id": "fe3720df-31ff-4109-b3a4-e378cd4f8376",
+    "type": "group",
+    "group_id": "7eaf23e2-1406-450b-91e6-d7dc6e118c12",
+    "sender_id": "98cd7bc4-c23d-447b-a677-17604c38bfb8",
+    "content": "Hey everyone",
+    "created_at": "2026-03-04T18:48:55.642456+00:00"
+  },
+  {
+    "_id": "69a8897343865a4e4d930953",
+    "id": "67d1540c-6f91-410b-a51e-f996445d7ace",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "a282acfa-13f4-4816-8d73-ff336ad95d55",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T19:35:15.372697+00:00"
+  },
+  {
+    "_id": "69a8897443865a4e4d930955",
+    "id": "b0ad0008-42e0-4aa5-a169-fba384cdcecb",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "8b0db202-5517-4b6d-a553-4f0ccb4b5a11",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T19:35:16.037321+00:00"
+  },
+  {
+    "_id": "69a8897543865a4e4d93095c",
+    "id": "80684f05-bbf1-45d1-a75d-d5842698b75a",
+    "type": "group",
+    "group_id": "2c665651-eeb2-48d7-8dd7-f3526b668cab",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T19:35:17.616677+00:00"
+  },
+  {
+    "_id": "69a892317d7756e521f9b4f7",
+    "id": "b8921171-11d0-40c7-be82-7725acbc42c1",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "42dff73c-8b24-464f-9797-b800ee560b38",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T20:12:33.967227+00:00"
+  },
+  {
+    "_id": "69a892327d7756e521f9b4f9",
+    "id": "7ae0e4f0-ec2e-43b8-a451-377278e55460",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "80b25b50-1544-49fb-87b8-183fd5e4c2d1",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T20:12:34.656735+00:00"
+  },
+  {
+    "_id": "69a892787d7756e521f9b500",
+    "id": "7be76a37-ae9f-4d4e-b59a-c43910e79675",
+    "type": "group",
+    "group_id": "51b138b6-a6e7-4d28-95ae-4ec1f1458c1d",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T20:13:44.212144+00:00"
+  },
+  {
+    "_id": "69a896eac4a804978d63b430",
+    "id": "14fc2687-fbbd-4844-93ba-3951f043a732",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "e185daef-57ee-405d-af44-e929378642a0",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T20:32:42.583408+00:00"
+  },
+  {
+    "_id": "69a896ebc4a804978d63b432",
+    "id": "6494ce81-4117-427d-be53-775b8a9979c8",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "1d9d1e7f-b160-4c96-9e16-68ed3c328b3a",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T20:32:43.235081+00:00"
+  },
+  {
+    "_id": "69a896ecc4a804978d63b439",
+    "id": "1a16c159-8647-479d-923a-7f3fde6fccef",
+    "type": "group",
+    "group_id": "563c886b-25f5-4e3b-a6b0-b0df2f02dd40",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T20:32:44.694747+00:00"
+  },
+  {
+    "_id": "69a8bb6f573c094d6abbdc97",
+    "id": "e158d88a-b930-4297-9cce-f93d50b18c19",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "18ef9347-70d5-4549-adc2-21126d4661de",
+    "content": "Hello, this is a test message!",
+    "read": false,
+    "created_at": "2026-03-04T23:08:31.938499+00:00"
+  },
+  {
+    "_id": "69a8bb70573c094d6abbdc99",
+    "id": "bd7c9e25-bf8c-4544-8f4d-f1d4c56c1299",
+    "type": "direct",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "recipient_id": "c43036ed-f1ae-4751-840b-1836d0d3136b",
+    "content": "Test message for conversation list",
+    "read": false,
+    "created_at": "2026-03-04T23:08:32.616576+00:00"
+  },
+  {
+    "_id": "69a8bb72573c094d6abbdca0",
+    "id": "cb3253b8-c236-4b52-8656-b6bf2734f980",
+    "type": "group",
+    "group_id": "d0ddf568-22c3-412b-a640-d79e39ec568c",
+    "sender_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "content": "Hello group!",
+    "created_at": "2026-03-04T23:08:34.054423+00:00"
+  }
+]

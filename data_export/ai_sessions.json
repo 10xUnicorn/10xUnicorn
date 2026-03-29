@@ -1,0 +1,948 @@
+[
+  {
+    "_id": "699b556b4ce9ba965510d29e",
+    "id": "c78b665a-920e-4c03-87aa-92a4ddbaf28a",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-02-22",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-02-22T19:13:47.073793+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x target is clear: build a $10M company by launching your SaaS, and today you chose the identity: **\u201cI am being focused and productive.\u201d** You already proved momentum by getting your **2 hours of coding** done. Now we course-correct so you still win the day and keep the MVP shipping to first customers.\n\nWhat *specifically* blocked your top priority today?\n- Was it **unclear next step**, **context switching**, **perfectionism**, **fear of outreach/feedback**, or **too many options**?\n- And what was the **exact distraction** (phone, Slack, browser rabbit hole, \u201cjust one more tweak,\u201d etc.)?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### Course-Correct Execution Plan (45 min)\n- **Clear action:** Ship one concrete MVP artifact to a first-customer path (choose ONE):  \n  1) Send an outreach message to 3 target users, **or**  \n  2) Publish a demo/walkthrough + request for feedback, **or**  \n  3) Finish and deploy the single highest-impact MVP flow (the one a customer must complete end-to-end).\n- **First 2-minute step:** Write on a sticky note: **\u201cOne shipped thing in 45 min.\u201d** Then open the exact file/page you must change (or open your email/DM draft) and create a bullet list of the *minimum* steps.\n- **Timebox:** 45 minutes, no exceptions. One tab. Do Not Disturb on.\n- **Definition of done:** One of these is true:  \n  - 3 outreach messages sent, **or**  \n  - demo link posted + 1 feedback ask sent, **or**  \n  - feature deployed to staging/production with a quick sanity test.\n- **One obstacle + mitigation:** Distraction urge \u2192 set a **10-minute \u201curge delay\u201d rule**: when you feel the pull, write the urge on paper, continue the task until the next 10-min mark, then decide.\n\nWhat time are you starting this 45-minute sprint?\n\nAnd type your commitment statement: **\u201cI start at __:__ and I will ship one MVP win today.\u201d**",
+        "timestamp": "2026-02-22T19:13:47.073800+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-02-22T19:13:47.073802+00:00"
+  },
+  {
+    "_id": "699b55734ce9ba965510d29f",
+    "id": "3ca3aa28-c17a-4881-950f-3ad4b211ef6f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-02-22",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-02-22T19:13:55.728285+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x target is clear: build a $10M company by launching your SaaS. Today you set the identity: **\u201cI am being focused and productive.\u201d** You already protected the compounding flywheel\u2014**2 hours of code done**\u2014but you **didn\u2019t complete the top priority**, and key leverage actions are still open (**scariest, boldest, meditation**).\n\nWhat *specifically* blocked your execution today from completing the top priority?  \nBe concrete: was it unclear next step, avoidance/fear (shipping to customers), too many tasks, context switching, perfectionism, or something else?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nWhile you answer, here\u2019s a default \u201ccourse-corrected win\u201d plan aligned to **Ship MVP to first customers**:\n\n### Execution Plan (\u226445 min)\n- **Clear action:** Send an outreach message to **3 potential first customers** to get them onto the MVP this week (or to book a 15-min call).\n- **First 2-minute step:** Open your notes/CRM and list **3 names** (or 3 companies) + contact method.\n- **Timebox:** **35 minutes**\n- **Definition of done:** **3 messages sent** (not drafted), each with: 1-sentence value, 1 ask, 2 time options.\n- **One obstacle + mitigation:**  \n  - *Obstacle:* \u201cI don\u2019t know what to say / it won\u2019t be good enough.\u201d  \n  - *Mitigation:* Use this template and send as-is:\n    - \u201cHey [Name] \u2014 I\u2019m building [SaaS] to help [who] achieve [result] without [pain]. I have an MVP ready and I\u2019m onboarding 3 early users this week. Would you be open to trying it + giving blunt feedback? If yes, can you do **[time option A]** or **[time option B]**?\u201d\n\nWhat time are you starting this 35-minute sprint? (Give me an exact time.)  \n\nThen write your commitment statement: **\u201cI start at __ and I will send 3 messages before I stop.\u201d**",
+        "timestamp": "2026-02-22T19:13:55.728292+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-02-22T19:13:55.728294+00:00"
+  },
+  {
+    "_id": "699b6c121920b59ed763253c",
+    "id": "cec30404-cee5-4376-9ccd-f4e99e1fcab9",
+    "user_id": "98cd7bc4-c23d-447b-a677-17604c38bfb8",
+    "date_reference": "2026-02-22",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted and lost focus",
+        "timestamp": "2026-02-22T20:50:26.252172+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Daniel \u2014 your 10x goal is **1,000 10xUnicorn signups by year-end**, and today you declared you\u2019re **a man of inspired action**. You *did* complete the 20 calls and your compound habit, but you didn\u2019t course-correct immediately when **Instagram** pulled you off focus.\n\nWhat specifically happened in the moment you lost focus:\n- Were you avoiding a specific call/follow-up?\n- Did you open Instagram \u201cfor a second\u201d and it turned into a scroll?\n- What emotion was present right before you tapped it (boredom, anxiety, resistance, fatigue)?\n\nBased on what you shared, the likely root blocker is **attention leakage via an easy dopamine escape (Instagram) when friction showed up**.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-min Course-Correct Execution Plan (UNICON ticket sales)\n- **Clear action:** Send **15 direct, specific invites** to warm leads to buy a UNICON ticket or book a 10-min decision call.\n- **First 2-minute step:** Put your phone in **Do Not Disturb + grayscale**, then **delete Instagram (or log out)** for the next 24 hours.\n- **Timebox:** 35 minutes outreach + 10 minutes follow-up scheduling (total **45 min**).\n- **Definition of done:**  \n  - 15 messages sent (names tracked)  \n  - 3 \u201cdecision calls\u201d booked **or** 1 ticket purchase initiated\n- **One obstacle + mitigation:**  \n  - Obstacle: \u201cI\u2019ll just check IG quickly.\u201d  \n  - Mitigation: IG removed/logged out + messages done from a **laptop** + timer running + tab blocked (Freedom/Cold Turkey if needed).\n\nWhat time are you starting this 45-minute block today?\n\nAnd give me your commitment statement in one line:  \n**\u201cI\u2019m Daniel, a man of inspired action, and I will ________ at ________.\u201d**",
+        "timestamp": "2026-02-22T20:50:26.252181+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-02-22T20:50:26.252183+00:00"
+  },
+  {
+    "_id": "69a7fb011cbc7bcb5652c23f",
+    "id": "7982fb95-a490-45e4-bb95-291b7c5f92dc",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T09:27:29.182669+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product on the path to a $50M unicorn\u2014and today you said you\u2019re being **focused and productive**. Your identity is a builder who ships. Let\u2019s course-correct and get a win tonight.\n\nWhat *specifically* blocked your execution today\u2014what did you get pulled into (task/app/person), and at what moment did it derail you?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nWhile you answer, here\u2019s a tight execution plan you can run immediately (\u226445 min):\n\n- **Clear action:** Ship one customer-facing MVP increment (something you can send to a first customer today).\n- **First 2-minute step:** Open your repo \u2192 create a branch named `course-correct-win` \u2192 write a 1-sentence \u201cdone\u201d target in the top of your notes (e.g., \u201cCustomer can X end-to-end without errors\u201d).\n- **Timebox:** 45 minutes (single sprint, no tabs).\n- **Definition of done:** One of these shipped:\n  - PR merged to main **and** deployed, **or**\n  - A working demo link/video sent to a prospective first customer, **or**\n  - A payment/signup flow working end-to-end in staging with screenshots sent to yourself/customer.\n- **One obstacle + mitigation:** Distraction loop \u2192 Put phone in another room + enable Do Not Disturb + block distracting sites for 45 min.\n\nWhat time are you starting (exact clock time)?\n\nThen reply with your commitment statement:  \n\u201cI\u2019m starting at __ and I will ship __ in 45 minutes.\u201d",
+        "timestamp": "2026-03-04T09:27:29.182677+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T09:27:29.182679+00:00"
+  },
+  {
+    "_id": "69a7fb0b1cbc7bcb5652c240",
+    "id": "261b7e88-9dc8-479e-9e0f-315034223a9d",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T09:27:39.451920+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x lane is **launching a SaaS MVP to first customers**, and today you said: **\u201cI am being focused and productive.\u201d** You still wrote code for 2 hours and hit the top priority \u2014 that identity is real. Now we close the loop and course-correct the drift.\n\nWhat specifically happened with social media today?\n- Which app(s)?\n- What time(s) did you get pulled in?\n- What were you avoiding right before you opened it (wormhole/scariest/boldest/meditation)?\n\nBased on your check-in, the likely root blocker is **avoidance of discomfort**: social is an instant dopamine escape from the **scariest/boldest** work (both still unchecked).\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-Corrected Win Plan (\u226445 min)\n**Clear action:** Do one **bold, customer-facing MVP shipping move** (pick one):\n1) Send **5 outreach messages** to target users asking for a 15-min call + offering early access  \n2) Ship **one small MVP improvement** and **deploy** it  \n3) Record a **2-minute demo** and send it to 3 prospects\n\n**First 2-minute step:** Put your phone **in another room** + turn on **Do Not Disturb** + open the exact doc/tool you\u2019ll use (messages/CRM/repo).\n\n**Timebox:** 35 minutes (single sprint, no multitasking)\n\n**Definition of done:**  \n- Option 1: **5 messages sent** (screenshots/log counts)  \n- Option 2: **PR merged + deployment live**  \n- Option 3: **video recorded + 3 sends completed**\n\n**One obstacle + mitigation:**  \nObstacle: \u201cI\u2019ll reflex-open social.\u201d  \nMitigation: **App/website block for 45 min** (Freedom/Screen Time/Cold Turkey) + phone physically away.\n\nWhen will you start (exact time)?  \n\nAnd type your commitment statement: **\u201cI commit to doing this 35-minute sprint now and I won\u2019t touch social media until it\u2019s done.\u201d**",
+        "timestamp": "2026-03-04T09:27:39.451928+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T09:27:50.031435+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 you\u2019re building a **$50M SaaS unicorn** by **shipping an MVP to first customers**, and today you chose the identity: **focused and productive**. You already got the 2-hour coding habit done; now we remove the focus leak so your **boldest/scariest** actions stop getting deferred.\n\nRoot blocker: **attention fragmentation** (notifications) \u2192 triggers context switching \u2192 social spiral.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-min Course-Correct Sprint (notifications-proof)\n**Clear action:** Do **one customer-facing shipping move** (choose ONE):\n1) Send **5 concise outreach messages** to potential first customers  \n2) **Deploy one MVP improvement** (small but real)  \n3) **Record + send** a 2-minute demo to 3 prospects\n\n**First 2-minute step (right now):**\n- Turn on **Do Not Disturb / Focus mode** (allow: none, or only emergencies)\n- Put phone **in another room** (not just face-down)\n- Close all tabs except the one needed for the sprint\n\n**Timebox:** 35 minutes (single sprint)\n\n**Definition of done (pick based on option):**\n- Outreach: **5 messages sent**\n- Deploy: **live deployment shipped**\n- Demo: **video sent to 3 people**\n\n**One obstacle + mitigation:**\n- Obstacle: \u201cNotifications sneak through on desktop.\u201d  \n- Mitigation: **Quit Slack/Discord/Email** + set status to \u201cHeads down 35 min\u201d + use a site blocker for socials.\n\nWhat time will you start (exact clock time)?  \nThen reply with your commitment statement: **\u201cI\u2019m starting at ____. I will complete the 35-minute sprint with notifications off and phone away.\u201d**",
+        "timestamp": "2026-03-04T09:27:50.031443+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T09:27:39.451930+00:00"
+  },
+  {
+    "_id": "69a7fb1f1cbc7bcb5652c241",
+    "id": "651a9023-c7f3-47f2-8390-ebef25eae363",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T09:27:59.714362+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 you\u2019re building a $50M unicorn by launching a SaaS product. Today you said: *\u201cI am being focused and productive.\u201d* You\u2019ve already done the compound habit (2 hours coding) and hit your top action + wormhole. What\u2019s missing is the *scariest, boldest* moves that actually ship the MVP to first customers.\n\nWhat specifically blocked you from doing the **scariest** and **boldest** actions today? (Be concrete: fear of outreach, unclear next step, perfectionism, fatigue, competing tasks, etc.)\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nWhile you answer, here\u2019s a ready-to-execute course-correction plan (choose the closest and we\u2019ll tailor it):\n\n### Execution Plan (\u226445 min)\n**Clear action:** Contact 5 target customers *today* with a simple MVP invite + book 2 calls.  \n**First 2-minute step:** Open your sent-mail or CRM and paste this message:\n\n> \u201cHey [Name] \u2014 I\u2019m building [1-line value prop] for [target]. We have an MVP and I\u2019m onboarding 3\u20135 early users this week. Want to try it and give blunt feedback? 15 min: [link]\u201d\n\n**Timebox:** 35 minutes total  \n- 10 min: list 10 names (or 10 companies + 1 person each)  \n- 20 min: send 5 messages  \n- 5 min: log who/when + set follow-ups for tomorrow\n\n**Definition of done:** 5 messages sent + 2 time slots offered + follow-ups scheduled.  \n**One obstacle + mitigation:** \u201cI don\u2019t have the perfect list/value prop.\u201d \u2192 Use a scrappy list (LinkedIn/email history) and keep the value prop to 1 sentence. You\u2019re optimizing for *response*, not perfection.\n\nNow: **What time will you start?** (give me an exact time, e.g., 7:10pm)\n\nAnd type your commitment statement: **\u201cI will start at __ and send 5 customer invites before I stop.\u201d**",
+        "timestamp": "2026-03-04T09:27:59.714369+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T09:27:59.714371+00:00"
+  },
+  {
+    "_id": "69a7fb861c9575f2c64dcb1b",
+    "id": "7c0efa6d-a18a-4c97-9565-4f3e5422acbe",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T09:29:42.170965+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product that can become a $50M unicorn\u2014and today you said you\u2019re being **focused and productive**. Right now is your chance to act like that identity and still create a win.\n\nWhat specifically blocked your execution today\u2014what did you get distracted by (tabs/apps/people/tasks), and at what moment did you fall off the plan?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nHere\u2019s a tight course-correction plan you can run **today** (\u226445 min):\n\n- **Clear action:** Ship one concrete MVP deliverable to move \u201cMVP to first customers\u201d forward (pick ONE: fix the #1 blocker bug, complete one onboarding step, or send the first customer outreach message).\n- **First 2-minute step:** Open your repo (or product doc) and write a single line: **\u201cIn the next 45 minutes I will ship: ____.\u201d**\n- **Timebox:** 45 minutes (set a timer; phone in another room).\n- **Definition of done:** A visible artifact exists: merged PR + deployed change **or** sent message to a real potential customer **or** onboarding screen/flow completed and committed.\n- **One obstacle + mitigation:**  \n  - Obstacle: You drift into \u201cjust checking\u201d distractions.  \n  - Mitigation: Close all tabs except the one you need + enable Do Not Disturb + put a sticky note: **\u201cOne deliverable only.\u201d**\n\nWhat time are you starting this 45-minute sprint?\n\nReply with your commitment statement: **\u201cI commit to starting at __ and shipping __ by __.\u201d**",
+        "timestamp": "2026-03-04T09:29:42.170983+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T09:29:42.170985+00:00"
+  },
+  {
+    "_id": "69a7fb8f1c9575f2c64dcb1c",
+    "id": "4ed77c50-fc1f-4814-aadb-ba04c38854d9",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T09:29:51.435449+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn by launching your SaaS product, and today you set the identity: **\u201cI am being focused and productive.\u201d** You\u2019ve already proven momentum (compound habit done + wormhole done). Now we course-correct the distraction loop so you keep shipping the MVP to first customers.\n\nWhat specifically happened with social media today: **which app(s), what time, and what were you avoiding right before you opened it?**\n\nRoot blocker (based on what you shared): **attention hijack + emotional avoidance** (you reached for social media instead of sitting with the next \u201cshipping\u201d discomfort).\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-minute course-correct execution plan (do this once, today)\n- **Clear action:** Ship one concrete MVP customer-facing improvement (choose ONE):  \n  1) fix the #1 bug in onboarding, or  \n  2) implement the missing \u201chappy path\u201d step, or  \n  3) send 5 crisp outreach messages to first customers with a signup link.\n- **First 2-minute step:** Turn on Focus/Block for social apps + put phone in another room, then open your repo/CRM and write the single sentence: *\u201cIn 45 min, I will ship ____.\u201d*\n- **Timebox:** 45 minutes (single sprint; no tabs except what\u2019s required).\n- **Definition of done:**  \n  - If coding: PR opened + deployed to staging (or merged if you can).  \n  - If outreach: 5 messages sent + names logged.\n- **One obstacle + mitigation:** Urge to check social \u2192 **1-minute reset**: stand up, 10 breaths, read the sentence you wrote, resume. (If urge persists, extend blocker 60 min.)\n\nWhat time are you starting this 45-minute sprint (give me an exact time)?  \n\nThen type your commitment statement: **\u201cI commit to starting at __ and completing the 45-minute sprint with ____ done.\u201d**",
+        "timestamp": "2026-03-04T09:29:51.435456+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T09:30:01.473505+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 you\u2019re building a $50M unicorn SaaS, and you chose the identity today: **focused and productive**. You already did your 2-hour coding habit; now we remove the focus leak (notifications) so you keep **shipping the MVP to first customers**.\n\nWhat notifications specifically pulled you off course today: **phone, Slack, email, or in-app alerts?** And which 1\u20132 are the worst offenders?\n\nRoot blocker: **environmental attention fragmentation** (notifications creating constant task-switching \u2192 you lose the \u201cwormhole\u201d state).\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-minute course-correct execution plan (notifications-proof)\n- **Clear action:** Do one \u201cship\u201d unit for the MVP: **complete and push one customer-facing change** (small feature slice or bugfix) OR **send 5 customer outreach messages**.\n- **First 2-minute step (must-do):**\n  1) **Phone:** Do Not Disturb ON + place in another room.  \n  2) **Computer:** Quit social tabs + set Slack/Email to **Pause notifications for 1 hour** (or log out).  \n  3) Write on a sticky note: **\u201cShip MVP \u2192 one unit in 45.\u201d**\n- **Timebox:** 45 minutes, single sprint.\n- **Definition of done:**  \n  - Coding path: **PR opened + pushed** (or deployed if you can).  \n  - Outreach path: **5 messages sent + logged**.\n- **One obstacle + mitigation:** \u201cBut I might miss something\u201d \u2192 set an **auto-status**: \u201cIn a 45-min build sprint, back at __:__\u201d and schedule a **10-min notification check** immediately after the sprint.\n\nWhat exact time are you starting this 45-minute sprint today?\n\nThen type your commitment statement: **\u201cI commit to starting at __ and finishing with ____ done.\u201d**",
+        "timestamp": "2026-03-04T09:30:01.473512+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T09:29:51.435459+00:00"
+  },
+  {
+    "_id": "69a7fb9e1c9575f2c64dcb1e",
+    "id": "1e2c6184-a1c6-4b4c-bf64-d1c8c091e546",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T09:30:06.969995+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to build a $50M unicorn company by launching your SaaS product. Today, you\u2019re the kind of founder who compounds progress daily\u2014and your keystone habit is **writing code for 2 hours**. Right now your determination is **5/10**, and you haven\u2019t completed your top priority or any core actions yet. That\u2019s not failure\u2014this is the moment that defines whether you course-correct like a real operator.\n\nWhat *specifically* blocked your execution today?  \nPick the closest and tell me the details:\n1) Unclear \u201ctop action\u201d (didn\u2019t decide what to build)  \n2) Overwhelm / too many tasks  \n3) Distractions (phone, tabs, people)  \n4) Low energy / stress / sleep  \n5) Avoidance (fear of shipping, perfectionism)  \n6) Unexpected fire / urgent work\n\n**Answer with:** the number + 1\u20132 sentences on what happened.\n\nAnd then answer this EXACT question:  \n**\u201cWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\u201d**",
+        "timestamp": "2026-03-04T09:30:06.970002+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T09:30:06.970004+00:00"
+  },
+  {
+    "_id": "69a7fbcad0ce63415270ea18",
+    "id": "4ee2273a-753a-4bb6-a557-1cbccdb6a09d",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T09:30:50.573264+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to launch a SaaS product and build a $50M unicorn company. Today you set the identity: **\u201cI am being focused and productive.\u201d** Let\u2019s bring your actions back into alignment with that.\n\nWhat specifically blocked your execution today?\n- What did you get distracted by (task/app/person), and **when** did it happen?\n- What were you doing right before the distraction?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nWhile you answer, here\u2019s a default **\u226445-minute course-correct plan** aimed at your 10x focus (ship MVP to first customers):\n\n**Execution Plan (45 min)**\n- **Clear action:** Ship one customer-facing MVP improvement *today* (pick one): fix 1 critical bug, complete 1 onboarding step, or add 1 \u201cmust-have\u201d feature slice.\n- **First 2-minute step:** Open your repo \u2192 create a branch named `course-correct` \u2192 write a 1-sentence \u201cDONE means\u2026\u201d at the top of a scratchpad.\n- **Timebox:** 45 minutes (single sprint, no multitasking).\n- **Definition of done:** Code merged (or PR opened) + deployed to staging (or production) + 1 message sent to a first customer/user updating what\u2019s now available.\n- **One obstacle + mitigation:**  \n  - **Obstacle:** Getting pulled into distractions mid-sprint.  \n  - **Mitigation:** Turn on Do Not Disturb + close all non-dev tabs + phone in another room; if an urge hits, write it on a \u201clater\u201d note and continue.\n\nWhat time are you starting this 45-minute sprint?\n\nThen type your commitment statement: **\u201cI start at __ and I will ship __ in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T09:30:50.573272+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T09:30:50.573274+00:00"
+  },
+  {
+    "_id": "69a7fbd0d0ce63415270ea19",
+    "id": "f50ebbc5-2b66-442b-8562-b7decb86169d",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T09:30:56.754287+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product on the path to a $50M unicorn\u2014and today you said you\u2019re being **focused and productive**. You already shipped momentum (top priority + 2 hours of code). Social media is the one thing trying to steal that identity.\n\nWhat specifically happened today\u2014**when** did you open social media, on **what device**, and what were you trying to avoid or get relief from in that moment?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### Course-Corrected Win Plan (45 min)\n- **Clear action:** Lock down social media + ship one concrete MVP/customer step tonight.\n- **First 2-minute step:** Turn on **Downtime/Focus mode** (phone) + block the social sites/apps (desktop) *right now*.\n- **Timebox:** 45 minutes\n- **Definition of done:**  \n  1) Social media blocked until tomorrow morning, and  \n  2) One shipped artifact that moves \u201cMVP to first customers\u201d forward (pick ONE): a deploy, a working user flow, or a customer email + scheduled call.\n- **One obstacle + mitigation:** Urge to \u201cjust check\u201d \u2192 put phone in another room + set a single allowed check window tomorrow (10 minutes, scheduled).\n\nWhat time will you start the 45-minute block?\n\nThen type your commitment statement: **\u201cI start at ___ and I will not touch social media until my 45-minute ship is done.\u201d**",
+        "timestamp": "2026-03-04T09:30:56.754294+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T09:31:05.388164+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M SaaS unicorn and you declared you\u2019re being **focused and productive**. Today the enemy wasn\u2019t capability\u2014it was **attention leakage**: low focus + constant notification pings.\n\nRoot blocker: **your environment is currently optimized for interruption**, so your brain keeps getting yanked off \u201cShip MVP to first customers.\u201d\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### 45-minute execution plan (do this today)\n- **Clear action:** Create a \u201cnotification-free ship sprint\u201d and ship one MVP-customer step.\n- **First 2-minute step:**  \n  1) Turn on **Do Not Disturb/Focus** on phone (allow: calls from 1\u20132 key people only).  \n  2) On desktop: **mute Slack/Email/Calendar notifications** + close all tabs except the one you\u2019ll ship in.\n- **Timebox:** 45 minutes\n- **Definition of done:**  \n  - Notifications are off on both devices until the sprint ends, AND  \n  - One concrete deliverable is shipped for first customers (choose one now):  \n    A) Implement + push one critical MVP feature, or  \n    B) Fix + deploy one top bug blocking onboarding, or  \n    C) Write/send 3 customer outreach emails + book 1 call.\n- **One obstacle + mitigation:** \u201cI might miss something important\u201d \u2192 set a single **5-minute check** at the end of the 45 minutes (not before).\n\nWhat time will you start the 45-minute ship sprint?\n\nThen type your commitment statement: **\u201cI start at ___, notifications stay off, and I ship ___ in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T09:31:05.388172+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T09:30:56.754296+00:00"
+  },
+  {
+    "_id": "69a7fbe2d0ce63415270ea1a",
+    "id": "d0de2a1e-7532-422a-a5ec-061219fd2d5a",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T09:31:14.719806+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product and build a $50M unicorn company\u2014and your daily compound habit is **2 hours of coding**. Today your determination is **5/10**, and right now your top priority + every core action shows **not completed**. That doesn\u2019t mean you failed\u2014it means we course-correct and still bank a win today.\n\nWhat specifically blocked your execution today?  \nPick the main one (or list top 2) and be concrete:\n- unclear top action / no plan\n- distractions (what were they?)\n- low energy / mood / stress\n- avoidance/fear (what task were you avoiding?)\n- logistics (meetings, errands, interruptions)\n- too big/unclear coding task\n\nNow answer this EXACTLY: **\u201cWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\u201d**\n\nWhile you answer, here\u2019s a default \u201ccourse-corrected win\u201d plan aligned to your SaaS goal (we\u2019ll tailor after your reply):\n\n**Execution Plan (45 min max)**\n- **Clear action:** Ship one tangible product increment: implement **one small user-facing feature or one critical bugfix** and push it (commit + deploy or PR).\n- **First 2-minute step:** Open the repo \u2192 create a branch named `course-correct-<date>` \u2192 write a 1-sentence outcome in the PR description: \u201cAfter this, users can ___.\u201d\n- **Timebox:** 45 minutes (single sprint, no scope creep).\n- **Definition of done:** Code committed + PR opened (or deployed) + 3-bullet changelog written.\n- **One obstacle + mitigation:** You feel scattered \u2192 set a 25-min timer, phone in another room, only one tab allowed, and if stuck >5 min, write a TODO and move to the next smallest step.\n\nWhat time will you start (exact time, your local timezone)?  \n\nThen write your commitment statement: **\u201cI\u2019m starting at __ and I will do __ for 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T09:31:14.719813+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T09:31:14.719815+00:00"
+  },
+  {
+    "_id": "69a8621691b64916caf68167",
+    "id": "5eccd8b8-4c4a-43df-99ce-509acc9f0219",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T16:47:18.988047+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to launch a SaaS product on the path to a $50M unicorn, and today you set the identity: **\u201cI am being focused and productive.\u201d** Let\u2019s realign to that now.\n\nWhat specifically blocked your execution today\u2014**what did you get distracted by (one or two concrete things), and when did it happen?**\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nWhile you answer, here\u2019s a tight default course-correction plan aligned with **Ship MVP to first customers**:\n\n**Execution plan (\u226445 min)**\n- **Clear action:** Ship one customer-facing MVP improvement *today* (pick one: fix #1 bug, implement 1 onboarding step, or send 5 customer outreach messages to book demos).\n- **First 2-minute step:** Open your MVP repo + create a note titled **\u201cTonight\u2019s Ship\u201d** and write the *single* deliverable in one sentence.\n- **Timebox:** 45 minutes (single sprint).\n- **Definition of done:** One of:\n  - PR merged + deployed to your staging/production, **or**\n  - 5 outreach messages sent + 1 demo slot requested, **or**\n  - One onboarding flow step live (even if ugly).\n- **One obstacle + mitigation:** Distraction relapse \u2192 **phone in another room + single tab + timer on**; if you drift, you immediately return to the one-sentence deliverable.\n\nWhat time will you start\u2014**exact clock time**?\n\nAnd write your commitment statement: **\u201cI commit to starting at __ and completing __ tonight.\u201d**",
+        "timestamp": "2026-03-04T16:47:18.988056+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T16:47:18.988059+00:00"
+  },
+  {
+    "_id": "69a8621f91b64916caf68168",
+    "id": "c4ecf9ab-a39c-43b7-863c-86309ed5521b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T16:47:27.582883+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M unicorn SaaS\u2014and today you said: *\u201cI am being focused and productive.\u201d* You already wrote code for 2 hours and you\u2019re in *ship MVP to first customers* mode. Social media is the behavior that\u2019s out of alignment with that identity.\n\nWhat specifically happened today\u2014what triggered the social media spiral? (boredom after a hard bug, uncertainty on next step, notification pull, \u201cquick break\u201d that turned into 30 minutes, something else?)\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### Course-corrected execution plan (\u226445 min)\n- **Clear action:** Lock down social media + ship one concrete MVP customer-facing step tonight.\n- **First 2-minute step:** Turn on Focus/Do Not Disturb + use an app/site blocker (Screen Time/Freedom/Cold Turkey) to block your social apps/sites for **45 minutes**.\n- **Timebox:** 45 minutes.\n- **Definition of done (pick 1 and finish it):**\n  1) Send **3 outreach messages** to potential first customers asking for a 10-min demo call, **or**\n  2) Implement **one \u201cthin slice\u201d MVP fix** that unblocks a user path and push to repo, **or**\n  3) Write and send a **single-page MVP onboarding doc** (how to get value in 5 minutes) to your first testers.\n- **One obstacle + mitigation:** Urge to \u201cjust check\u201d socials \u2192 keep blocker on + put phone in another room; if you need a break, take a 2-minute walk\u2014no phone.\n\nWhat time are you starting this 45-minute sprint?\n\nThen reply with your commitment statement in this format:\n**\u201cI commit to starting at __:__ and completing __ (definition of done) in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T16:47:27.582891+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T16:47:36.633671+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your identity today is \u201cfocused and productive,\u201d and your 10x mission is shipping an MVP to first customers for a $50M SaaS. The blocker is clear: **attention fragmentation** (notifications \u2192 lost focus \u2192 social media).\n\nRoot blocker: **you didn\u2019t protect your focus environment** (notifications are effectively other people\u2019s priorities hijacking your MVP shipping time).\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### 45-minute course-correct plan\n- **Clear action:** Create a \u201cnotification-free ship zone\u201d + ship one customer-facing output.\n- **First 2-minute step:**  \n  1) Turn on **Do Not Disturb / Focus mode** (allow only calls from 1\u20132 key people).  \n  2) Enable a **site/app blocker** for social + news for **45 minutes**.\n- **Timebox:** 45 minutes.\n- **Definition of done (choose ONE):**\n  - **Customer progress:** Send **5** short outreach messages to potential first customers to get MVP feedback/demo, OR  \n  - **Product progress:** Complete **one MVP slice** (single bug fix/feature) and **push code** + write 3 bullets of release notes, OR  \n  - **Activation progress:** Draft and send a **5-step onboarding message** to your first testers.\n- **Obstacle + mitigation:** You\u2019ll feel the itch to check notifications \u2192 put phone **in another room** + keep browser in a single working tab; if urge spikes, do **10 slow breaths** and continue.\n\nWhat time are you starting the 45-minute ship zone?\n\nThen write your commitment statement:\n**\u201cI commit to starting at __:__ and completing __ in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T16:47:36.633678+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T16:47:27.582893+00:00"
+  },
+  {
+    "_id": "69a8623391b64916caf68169",
+    "id": "849b3d04-777e-44f6-bb69-eb849f92913f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T16:47:47.265295+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product that becomes a $50M unicorn. The identity you\u2019re stepping back into today is: the founder who ships\u2014especially on low-determination days (you logged 5/10). Your daily compounding habit is **2 hours of code**, and today it\u2019s currently **not done**\u2014so we\u2019re going to create a win before the day ends.\n\nWhat specifically blocked your execution today?\n- Was it **unclear intention/top action** (you left those blank), **distractions**, **low energy**, **avoidance/fear**, or **logistics/time**?\n- Give me the *one* most concrete reason (e.g., \u201cdidn\u2019t know what to code,\u201d \u201ckept checking X,\u201d \u201ctoo tired after work,\u201d etc.).\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nWhile you answer, here\u2019s a default \u201csalvage win\u201d plan you can run **tonight** (\u226445 min) to get momentum back:\n\n**Execution Plan (45 min)**\n- **Clear action:** Ship one tangible SaaS increment: *implement one small user-facing feature or one critical backend endpoint + commit/push.*\n- **First 2-minute step:** Open the repo \u2192 create a branch named `course-correct-<date>` \u2192 write a 1-sentence outcome in the README or a scratch note: \u201cIn 45 min I will ship ____.\u201d\n- **Timebox:** 45 minutes (single sprint, no extensions).\n- **Definition of done:** Code compiles/tests pass (or runs locally) + **commit + push** + 1-line note of what changed.\n- **One obstacle + mitigation:** *Overwhelm/uncertainty about what to build* \u2192 choose from this menu **without debating**:\n  1) Fix the most recent bug you remember  \n  2) Add a basic \u201cempty state\u201d UI to one screen  \n  3) Add login/logout wiring (if missing)  \n  4) Create one CRUD endpoint + minimal test  \n  If you can\u2019t decide in 60 seconds, pick **#2**.\n\nNow: **What time will you start your 45-minute sprint?** (Give me an exact time.)\n\nAnd write your commitment statement:  \n\u201cI, Test Unicorn, will start at __ and ship one increment by __.\u201d",
+        "timestamp": "2026-03-04T16:47:47.265303+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T16:47:47.265305+00:00"
+  },
+  {
+    "_id": "69a862b9c3950608b0e9126c",
+    "id": "ef9f2963-e147-46db-a487-84980d8adae1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T16:50:01.696396+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to **launch a SaaS product and build a $50M unicorn**\u2014and today you said: **\u201cI am being focused and productive.\u201d** Let\u2019s bring you back into that identity and finish the day like a builder.\n\nWhat specifically blocked your execution today\u2014**what distracted you**, and **at what moment did you go off-track**?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nHere\u2019s a tight course-correction plan you can run immediately (\u226445 min):\n\n- **Clear action:** Ship one concrete MVP deliverable toward first customers (pick one: *deploy a working build*, *fix the #1 blocker bug*, *send 5 customer outreach messages*, or *finish one onboarding flow*).\n- **First 2-minute step:** Open your repo (or outreach list) and write a single line: **\u201cIn the next 35 minutes, I will ship: ______.\u201d**\n- **Timebox:** 35 minutes deep work + 5 minutes wrap (40 min total).\n- **Definition of done:** One of these is true:\n  - PR merged / commit pushed + deployed, **or**\n  - Bug fixed with a passing test, **or**\n  - 5 targeted messages sent to potential first customers, **or**\n  - One onboarding step fully implemented and usable.\n- **One obstacle + mitigation:** Phone/notifications pull you out \u2192 **Do Not Disturb + put phone in another room + single tab only** for the full 35 minutes.\n\nWhat time are you starting (exact time, your timezone)?\n\nThen type your commitment statement: **\u201cI start at __:__ and I will not stop until my definition of done is met.\u201d**",
+        "timestamp": "2026-03-04T16:50:01.696403+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T16:50:01.696406+00:00"
+  },
+  {
+    "_id": "69a862c3c3950608b0e9126d",
+    "id": "2015b4e0-359d-4bdb-add6-d44dcd32bf6d",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T16:50:11.668335+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn by launching your SaaS, and today you chose the identity: **\u201cI am being focused and productive.\u201d** You *did* write code for 2 hours and you\u2019re shipping the MVP\u2014but social media pulled you off the track (and distractions = false today), which means it\u2019s still the lever to tighten.\n\nWhat specifically triggered the social media spiral today\u2014**boredom/stuck on a bug, anxiety about shipping, or \u201cjust checking\u201d that turned into 20+ minutes?**\n\nRoot blocker (based on what you shared): **unprotected attention** \u2014 social media is your default escape hatch when there\u2019s friction.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-min Course-Corrected Execution Plan (do this today)\n- **Clear action:** Lock down social media + finish your \u201cPlan Tomorrow\u201d so you protect MVP shipping momentum.\n- **First 2-minute step:** Turn on **Focus/Do Not Disturb**, then add a **30-minute app/website block** for your top 2 social apps (Screen Time/Freedom/Cold Turkey\u2014whatever you have).\n- **Timebox:** **35 minutes planning + 10 minutes setup** (total **45 min**)\n- **Definition of done:**\n  1) Tomorrow\u2019s **#1 MVP shipping task** written as a single sentence  \n  2) Next **3 concrete steps** listed  \n  3) A **2-hour coding block** scheduled on your calendar  \n  4) Social apps **blocked during that block**\n- **One obstacle + mitigation:**  \n  - Obstacle: \u201cI\u2019ll need social for a quick break.\u201d  \n  - Mitigation: Pre-decide a break: **5-minute walk / water / 10 pushups**\u2014no phone.\n\nWhat time will you start the 45-minute course-correct right now?\n\nThen reply with your commitment statement in this exact format:  \n**\u201cI commit to starting at __ and finishing by __. No social media until done.\u201d**",
+        "timestamp": "2026-03-04T16:50:11.668344+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T16:50:22.404136+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x mission is **launching the SaaS MVP to first customers** on the path to a **$50M unicorn**, and today you said: **\u201cI am being focused and productive.\u201d** The blocker you named is clear: **lack of focus + constant notification interrupts** (classic attention fragmentation).\n\nRoot blocker: **your environment is not set up to protect deep work**\u2014notifications are stealing your \u201cwrite code 2 hours daily\u201d edge.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-min Course-Corrected Execution Plan (Notification Lockdown + Ship One MVP Slice)\n- **Clear action:** Do a **full notification shutdown** and then **ship one small MVP deliverable** (something that moves toward first customers).\n- **First 2-minute step:** Turn on **Do Not Disturb / Focus mode** right now (phone + computer). Put phone **in another room**.\n- **Timebox (\u226445 min):** **35 min deep work sprint + 10 min harden settings**\n- **Definition of done:**\n  1) **Notification settings hardened**:  \n     - Phone: DND ON, all non-human notifications OFF  \n     - Desktop: Slack/email/push notifications OFF  \n  2) **One shippable output** completed: *PR opened/merged, endpoint works end-to-end, checkout/test flow fixed, or onboarding copy updated* (pick one).\n- **One obstacle + mitigation:**  \n  - Obstacle: \u201cI\u2019m worried I\u2019ll miss something urgent.\u201d  \n  - Mitigation: Allowlist **only 1 channel/person** for emergencies; schedule a **10-minute check window after the sprint**.\n\nWhat time will you start this 45-minute sprint?\n\nThen send your commitment statement exactly like this:  \n**\u201cI commit to starting at __ and finishing by __. Notifications stay off until done.\u201d**",
+        "timestamp": "2026-03-04T16:50:22.404143+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T16:50:11.668347+00:00"
+  },
+  {
+    "_id": "69a862dbc3950608b0e9126e",
+    "id": "332e054d-8057-40eb-adc1-e7384a2cb102",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T16:50:35.894043+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x path is building a $50M unicorn by launching your SaaS product. Today, the identity to step back into is: *the founder who ships daily*, and your compound habit is **2 hours of code**. Right now: top priority not completed, and none of the core actions are done yet\u2014so we\u2019re not \u201cbehind,\u201d we\u2019re simply at a decision point.\n\nWhat *specifically* blocked your execution today?\n- Was it **no clear Top Action**, low energy (5/10), distractions, uncertainty on what to code next, or something else?\n- What happened in the last 3\u20136 hours that led to \u201cno progress\u201d?\n\nAfter you answer, I\u2019ll pinpoint the root blocker.  \n\nBefore that, I\u2019m going to ask you exactly this:\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nIn the meantime, here\u2019s a default course-correct plan (45 min max) to get momentum back **today**:\n\n### Course-Correct Win Plan (45 min)\n**Clear action:** Ship one concrete SaaS deliverable: *one small feature or fix merged + pushed* (even if it\u2019s \u201cboring\u201d).  \n**First 2-minute step:** Open the repo \u2192 create a branch named `course-correct-<date>` \u2192 write a 1-sentence goal in a TODO comment at the top of the file you\u2019ll touch.  \n**Timebox:** 45 minutes (one sprint).  \n**Definition of done:** One of these is true:\n- PR opened (even if not merged), **or**\n- One commit pushed to main with a working change, **or**\n- A failing test reproduced + a fix committed.\n**One likely obstacle + mitigation:**  \nObstacle: \u201cI don\u2019t know what to work on.\u201d  \nMitigation: Choose from this priority stack (pick the first that\u2019s true):\n1) Fix the biggest user-facing bug you already know about  \n2) Implement the smallest slice of your core workflow (one screen, one endpoint, one integration step)  \n3) Add instrumentation: basic logging + error reporting to the critical path  \n4) Write one high-signal test that locks in behavior\n\nNow: **What time will you start your 45-minute sprint?** (Give me an exact time.)\n\nAnd give me your commitment statement in this format:\n**\u201cI start at ____. For 45 minutes, I will ____. Done means ____.\u201d**",
+        "timestamp": "2026-03-04T16:50:35.894058+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T16:50:35.894060+00:00"
+  },
+  {
+    "_id": "69a86f1cc3c6343fcfdf84f6",
+    "id": "93e490ad-ca9d-4b91-849b-2346112558d1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T17:42:52.730131+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to build a $50M unicorn by launching your SaaS\u2014and today you declared: **\u201cI am being focused and productive.\u201d** Even with distractions, that identity is still available to you right now.\n\nWhat specifically blocked your execution today\u2014**what was the distraction**, and **at what moment did you go off-track** (what were you doing right before it happened)?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-Corrected Win Plan (\u226445 min)\n- **Clear action:** Do one concrete \u201cMVP shipped\u201d step that moves you closer to first customers (pick one: fix the #1 bug blocking onboarding, implement the next critical feature, or send the MVP invite to 3 target users).\n- **First 2-minute step:** Open your repo + write a one-line objective at the top of a note: *\u201cIn the next 45 minutes, I will ______.\u201d*\n- **Timebox:** 45 minutes, single sprint, no tabs except what\u2019s required.\n- **Definition of done:** One deploy/PR merged **or** 3 invites sent **or** one blocker bug fixed + pushed\u2014something a customer could feel.\n- **One obstacle + mitigation:** **Obstacle:** you get pulled into a distraction loop. **Mitigation:** phone in another room + block distracting sites + set a timer; if you wander, you immediately return to the one-line objective.\n\nWhat time will you start this sprint (exact time), Test Unicorn?\n\nThen type your commitment statement: **\u201cI start at __:__ and I will complete this 45-minute sprint.\u201d**",
+        "timestamp": "2026-03-04T17:42:52.730140+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T17:42:52.730142+00:00"
+  },
+  {
+    "_id": "69a86f26c3c6343fcfdf84f7",
+    "id": "26b77eaf-e710-4007-baec-c061b282167b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T17:43:02.407067+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product on the path to a $50M unicorn\u2014and today you said you\u2019re being **focused and productive**. You\u2019ve already kept your compound habit (**2 hours of code**) and you\u2019re focused on **shipping the MVP to first customers**. Social media is the thing trying to steal that identity.\n\nWhat specifically happened today\u2014**when** did you get pulled into social media, **which app(s)**, and what were you avoiding or feeling right before you opened it (boredom, uncertainty, frustration, \u201cjust a quick break\u201d)?\n\nRoot blocker (based on what you shared): **attention leakage**\u2014you didn\u2019t fail on ability, you leaked focus at the edges. This is solvable with an environment lock + a small shippable win.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-Corrected Win Plan (\u226445 min)\n- **Clear action:** Do one concrete \u201ccustomer-facing\u201d MVP ship step (choose one now):  \n  A) Push one meaningful PR/feature + deploy to staging, **or**  \n  B) Send 5 outreach messages to potential first customers to get them onto the MVP this week.\n- **First 2-minute step:** Put phone in another room + enable a site/app blocker (Freedom/Screen Time/Cold Turkey) for **45 minutes** on the social apps you used.\n- **Timebox:** 45 minutes, single-task sprint.\n- **Definition of done:**  \n  - If A: PR opened + deployed to staging + 1 sentence changelog.  \n  - If B: 5 messages sent (names listed) + 1 proposed time slot for a quick call/demo.\n- **One obstacle + mitigation:** Urge to check socials \u2192 write the urge on a sticky note (\u201cafter sprint\u201d) and do 10 deep breaths, then immediately return to the next tiny step.\n\nWhat time will you start the 45-minute sprint? (Give me an exact time.)  \n\nThen type your commitment statement: **\u201cI start at __ and I will not touch social media until the sprint is done.\u201d**",
+        "timestamp": "2026-03-04T17:43:02.407075+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T17:43:11.591146+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M SaaS unicorn, and today you committed to being **focused and productive**. You already did your **2 hours of coding**, so the capability is there\u2014the issue is **environmental attention sabotage**: notifications fragmenting your focus.\n\nTo confirm specifics: which notifications were the worst offenders\u2014**phone**, **Slack/Discord**, **email**, or **social apps**?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### 45-Min Course-Corrected Execution Plan\n- **Clear action:** Ship one MVP step tied to \u201cfirst customers\u201d (pick one):\n  1) **Customer-facing improvement:** fix one top bug / finish one onboarding step and push a PR, or  \n  2) **Customer acquisition:** send **5** targeted outreach messages to potential first customers for MVP access.\n- **First 2-minute step (notification kill-switch):**\n  - Phone: **Do Not Disturb + put it in another room**\n  - Desktop: **Pause notifications** (Slack/email) + close all tabs except what you need\n  - Block socials: enable a blocker for **45 min**\n- **Timebox:** 45 minutes, single sprint.\n- **Definition of done:**\n  - Option 1: PR created + pushed (or merged) + short note of what changed\n  - Option 2: 5 messages sent + list of recipients + proposed demo slot(s)\n- **One obstacle + mitigation:** \u201cI\u2019ll just check one thing\u201d impulse \u2192 keep a \u201cnotification parking lot\u201d note; any thought goes there, not into an app.\n\nWhat exact time will you start your 45-minute sprint?\n\nThen type your commitment statement: **\u201cI start at __. I\u2019m shipping __ (option 1 or 2). Notifications stay off until done.\u201d**",
+        "timestamp": "2026-03-04T17:43:11.591155+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T17:43:02.407077+00:00"
+  },
+  {
+    "_id": "69a86f38c3c6343fcfdf84f8",
+    "id": "674cf8da-99fe-48f7-8867-abf1de80ab5c",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T17:43:20.714000+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M unicorn SaaS\u2014and the person who does that is the person who ships code daily. Today your determination is 5/10 and you haven\u2019t completed your top priority or your 2-hour coding habit yet. That\u2019s not a character flaw; it\u2019s a signal we need a tight course-correction.\n\nWhat *specifically* blocked your execution today?  \nPick the most true option (or reply in your own words):\n1) No clear target (intention/10x focus/top action weren\u2019t defined)  \n2) Overwhelm / too many tasks  \n3) Distractions (phone, tabs, people)  \n4) Low energy / mood  \n5) Fear/perfectionism (didn\u2019t want to start unless it was \u201cright\u201d)  \n6) Unexpected fires / obligations  \n7) Something else: _______\n\nNow answer EXACTLY this:  \n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nWhile you answer, here\u2019s a default \u201ccourse-corrected win\u201d plan aligned to your compound habit (code daily) and your SaaS launch:\n\n### 45-minute Execution Plan (today)\n- **Clear action:** Ship one small, real product increment (one PR) toward your SaaS launch.\n- **First 2-minute step:** Open the repo \u2192 create a branch named `course-correct-win` \u2192 write a 1-sentence goal in the PR description (\u201cThis PR adds ____\u201d).\n- **Timebox:** 45 minutes (single sprint, no extending).\n- **Definition of done:** PR opened with working code + passing tests (or a manual sanity check) + merged or ready-for-review.\n- **One obstacle + mitigation:**  \n  - **Obstacle:** \u201cI don\u2019t know what to build.\u201d  \n  - **Mitigation:** Pick the smallest user-facing slice: **login flow fix**, **one onboarding screen**, **one API endpoint**, or **one billing/settings UI stub**\u2014whichever is closest to revenue.\n\nWhat time will you start the 45-minute sprint? (Give an exact clock time.)\n\nThen give me your commitment statement in this format:  \n**\u201cI start at ___. I will ship one PR in 45 minutes. No distractions.\u201d**",
+        "timestamp": "2026-03-04T17:43:20.714008+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T17:43:20.714010+00:00"
+  },
+  {
+    "_id": "69a87e443e2bdd0b0b7cb0e5",
+    "id": "473ce35e-5d90-486f-a43e-051630962b1b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T18:47:32.702795+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn SaaS, and today you said: *\u201cI am being focused and productive.\u201d* Your 10x focus is **ship MVP to first customers**. Right now, distractions pulled you off that identity.\n\nWhat *specifically* distracted you today\u2014was it Slack/email, context switching, unclear next step on the MVP, meetings, fatigue, or something else? What was the moment you went off-track?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nHere\u2019s a course-correct plan (we\u2019ll tailor once you answer the blocker):\n\n**Execution Plan (\u226445 min)**\n- **Clear action:** Ship one customer-facing MVP increment (a tiny feature, fix, or onboarding step) and get it in front of a real user (or ready to).\n- **First 2-minute step:** Open the repo + write a single sentence: *\u201cIn the next 45 minutes I will ship ____.\u201d* Then create a branch or checklist with 3 bullets max.\n- **Timebox:** 45 minutes (one sprint)\n- **Definition of done:** PR merged or deployed to staging + message drafted to first customer/user (\u201cCan you try X and tell me where it breaks?\u201d).\n- **One obstacle + mitigation:** **Urge to check distractions** \u2192 put phone in another room + block Slack/email for 45 minutes (Do Not Disturb).\n\nWhat time are you starting this 45-minute sprint?\n\nType your commitment statement: **\u201cI commit to starting at __ and shipping __ before I stop.\u201d**",
+        "timestamp": "2026-03-04T18:47:32.702804+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T18:47:32.702806+00:00"
+  },
+  {
+    "_id": "69a87e4c3e2bdd0b0b7cb0e6",
+    "id": "b342cee0-c09f-4a95-ab59-bac7985b3635",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T18:47:40.961690+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn by launching your SaaS, and today you said: *\u201cI am being focused and productive.\u201d* You already shipped progress (top action + 2 hours of code), but social media pulled you off-course\u2014and you didn\u2019t course-correct immediately.\n\nWhat specifically triggered the social media scroll today (moment/time/emotion/task you were avoiding)?\n\nRoot blocker (based on what you shared): **attention leakage from an easy dopamine loop replacing the next uncomfortable MVP-shipping step.**\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n## 45-minute Course-Correct Plan (today)\n- **Clear action:** Ship one customer-visible MVP improvement (or unblock the #1 MVP bottleneck) and push it live/ready-to-demo.\n- **First 2-minute step:** Put phone in another room + enable a site blocker for social domains (or log out) and open the single repo/project you\u2019re shipping from.\n- **Timebox:** 45 minutes.\n- **Definition of done:** One of these is complete:\n  1) PR merged to main, or  \n  2) Deployed to staging/production, or  \n  3) A demo-ready flow works end-to-end with notes for any remaining bug.\n- **One obstacle + mitigation:** Urge to \u201cjust check\u201d social \u2192 **lock it out for 60 minutes** (blocker + phone away) and tell yourself \u201cI can check at the end of the timer.\u201d\n\nWhat time will you start the 45-minute block? (Give me an exact time.)\n\nThen reply with your commitment statement: **\u201cI start at __ and I will ship __ in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T18:47:40.961700+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T18:47:50.158811+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 you\u2019re building a $50M unicorn by launching your SaaS, and today you chose the identity: **focused and productive**. You already did your 2 hours of coding, but notifications fractured your attention and pulled you into social.\n\nRoot blocker: **environmental attention attacks (notifications) causing context switching**, which kills MVP shipping speed.\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n## 45-minute Course-Correct Execution Plan (Notification Lockdown + Ship)\n- **Clear action:** Do a 45-minute \u201cNotification-Zero Shipping Sprint\u201d to complete one customer-visible MVP step (bug fix, onboarding step, payment flow, demo flow, or a single feature slice).\n- **First 2-minute step (do this now):**\n  1) Phone \u2192 **Do Not Disturb** + **put it in another room**  \n  2) Laptop \u2192 **turn off all notifications** (Slack/email/browser) + close extra tabs  \n  3) Set a **45-minute timer** titled: *Ship MVP to first customers*\n- **Timebox:** 45 minutes (no switching, no messages).\n- **Definition of done:** At the end of 45 minutes you have **one concrete ship artifact**, e.g.:\n  - PR opened/merged, **or**\n  - deployment to staging/prod, **or**\n  - demo-ready happy path working end-to-end with a short TODO list.\n- **One obstacle + mitigation:** \u201cBut I might miss something important\u201d \u2192 set an **auto-reply/status**: *Heads down until [time]. Call me if urgent.* Then trust the block.\n\nWhat time will you start the 45-minute sprint? (Exact time.)\n\nThen send your commitment statement: **\u201cI start at __ and I will ship __ in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T18:47:50.158827+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T18:47:40.961702+00:00"
+  },
+  {
+    "_id": "69a87e5e3e2bdd0b0b7cb0e8",
+    "id": "aeb67409-3760-448f-bdd4-1b34a772fd70",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T18:47:58.624694+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M unicorn SaaS company\u2014and the person you\u2019re being today is the founder who compounds daily by writing code for 2 hours. Right now your top priority isn\u2019t done, your compound habit isn\u2019t done, and your determination is sitting at 5/10\u2014which is exactly when we win by executing anyway.\n\nWhat specifically blocked your execution today?  \nPick the main blocker (or tell me yours): **unclear next step, overwhelm, distractions, low energy, fear/avoidance, meetings/interruptions, or perfectionism**.\n\nAnd answer this exactly: **\u201cWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\u201d**\n\nWhile you answer, here\u2019s a default course-corrected win plan (\u226445 min) aligned to your compound habit:\n\n**Execution Plan (45 min)**\n- **Clear action:** Ship one small, real product increment (code) that moves your SaaS forward *today*.\n- **First 2-minute step:** Open repo \u2192 create a branch named `course-correct` \u2192 write a 1-sentence note: \u201cIn this 45 min I will ship ______.\u201d\n- **Timebox:** 45 minutes (single sprint, no switching tasks).\n- **Definition of done:** One of these is completed:\n  - PR opened with working change + brief description, **or**\n  - Feature behind a flag merged to main, **or**\n  - Bug fixed + test added + pushed, **or**\n  - One end-to-end slice working locally (even if ugly) + committed.\n- **One obstacle + mitigation:**  \n  - **Obstacle:** Not knowing what to build next.  \n  - **Mitigation:** Spend **5 minutes max** choosing the smallest \u201cnext slice\u201d (UI \u2192 API \u2192 DB) and commit to it; after 5 minutes, decide and start coding.\n\nWhat time will you start your 45-minute sprint? (Give a specific time.)  \nThen type your commitment statement: **\u201cI start at ____. I will code for 45 minutes and ship ____.\u201d**",
+        "timestamp": "2026-03-04T18:47:58.624703+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T18:47:58.624705+00:00"
+  },
+  {
+    "_id": "69a8894e43865a4e4d93092b",
+    "id": "65f12527-965a-4091-b844-1348c957c173",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T19:34:38.383055+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn by launching your SaaS, and today you set the identity: **\u201cI am being focused and productive.\u201d** Your 10x focus is **ship the MVP to first customers**. You drifted from that, but you can still *close today like a builder*.\n\nWhat specifically blocked your execution today\u2014what was the distraction (app/site/person/task), and what moment did you go off-track?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-Corrected Win Plan (\u226445 min)\n- **Clear action:** Ship one concrete MVP deliverable toward first customers (pick one: deploy a working build, finish one core flow end-to-end, or send 3 customer outreach messages with a booking link).\n- **First 2-minute step:** Open your MVP repo + write a 3-bullet \u201cship list\u201d for the next 45 minutes (only the smallest shippable slice).\n- **Timebox:** 45 minutes, single-task sprint (phone in another room, one tab).\n- **Definition of done:** One of these is true:\n  1) A deploy is live, **or**  \n  2) One core user flow works end-to-end in staging, **or**  \n  3) 3 outreach DMs/emails sent + link to book a call.\n- **Likely obstacle:** You get pulled back into distraction / \u201cjust one more thing.\u201d\n  - **Mitigation:** Turn on Do Not Disturb + block the distracting site/app + set a visible timer for 45 minutes.\n\nWhen will you start\u2014give me an exact start time (e.g., 7:10pm)?\n\nThen type your commitment statement: **\u201cI will do the 45-minute sprint at [time] and I will finish [definition of done].\u201d**",
+        "timestamp": "2026-03-04T19:34:38.383063+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T19:34:38.383065+00:00"
+  },
+  {
+    "_id": "69a8895743865a4e4d93092c",
+    "id": "44bfac20-de21-4959-90e6-9f8e488d69aa",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T19:34:47.320096+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you said you\u2019re being **focused and productive** today\u2014and you\u2019re building toward a **$50M unicorn** by **shipping an MVP to first customers**. Social media is the opposite identity. We\u2019re correcting that now.\n\nWhat specifically happened today\u2014**when** did you open social media, on **which device/app**, and what were you avoiding or feeling right before you tapped it?\n\nRoot blocker (based on what you said): **attention leakage + low-friction access** (social apps are one tap away, so \u201cfocused\u201d loses by default unless we add friction).\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-corrected execution plan (\u226445 min)\n- **Clear action:** Lock down social media + ship one concrete MVP deliverable to move toward first customers (a \u201cshippable slice,\u201d not planning).\n- **First 2-minute step:** Put your phone in another room **right now** and enable a **45-min site/app blocker** on your computer (Freedom/Cold Turkey/Screen Time).\n- **Timebox:** 45 minutes.\n- **Definition of done:**  \n  1) Social media blocked on all devices for the rest of today (or at minimum until bedtime), **and**  \n  2) One MVP output is pushed/merged (e.g., a single feature, bugfix, onboarding step) or a customer-facing artifact is sent (e.g., first outreach email/message).\n- **One obstacle + mitigation:** Urge to \u201cjust check\u201d \u2192 write the urge on a sticky note (\u201ccheck later\u201d), take 10 deep breaths, return to the task; if needed, add **password/parental lock** to blockers.\n\nWhat time are you starting the 45-minute sprint?\n\nReply with your commitment statement: **\u201cI\u2019m focused and productive\u2014I start at __ and I will finish by __.\u201d**",
+        "timestamp": "2026-03-04T19:34:47.320103+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T19:34:55.463687+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your identity today is **focused and productive**, and your 10x focus is **ship MVP to first customers** on the path to a **$50M unicorn**. The blocker you named is clear: **attention fragmentation from notifications**.\n\nRoot blocker: **no protected focus container** (notifications + open loops steal the first 5 minutes, then the hour).\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### 45-minute course-correct plan\n- **Clear action:** Create a zero-notification focus container and ship one MVP increment.\n- **First 2-minute step (do now):**\n  1) Phone \u2192 **Do Not Disturb** (allowlist only calls from 1\u20132 key people).  \n  2) Computer \u2192 turn off Slack/email/push notifications + set status to **\u201cHeads down shipping MVP (45m)\u201d**.  \n- **Timebox:** 45 minutes.\n- **Definition of done:**  \n  - Notifications are off (phone + computer) **until the timer ends**, and  \n  - One concrete MVP deliverable is shipped: **PR merged / feature toggled live / bug fixed + deployed / onboarding step completed** (pick one).\n- **One obstacle + mitigation:** \u201cWhat if I miss something?\u201d \u2192 schedule a **5-minute notification check** immediately after the 45 minutes; write down any worries on a note, don\u2019t act on them mid-sprint.\n\nWhat time are you starting the 45-minute sprint?\n\nSend your commitment statement: **\u201cI\u2019m focused and productive\u2014I start at __ and I will ship __ by __.\u201d**",
+        "timestamp": "2026-03-04T19:34:55.463695+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T19:34:47.320105+00:00"
+  },
+  {
+    "_id": "69a8896843865a4e4d93092d",
+    "id": "57d2acc8-47d5-4927-a4f4-07dbfed4295a",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T19:35:04.629417+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product and build a $50M unicorn company. Today you\u2019re the person who compounds daily\u20142 hours of code\u2014yet right now your **top priority and compound habit are both not done**, and your determination is sitting at **5/10**. That\u2019s not a failure; it\u2019s a signal: you need a clean course-correct, fast.\n\nWhat *specifically* blocked execution today?\n- Was it lack of clarity on the **top action**, context switching, distractions, low energy, or something else?\n- What did you do instead (even if it was \u201cnothing\u201d)?\n\nBefore you answer, I\u2019m going to ask you **exactly** this:\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-Correct Win Plan (45 min)\n- **Clear action:** Ship one concrete SaaS progress artifact (code) today: *implement or complete one small, user-visible slice* (e.g., login flow, billing screen stub, onboarding step, CRUD endpoint).\n- **First 2-minute step:** Open repo \u2192 create a branch named `course-correct-<date>` \u2192 write a 3-line note in the README or a scratchpad: *\u201cIn this 45 min I will ship: ____.\u201d*\n- **Timebox:** 45 minutes (single sprint, no multitasking).\n- **Definition of done:** One of these is true:\n  1) A PR/commit pushed with working code, **or**\n  2) A deployed change to staging, **or**\n  3) A passing test + feature behind a flag + commit pushed.\n- **One obstacle + mitigation:** **Obstacle:** \u201cI don\u2019t know what to build / it feels too big.\u201d  \n  **Mitigation:** Choose the *smallest shippable slice* and timebox scope: \u201cone endpoint + basic UI stub\u201d or \u201cone migration + one query + one test.\u201d No polish.\n\nWhat time will you start the 45-minute sprint? (Give an exact time, e.g., 3:40pm.)\n\nThen write your commitment statement in one line:  \n**\u201cI\u2019m starting at __ and I will complete the 45-minute course-correct sprint.\u201d**",
+        "timestamp": "2026-03-04T19:35:04.629425+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T19:35:04.629427+00:00"
+  },
+  {
+    "_id": "69a8920e7d7756e521f9b4cf",
+    "id": "6fcf40b6-0e28-46cc-b74e-a0605619cd7c",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T20:11:58.703897+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to launch a SaaS product on the path to a $50M unicorn, and today you set the identity: **\u201cI am being focused and productive.\u201d** Your 10x focus is **ship MVP to first customers**, and distractions pulled you off that.\n\nWhat specifically blocked your execution today \u2014 **what was the distraction**, and **at what moment did you go off-track** (trigger + time + what you switched to)?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nHere\u2019s a tight course-correct plan (we\u2019ll tailor it after your answer):\n\n**Execution Plan (\u226445 min)**\n- **Clear action:** Ship one customer-facing MVP increment (one small feature/fix) and push it live or into a deploy-ready PR.\n- **First 2-minute step:** Open your repo \u2192 create a branch named `course-correct-<date>` \u2192 write a 1-sentence \u201cDefinition of Done\u201d at the top of the PR/issue.\n- **Timebox:** 45 minutes (single sprint, no context switching).\n- **Definition of done:** One of the following is true:\n  1) PR opened with passing tests + ready for review, or  \n  2) Deploy completed to staging/production, or  \n  3) A specific bug/feature is finished + verified end-to-end.\n- **One obstacle + mitigation:** **Distraction relapse** \u2192 phone in another room + block distracting sites + set \u201cDo Not Disturb\u201d for 45 min.\n\nWhen will you start the 45-minute sprint (exact time)?  \n\nAnd type your commitment statement: **\u201cI start at __ and I will ship __ in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T20:11:58.703905+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T20:11:58.703907+00:00"
+  },
+  {
+    "_id": "69a892167d7756e521f9b4d0",
+    "id": "f9debd96-3c87-40f5-8b40-c8121c7386fa",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T20:12:06.962309+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to launch a SaaS MVP to first customers, and today you set the identity: **\u201cI am being focused and productive.\u201d** Your determination is **10/10**, and you *did* get your 2 hours of coding done\u2014so the builder is showing up. The leak was **social media**, which conflicts with that identity.\n\nWhat specifically happened today\u2014**when** did you open social media, **on what device**, and **what were you trying to avoid or get relief from** in that moment (boredom, uncertainty, stuck bug, anxiety, waiting, etc.)?\n\nRoot blocker (based on your note): **attention leakage + lack of a hard boundary** (no friction between you and the feed).\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-minute Course-Corrected Win Plan (do this today)\n- **Clear action:** Lock down social media + ship one concrete MVP customer-facing artifact.\n- **First 2-minute step:** Put your phone in another room + turn on Focus/Do Not Disturb **right now**.\n- **Timebox:** 45 minutes.\n- **Definition of done (pick ONE):**\n  1) Send a short \u201cMVP ready for 10-min test?\u201d message to **1 real target user**, or  \n  2) Fix **one** highest-friction onboarding issue and deploy, or  \n  3) Write the **5-step** onboarding checklist and add it to the app/docs.\n- **One obstacle + mitigation:**  \n  - *Obstacle:* reflex to check socials mid-task.  \n  - *Mitigation:* add a 10-minute site/app blocker (Freedom/Screen Time/Cold Turkey) + keep a sticky note: \u201cNot now\u2014ship MVP.\u201d\n\nWhat time will you start the 45-minute block? (Give me an exact time.)\n\nThen type your commitment statement in this format:  \n**\u201cI commit to starting at __ and completing __ by __.\u201d**",
+        "timestamp": "2026-03-04T20:12:06.962317+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T20:12:15.641853+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your identity today is **focused and productive**, and your 10x focus is **ship the MVP to first customers**. You\u2019ve already proven momentum (2 hours coding + wormhole), but the blocker is clear: **attention fragmentation from notifications \u2192 focus collapse \u2192 social pull**. Root cause: **no enforced notification boundary during build mode**.\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n### 45-minute Execution Plan (course-correct today)\n- **Clear action:** Create a \u201cBuild Mode\u201d notification lockdown + ship one MVP-customer step.\n- **First 2-minute step:** Turn on **Do Not Disturb / Focus** on *all devices* (phone + computer). Put phone **in another room**.\n- **Timebox:** 45 minutes total\n  - 5 min: Notification lockdown  \n  - 35 min: Deep work on one shipping task  \n  - 5 min: Quick wrap + plan tomorrow (since that\u2019s currently not done)\n- **Definition of done (choose ONE shipping outcome):**\n  1) Message **1 target customer** to onboard/test today, or  \n  2) Deploy **one** MVP improvement that unblocks onboarding, or  \n  3) Write tomorrow\u2019s plan: **Top Action + time + first step** (must be specific)\n- **One obstacle + mitigation:**\n  - **Obstacle:** \u201cBut I might miss something important.\u201d  \n  - **Mitigation:** Set **VIP exceptions only** (calls from 1\u20132 people) + schedule a **single notification check window** after the 45 minutes.\n\nWhat exact time will you start your 45-minute Build Mode block?\n\nThen reply with your commitment statement:  \n**\u201cI commit to starting at __ and completing __ (definition of done) by __.\u201d**",
+        "timestamp": "2026-03-04T20:12:15.641861+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T20:12:06.962319+00:00"
+  },
+  {
+    "_id": "69a892277d7756e521f9b4d1",
+    "id": "f2472e67-f8ab-4568-add1-ef8a78a9c3ee",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T20:12:23.412445+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M unicorn SaaS company\u2014and the person who does that is the one who ships even on low-determination days. Today you haven\u2019t completed your top priority and you didn\u2019t get your 2 hours of coding in. That\u2019s not a verdict; it\u2019s a signal to course-correct now.\n\nWhat *specifically* blocked your execution today?  \nPick the main one (or list top 2):  \n- unclear top action / didn\u2019t decide what \u201cwinning\u201d meant  \n- distraction spiral (phone, web, Slack, etc.)  \n- low energy / stress / mood  \n- perfectionism or \u201ctoo big to start\u201d  \n- meetings/other people\u2019s priorities took over  \n- avoidance (what were you avoiding?)\n\nNow answer this EXACTLY: **\"What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\"**\n\nWhile you answer, here\u2019s a default course-corrected win plan (45 min) tied to your SaaS + daily coding habit:\n\n**Execution Plan (45 min)**\n- **Clear action:** Ship one tangible product increment: implement *one* small user-facing feature or fix *one* bug that unblocks the next release.\n- **First 2-minute step:** Open repo \u2192 create a branch named `course-correct-<date>` \u2192 write a 1-sentence \u201cDefinition of Done\u201d in a comment or ticket.\n- **Timebox:** 45 minutes (single sprint, no extensions).\n- **Definition of done:** PR opened (even if not merged) with working code + brief note of what changed and what\u2019s next.\n- **One obstacle + mitigation:** You\u2019ll drift into distractions \u2192 put phone in another room + enable Focus mode + block sites for 45 min.\n\nWhat time will you start the 45-minute sprint? (Give me an exact start time.)  \nThen type your commitment statement: **\u201cI start at ____. I will ship a course-corrected win in 45 minutes.\u201d**",
+        "timestamp": "2026-03-04T20:12:23.412453+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T20:12:23.412456+00:00"
+  },
+  {
+    "_id": "69a896c5c4a804978d63b408",
+    "id": "5d80c0de-cb3c-49e6-b4af-a79786d6afdc",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T20:32:05.014183+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn by launching your SaaS, and today you said: **\u201cI am being focused and productive.\u201d** Your 10x focus is **shipping the MVP to first customers.** Let\u2019s course-correct this day.\n\nWhat specifically blocked your execution today\u2014what did you get distracted by (apps/sites/people/tasks), and at what moment did you first drift?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nWhile you answer, here\u2019s a default course-correct plan (45 min) aimed directly at \u201cShip MVP to first customers\u201d:\n\n- **Clear action:** Ship one customer-facing MVP increment (something you can actually put in front of a first user today).\n- **First 2-minute step:** Open your repo + write a single-line goal at the top of your TODO: \u201cIn 45 min I will ship: ___\u201d then start a timer.\n- **Timebox:** 45 minutes (one sprint).\n- **Definition of done:** Code merged (or deployed) **and** you send 1 message to a potential/first customer: \u201cI pushed ___\u2014can you try it today?\u201d\n- **One obstacle + mitigation:** Distractions pull you away \u2192 phone in another room + browser blocked + single-tab rule until timer ends.\n\nWhat time will you start the 45-minute sprint (exact time)?  \n\nReply with your commitment statement: **\u201cI start at ___. I will ship ___. No distractions until the timer ends.\u201d**",
+        "timestamp": "2026-03-04T20:32:05.014192+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T20:32:05.014195+00:00"
+  },
+  {
+    "_id": "69a896cdc4a804978d63b409",
+    "id": "f9f6e6f7-f9aa-47bb-9041-6a8562ff7d97",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T20:32:13.309985+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn SaaS, and today you said: *\u201cI am being focused and productive.\u201d* You **did** write code for 2 hours and you\u2019re focused on **shipping the MVP to first customers**. The gap is you let **social media** steal cycles (and you haven\u2019t done meditation or planned tomorrow yet).\n\nWhat specifically triggered the social media distraction today\u2014boredom, stress, a hard bug, waiting on something, or \u201cjust checking\u201d that turned into scrolling?\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-corrected execution plan (\u226445 min)\n- **Clear action:** Do a 45-minute **MVP shipping sprint** on one customer-facing deliverable *and* lock down social media.\n- **First 2-minute step:** Turn on **Do Not Disturb + block social apps/sites** (Screen Time / Freedom / Cold Turkey) for 60 minutes, then open the exact task file/board you\u2019ll ship from.\n- **Timebox:** 45 minutes (single sprint, no switching).\n- **Definition of done:** One tangible \u201cship\u201d output (pick one):\n  - PR opened/merged for a key MVP feature/fix, **or**\n  - onboarding/email copy drafted + added to product, **or**\n  - first-customer outreach message written + sent to **3** targets.\n- **One obstacle + mitigation:** Urge to \u201cjust check\u201d social \u2192 keep phone in another room + leave the blocker on until the sprint ends.\n\nWhat time are you starting this 45-minute sprint?\n\nThen reply with your commitment statement: **\u201cI\u2019m starting at ___ and I will finish the 45-minute ship sprint.\u201d**",
+        "timestamp": "2026-03-04T20:32:13.309994+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T20:32:22.967579+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 you\u2019re building a $50M SaaS unicorn, and today you chose the identity: **focused and productive**. You already upheld the compound habit (**2 hours of coding**) and your top priority is marked complete. Now we tighten the loop: your blocker was **attention fragmentation**\u2014lack of focus driven by **too many notifications**.\n\nRoot blocker: **your environment is leaking attention** (notifications \u2192 context switching \u2192 social media).\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-minute course-corrected execution plan\n- **Clear action:** Run one **Notification Zero + Ship Sprint** that pushes the MVP closer to first customers.\n- **First 2-minute step (do this immediately):**\n  1) Put phone in another room.  \n  2) Turn on **Do Not Disturb** on phone + computer (allow only calls from 1 person if needed).  \n  3) Close email/Slack/social tabs.  \n- **Timebox:** **45 minutes** (single task, no switching).\n- **Definition of done (choose ONE and complete it):**\n  - **Ship:** open + merge a PR that improves a customer-facing MVP flow, or  \n  - **Sell:** send **3** first-customer outreach messages, or  \n  - **Activate:** implement one onboarding step + verify end-to-end locally.\n- **One obstacle + mitigation:** \u201cI need to check a notification\u201d \u2192 write it on a sticky note titled **\u2018After Sprint\u2019** and keep going. You can review after the timer.\n\nWhat time are you starting?\n\nThen type your commitment statement exactly: **\u201cI\u2019m starting at ___ and I will complete the 45-minute Notification Zero + Ship Sprint.\u201d**",
+        "timestamp": "2026-03-04T20:32:22.967587+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T20:32:13.309996+00:00"
+  },
+  {
+    "_id": "69a896e0c4a804978d63b40a",
+    "id": "ccff95bd-e2c6-4741-bde3-6dfa7842e97f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T20:32:32.135075+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to launch a SaaS product on the path to a $50M unicorn. The person you\u2019re being is someone who compounds daily by writing code for 2 hours. Today, none of the core actions happened yet and your determination is at 5/10 \u2014 so we\u2019re not \u201cbehind,\u201d we\u2019re simply at the decision point.\n\nWhat *specifically* blocked your execution today?  \nPick the main one (or list top 2): lack of clarity on what to code, distractions, low energy, anxiety/perfectionism, meetings/interruptions, or something else.\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nWhile you answer, here\u2019s a default \u201ccourse-correct win\u201d plan you can execute in \u226445 minutes:\n\n**Execution Plan (45 min)**\n- **Clear action:** Ship one tiny, real product increment in your SaaS codebase (not planning)\u2014a measurable change merged/committed.\n- **First 2-minute step:** Open the repo + create a branch named `course-correct-<today>` and write a 1-sentence goal in the commit message draft (e.g., \u201cAdd basic signup flow validation\u201d).\n- **Timebox:** 45 minutes (single sprint, no switching)\n- **Definition of done:** 1 commit pushed (or PR opened) that passes tests/build and changes user-visible behavior or removes a known blocker.\n- **One obstacle + mitigation:** *Obstacle:* \u201cI don\u2019t know what to work on.\u201d  \n  *Mitigation:* Choose the smallest item from this list and start immediately: fix one bug, add one form validation, add one endpoint stub returning hardcoded data, write one failing test + make it pass, or update one UI screen to render real state.\n\nNow: **What time will you start your 45-minute sprint (exact time)?**\n\nAnd give me your commitment statement in this format:  \n**\u201cI start at ___. For 45 minutes, I will ___. Done is ___.\u201d**",
+        "timestamp": "2026-03-04T20:32:32.135082+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T20:32:32.135084+00:00"
+  },
+  {
+    "_id": "69a8bb4d573c094d6abbdc6f",
+    "id": "71920dd1-b968-40b1-ae6d-f3d37d054970",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I didn't complete my top priority today and got distracted",
+        "timestamp": "2026-03-04T23:07:57.309109+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to build a $50M unicorn by launching your SaaS, and today you said you\u2019re being **focused and productive**. Right now we\u2019re going to realign to **Ship MVP to first customers**.\n\nWhat *specifically* blocked your execution today and pulled you into distractions?  \n- Was it unclear next step, perfectionism, meetings/Slack, context switching, fatigue, or something else?  \n- What was the distraction (be precise: YouTube, Twitter, \u201cjust checking\u201d email, random bug rabbit hole, etc.) and when did it start?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\n**While you answer, here\u2019s a tight course-correct plan you can run in \u226445 minutes:**\n- **Clear action:** Ship one MVP-critical customer-facing improvement *today* (pick ONE: onboarding step, checkout/payment, core workflow happy-path bug, or a demoable \u201cthin slice\u201d feature).\n- **First 2-minute step:** Open your repo + write a 3-line \u201cMVP Ship Note\u201d in a scratchpad:  \n  1) user action \u2192 2) expected result \u2192 3) current failure/gap.\n- **Timebox:** 45 minutes (single sprint; no \u201cresearch\u201d allowed).\n- **Definition of done:** PR merged to main **or** deployed to staging with a link + 2 bullet release note.\n- **One obstacle + mitigation:** Getting pulled back into distractions \u2192 turn on **Do Not Disturb**, close all tabs, and set a single allowed tab: repo/IDE only (phone in another room).\n\nWhat time will you start this 45-minute sprint? (Give me an exact time.)\n\nThen reply with your commitment statement:  \n\u201cI commit to starting at ___ and shipping ___ in 45 minutes.\u201d",
+        "timestamp": "2026-03-04T23:07:57.309118+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T23:07:57.309120+00:00"
+  },
+  {
+    "_id": "69a8bb54573c094d6abbdc70",
+    "id": "26954fb3-0c25-4ec7-b3d4-8034de630b57",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-03-04",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted by social media",
+        "timestamp": "2026-03-04T23:08:04.573923+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, your 10x goal is to launch a SaaS product on the path to a $50M unicorn\u2014and today you said you\u2019re being **focused and productive**. You *did* get your 2 hours of coding in and hit the top priority, but social media pulled you off your intended path (and you haven\u2019t done meditation or planned tomorrow yet).\n\nWhat specifically triggered the social media distraction today\u2014was it **boredom**, **avoidance of a hard task**, **a notification**, or **\u201cjust a quick check\u201d that snowballed**?\n\nFrom what you said, the likely root blocker is **attention leakage via an easy dopamine loop** (social apps) during moments of friction.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### 45-minute course-correct plan (ship MVP momentum)\n- **Clear action:** Lock down social media + plan tomorrow\u2019s MVP ship block.\n- **First 2-minute step:** Turn on **Focus/Do Not Disturb** and **block social apps** (Screen Time / app blocker) for the next 12 hours.\n- **Timebox:** 30 minutes to plan + 15 minutes to prep (total **45 min**).\n- **Definition of done:**  \n  1) Social apps blocked until tomorrow after your 2-hour code block  \n  2) A written \u201ctomorrow plan\u201d with: the **one MVP deliverable**, the **first file/function to touch**, and the **exact 2-hour calendar block**\n- **One obstacle + mitigation:** Urge to \u201cjust check\u201d \u2192 keep phone in another room + allow one scheduled 5-minute check window after planning is finished.\n\nWhat time are you starting this 45-minute block (give me an exact time)?\n\nThen reply with your commitment statement: **\u201cI commit to starting at [time] and finishing the course-correct plan tonight.\u201d**",
+        "timestamp": "2026-03-04T23:08:04.573932+00:00"
+      },
+      {
+        "role": "user",
+        "text": "The main blocker was lack of focus and too many notifications",
+        "timestamp": "2026-03-04T23:08:13.261993+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn, you\u2019re building a $50M unicorn SaaS and you declared you\u2019re being **focused and productive**. Today the blocker wasn\u2019t capability\u2014it was **attention fragmentation**: lack of focus + too many notifications. That\u2019s a solvable systems problem.\n\nRoot blocker: **no hard notification boundary**, so your attention got hijacked and context-switching killed momentum.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Execution plan (\u226445 min)\n- **Clear action:** Create a \u201cnotification-zero\u201d environment + lock tomorrow\u2019s MVP ship block.\n- **First 2-minute step:** Turn on **Do Not Disturb / Focus mode** right now (allow only calls from VIPs if needed).\n- **Timebox:** **40 minutes**\n- **Definition of done:**\n  1) Phone: notifications OFF for social + email + news (or set to scheduled summary)  \n  2) Computer: quit/disable Slack/email/browser notifications (banner + sounds off)  \n  3) Put a **2-hour coding block** on your calendar for tomorrow + write the **single MVP deliverable** you will ship\n- **One obstacle + mitigation:** \u201cBut I might miss something important\u201d \u2192 create a **whitelist** (e.g., calls/text from 2 people) + schedule **two check-in windows** tomorrow (10 min mid-day, 10 min late afternoon).\n\nWhat exact time are you starting this 40-minute course-correct block?\n\nThen send your commitment statement: **\u201cI commit to starting at [time] and finishing this notification-zero setup + tomorrow ship plan.\u201d**",
+        "timestamp": "2026-03-04T23:08:13.262002+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-04T23:08:04.573934+00:00"
+  },
+  {
+    "_id": "69a8bb65573c094d6abbdc71",
+    "id": "bba3c423-d9ea-415d-bfc7-e1955ae292a0",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "date_reference": "2026-04-03",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "Need help getting back on track",
+        "timestamp": "2026-03-04T23:08:21.420223+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "Test Unicorn \u2014 your 10x goal is to launch a SaaS product and build a $50M unicorn company. Today you\u2019re the person who compounds daily by writing code for 2 hours, even when determination is only 5/10. Right now, we\u2019re not negotiating identity\u2014we\u2019re restoring momentum.\n\nWhat *specifically* blocked execution today?\n- Was it unclear Top Action (you left it blank), low energy, distractions, avoidance/fear, meetings, or not knowing what code to write next?\n- What happened in the exact moment you were supposed to start?\n\nWhat do you feel is the biggest, boldest action you could still do today to create a course-corrected win?\n\nHere\u2019s a default \u201ccourse-corrected win\u201d plan we can run immediately (we\u2019ll tailor it once you answer):\n\n### Execution Plan (\u226445 minutes)\n- **Clear action:** Ship one small, real product increment: implement + deploy a single thin slice (e.g., one API endpoint, one UI form, one auth flow step, or one bugfix that unblocks next work).\n- **First 2-minute step:** Open repo \u2192 create a branch named `course-correct-win` \u2192 write a 1-sentence \u201cDefinition of Done\u201d at top of your notes.\n- **Timebox:** 45 minutes (one sprint).\n- **Definition of done:** One PR/commit pushed that either (a) passes tests, or (b) is deployed to staging, or (c) closes one tracked issue.\n- **One obstacle + mitigation:** \u201cI don\u2019t know what to build next\u201d \u2192 open your backlog and pick the smallest item that moves activation/revenue; if none exists, create one issue: \u201cAdd onboarding step X\u201d and implement the tiniest version.\n\nWhat time will you start your 45-minute sprint today? (Give me a specific time.)\n\nThen type your commitment statement:  \n\u201cI\u2019m starting at ___. I will ship one course-corrected win in 45 minutes.\u201d",
+        "timestamp": "2026-03-04T23:08:21.420231+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-04T23:08:21.420233+00:00"
+  },
+  {
+    "_id": "69a9e01661b65a4911e9269f",
+    "id": "f85266ec-b26a-44e0-8d6e-2c2bdeca8600",
+    "user_id": "8ca2402b-eb38-43fd-9949-dc9c0168fa04",
+    "date_reference": "2026-03-02",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I got distracted and lost focus",
+        "timestamp": "2026-03-05T19:57:10.529658+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "10xUnicorn, your 10x goal is **1,000 mastermind members**, and the identity you\u2019re building is: **the person who invites daily\u2014especially when stressed**. Today stress + scrolling/TV pulled you off that track, and your compound habit didn\u2019t happen yet.\n\nWhat *specifically* broke your execution today\u2014was it:\n1) **Avoidance of outreach** (fear of rejection / discomfort making calls)  \n2) **No clear target list** (didn\u2019t know who to contact)  \n3) **No time container** (open-ended = easy to escape)  \n4) **Emotional stress spike** (used social/TV to numb)  \nReply with the number(s) and one sentence.\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\n### Course-Corrected Win Plan (\u226445 min)\n- **Clear action:** Send **10 direct invites** to your event OR to guest on your mastermind (DM/text/email) + make **3 calls** to warm leads.\n- **First 2-minute step:** Open your phone/CRM \u2192 write a list of **13 names** (10 DM + 3 call). No perfect list\u2014just real humans.\n- **Timebox:** **35 minutes** (non-negotiable sprint).\n- **Definition of done:** **10 invites sent + 3 call attempts logged** (voicemail counts) + 1 follow-up question to anyone who replies.\n- **One obstacle + mitigation:** Urge to scroll / stress \u2192 **phone on Do Not Disturb + put it in another room between messages**; only pull it out to send the next invite/call.\n\nWhat time are you starting this **35-minute outreach sprint** today (give me an exact time)?\n\nThen type your commitment statement:  \n**\u201cI\u2019m 10xUnicorn, and I will start at ____ and complete 10 invites + 3 calls today.\u201d**",
+        "timestamp": "2026-03-05T19:57:10.529666+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": true,
+    "created_at": "2026-03-05T19:57:10.529668+00:00"
+  },
+  {
+    "_id": "69a9e0b161b65a4911e926a0",
+    "id": "9a51f6e6-bd71-4a89-88b5-79203202beba",
+    "user_id": "8ca2402b-eb38-43fd-9949-dc9c0168fa04",
+    "date_reference": "2026-03-05",
+    "conversation_log": [
+      {
+        "role": "user",
+        "text": "I\u2019m feeling stressed and overwhelmed and like what I need to achieve is impossible but I only need about $10,000 to pay everything and pull off the event that I want to pull off \ufffc",
+        "timestamp": "2026-03-05T19:59:45.059833+00:00"
+      },
+      {
+        "role": "assistant",
+        "text": "10xUnicorn, your 10x goal is **1,000 mastermind members**, and today you said you\u2019re being **committed, determined, strong, and courageous**. Feeling stressed doesn\u2019t contradict that identity\u2014this is exactly when you *practice* it. You also already kept your compound habit (inviting), so you\u2019re not \u201cbehind,\u201d you\u2019re just not locked onto the **Mass Registration Confirmations** move yet.\n\nWhat specifically blocked your execution today\u2014**was it**:\n- not knowing the next *one* step,\n- fear of outreach / hearing \u201cno,\u201d\n- too many moving parts (overwhelm),\n- unclear offer / who to message,\n- or avoiding the money conversation?\n\nAnd before you answer anything else:\n\n**What do you feel is the biggest, boldest action you could still do today to create a course-corrected win?**\n\nHere\u2019s a tight course-correct plan you can run *today* (\u226445 min), aligned to your focus: **Mass Registration Confirmations + $10k target**.\n\n## Execution Plan (45 minutes)\n**Clear action:**  \nSend a **direct \u201cconfirm + pay now\u201d message** to a short list of warm leads (past yes\u2019s, maybes, strong prospects) with a clear deadline and link.\n\n**First 2-minute step:**  \nOpen your notes and write one sentence:  \n\u201cI\u2019m filling the final spots for [Event] and confirming registrations today\u2014are you in? I can send the link.\u201d\n\n**Timebox:**  \n45 minutes total:\n- 5 min: build your list of **20 names**\n- 30 min: send **20 personalized messages** (voice note optional for speed/connection)\n- 10 min: follow-ups to anyone who already showed interest\n\n**Definition of done (binary):**  \n- **20 confirmation/payment messages sent**  \n- **5 follow-ups** sent  \n- You track who replied / who needs a call\n\n**One obstacle + mitigation:**  \nObstacle: \u201cOverwhelm + fear they won\u2019t respond.\u201d  \nMitigation: **Only one metric matters for 45 minutes: messages sent.** No rewriting. No perfecting. Copy/paste template + quick personalization.\n\nIf you want, reply with your event + price + who your warmest 5 people are, and I\u2019ll help you craft the exact message in under 60 seconds.\n\nWhat time are you going to start this 45-minute sprint? (give me a specific start time)\n\nThen type your commitment statement:  \n**\u201cI\u2019m 10xUnicorn. I start at ____. I will send 20 confirmation messages in 45 minutes.\u201d**",
+        "timestamp": "2026-03-05T19:59:45.059840+00:00"
+      }
+    ],
+    "generated_plan": null,
+    "user_commitment": null,
+    "marked_complete": false,
+    "created_at": "2026-03-05T19:59:45.059842+00:00"
+  }
+]

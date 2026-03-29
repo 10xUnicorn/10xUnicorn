@@ -1,0 +1,86 @@
+[
+  {
+    "_id": "69a84a236e81275b6ef8cb04",
+    "user_id": "58616a2b-75bf-4370-aad2-89266cc487df",
+    "bio": "We help SaaS companies grow",
+    "booking_link": "calendly.com/techstartup",
+    "company_name": "TechStartup Inc",
+    "created_at": "2026-03-04T15:05:07.608234+00:00",
+    "email": "hello@techstartup.com",
+    "golden_connection": "VC partners who invest in B2B SaaS",
+    "good_connection_for": "Anyone who needs marketing help",
+    "linkedin": "linkedin.com/company/techstartup",
+    "phone": "+1-555-123-4567",
+    "services_offered": [
+      "marketing",
+      "sales",
+      "coaching"
+    ],
+    "target_customer": "B2B SaaS founders",
+    "twitter": "@techstartup",
+    "updated_at": "2026-03-04T15:05:07.608205+00:00",
+    "warm_connection": "SaaS founders in Austin",
+    "website": "techstartup.com",
+    "working_on": "Building AI-powered sales tools"
+  },
+  {
+    "_id": "69a84da46e81275b6ef8cd9f",
+    "user_id": "7e3798b5-a15c-433a-9504-499d06e6810c",
+    "bio": "We help B2B SaaS companies scale",
+    "booking_link": "calendly.com/growthtech",
+    "company_name": "GrowthTech Inc",
+    "created_at": "2026-03-04T15:20:04.106872+00:00",
+    "email": "hello@growthtech.io",
+    "golden_connection": "Series A VCs in Austin",
+    "good_connection_for": "Anyone looking for sales help",
+    "linkedin": "linkedin.com/in/demouser",
+    "services_offered": [
+      "marketing",
+      "sales",
+      "coaching"
+    ],
+    "target_customer": "B2B SaaS founders",
+    "twitter": "@growthtech",
+    "updated_at": "2026-03-04T15:20:04.106837+00:00",
+    "website": "growthtech.io",
+    "working_on": "Building AI sales automation"
+  },
+  {
+    "_id": "69a855036e81275b6ef8d071",
+    "user_id": "98cd7bc4-c23d-447b-a677-17604c38bfb8",
+    "bio": "",
+    "booking_link": "",
+    "company_name": "",
+    "created_at": "2026-03-04T15:51:31.032341+00:00",
+    "email": "",
+    "golden_connection": "",
+    "good_connection_for": "",
+    "instagram": "",
+    "linkedin": "https://www.linkedin.com/in/10xunicorn",
+    "phone": "",
+    "services_offered": [
+      "coaching",
+      "speaking",
+      "tech_development",
+      "sponsorships",
+      "events",
+      "communities",
+      "capital"
+    ],
+    "target_customer": "",
+    "twitter": "",
+    "updated_at": "2026-03-04T15:51:31.032305+00:00",
+    "warm_connection": "",
+    "website": "",
+    "working_on": ""
+  },
+  {
+    "_id": "69a86b8c2dc15082251bdadf",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27"
+  },
+  {
+    "_id": "69a8a5d9c88fbe249acc73cd",
+    "user_id": "8ca2402b-eb38-43fd-9949-dc9c0168fa04",
+    "profile_photo_path": "10x-unicorn/profiles/8ca2402b-eb38-43fd-9949-dc9c0168fa04/bdfac632-7528-40c0-b078-867dcde60bd4.jpg"
+  }
+]

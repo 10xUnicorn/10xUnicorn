@@ -1,0 +1,162 @@
+[
+  {
+    "_id": "69a8628a7b42fc7dfd84995c",
+    "id": "b336baa7-092e-4bd8-bcba-04e0bdabffaa",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_0fa16fdc: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T16:49:14.225223+00:00"
+  },
+  {
+    "_id": "69a8628a7b42fc7dfd84995e",
+    "id": "b5355702-ed21-4962-8025-73b6ba495d27",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_416dffa1",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T16:49:14.816102+00:00"
+  },
+  {
+    "_id": "69a862e4c3950608b0e91287",
+    "id": "639c3c35-7517-4c46-a464-2fb190346142",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_3fe6e00f: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T16:50:44.026717+00:00"
+  },
+  {
+    "_id": "69a862e4c3950608b0e91289",
+    "id": "54cacc85-a146-458b-a36e-2cfba0af56de",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_7a49f9e1",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T16:50:44.681845+00:00"
+  },
+  {
+    "_id": "69a86f40c3c6343fcfdf850e",
+    "id": "889eeb27-e9c0-4c73-b828-0dbe9d4247e1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_28516e64: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T17:43:28.611697+00:00"
+  },
+  {
+    "_id": "69a86f41c3c6343fcfdf8510",
+    "id": "72bd0bd9-9b5a-4256-86bc-2fe9e22aec3f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_1083e547",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T17:43:29.183525+00:00"
+  },
+  {
+    "_id": "69a87e663e2bdd0b0b7cb0fe",
+    "id": "40728570-cd2a-4519-b753-ba4024018460",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_95e1829b: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T18:48:06.627626+00:00"
+  },
+  {
+    "_id": "69a87e673e2bdd0b0b7cb100",
+    "id": "80144195-ade6-4d76-821a-ffdf79c4b6bd",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_99c23de3",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T18:48:07.185835+00:00"
+  },
+  {
+    "_id": "69a8897043865a4e4d930943",
+    "id": "40f28760-181e-44c3-b019-bafb4cf6509e",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_70f9b20f: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T19:35:12.460732+00:00"
+  },
+  {
+    "_id": "69a8897143865a4e4d930945",
+    "id": "ca607b47-a297-4d39-aef3-30297dfa5109",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_14cb13ab",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T19:35:13.047866+00:00"
+  },
+  {
+    "_id": "69a8922f7d7756e521f9b4e7",
+    "id": "022b40cc-847f-42f7-be8e-b1258e4f3283",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_2610cf58: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T20:12:31.061242+00:00"
+  },
+  {
+    "_id": "69a8922f7d7756e521f9b4e9",
+    "id": "fed23404-5bba-477c-88e4-3a6ecaa10516",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_ecf26f64",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T20:12:31.636499+00:00"
+  },
+  {
+    "_id": "69a896e7c4a804978d63b420",
+    "id": "de6c2f6d-bffe-4a4d-9f9b-98acc079811b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_64e32c8d: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T20:32:39.684019+00:00"
+  },
+  {
+    "_id": "69a896e8c4a804978d63b422",
+    "id": "095f5b26-61df-4da1-ac0c-b26eb8f7f395",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_02a26f4d",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T20:32:40.277006+00:00"
+  },
+  {
+    "_id": "69a8bb6d573c094d6abbdc87",
+    "id": "da960dc1-91af-4496-8ec9-a1615bd4c00d",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Help_bfb5ab1a: I need help with my goal",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T23:08:29.009432+00:00"
+  },
+  {
+    "_id": "69a8bb6d573c094d6abbdc89",
+    "id": "b48787ce-50a9-4f3b-86af-a681c46880cb",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "goal_id": "0c21ca0c-4b88-479d-b8ea-262a966f2bed",
+    "description": "TEST_Feed_Help_f254fe99",
+    "is_public": true,
+    "status": "open",
+    "created_at": "2026-03-04T23:08:29.578786+00:00"
+  }
+]

@@ -1,0 +1,632 @@
+[
+  {
+    "_id": "69a86bb7c3c6343fcfdf84d9",
+    "id": "fb04f0d1-ca11-4c2b-802f-8e2c8190c5ab",
+    "contact_id": "260769f2-232b-4f96-a0ea-e5f185bd26fc",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:28:23.408718+00:00"
+  },
+  {
+    "_id": "69a86bb7c3c6343fcfdf84db",
+    "id": "688f1d86-4775-4642-a195-7b0706115a70",
+    "contact_id": "c4585328-7cbc-4ab9-9328-4aa12e364197",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T17:28:23.719988+00:00"
+  },
+  {
+    "_id": "69a86bb8c3c6343fcfdf84dd",
+    "id": "6a98a9e9-a076-482d-aed5-1ad45dfe6c8d",
+    "contact_id": "22259b7e-6af3-4203-8d1f-10a0a6dae519",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:28:24.016515+00:00"
+  },
+  {
+    "_id": "69a86bb8c3c6343fcfdf84de",
+    "id": "0b8f985f-d27d-437c-8c61-63fafc82e955",
+    "contact_id": "22259b7e-6af3-4203-8d1f-10a0a6dae519",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:28:24.173976+00:00"
+  },
+  {
+    "_id": "69a86bb8c3c6343fcfdf84df",
+    "id": "34e5d4c9-6013-4c10-b605-c3e2eac6bc3d",
+    "contact_id": "22259b7e-6af3-4203-8d1f-10a0a6dae519",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:28:24.231078+00:00"
+  },
+  {
+    "_id": "69a86bb8c3c6343fcfdf84e1",
+    "id": "0f02394a-9d60-444b-8f60-a9ec7a74e9ec",
+    "contact_id": "7eef6bbe-041f-4180-8446-b3be2273f856",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:28:24.622302+00:00"
+  },
+  {
+    "_id": "69a86bb8c3c6343fcfdf84e3",
+    "id": "b939da3c-ffc9-4830-9ae2-25ece1913b93",
+    "contact_id": "7b68bdf7-f546-4bc5-835f-17b2405c6231",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:28:24.955770+00:00"
+  },
+  {
+    "_id": "69a86f41c3c6343fcfdf8512",
+    "id": "208802bc-79b9-452b-acae-f8131ff09d38",
+    "contact_id": "e1a33676-f01c-4e28-a709-ce7a9f5c9ed6",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:43:29.649172+00:00"
+  },
+  {
+    "_id": "69a86f41c3c6343fcfdf8514",
+    "id": "6bf7dfa7-ec8b-4539-b104-a89830e014d7",
+    "contact_id": "46dfac66-15fc-41e0-8b39-59cb5f010c41",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T17:43:29.901191+00:00"
+  },
+  {
+    "_id": "69a86f42c3c6343fcfdf8516",
+    "id": "bd9c169f-5edf-4264-a1a8-e08762115611",
+    "contact_id": "2ff5bb08-f614-4001-917e-660ff6551756",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:43:30.158622+00:00"
+  },
+  {
+    "_id": "69a86f42c3c6343fcfdf8517",
+    "id": "f25c4a91-8699-4029-8846-89df868dc59b",
+    "contact_id": "2ff5bb08-f614-4001-917e-660ff6551756",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:43:30.221662+00:00"
+  },
+  {
+    "_id": "69a86f42c3c6343fcfdf8518",
+    "id": "89dba797-df1e-4cb7-9980-4e1292f9617f",
+    "contact_id": "2ff5bb08-f614-4001-917e-660ff6551756",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:43:30.291808+00:00"
+  },
+  {
+    "_id": "69a86f42c3c6343fcfdf851a",
+    "id": "fa8328d6-f2f2-49a5-bc0a-4e7c42510493",
+    "contact_id": "1be935cb-67eb-4e55-aace-0de1630c8ef8",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:43:30.641015+00:00"
+  },
+  {
+    "_id": "69a86f42c3c6343fcfdf851c",
+    "id": "95014b19-a5b7-44b1-ad6b-e5520c1ae219",
+    "contact_id": "2884e72f-b486-46d5-acda-d71d34124f1e",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T17:43:30.937722+00:00"
+  },
+  {
+    "_id": "69a87c9c6d0aa8f180eb3a32",
+    "id": "fec7e3e1-73a2-444b-a7b3-6823c81533bf",
+    "contact_id": "86648344-1aa9-4d86-a1f4-c41fb3605cb1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:40:28.323878+00:00"
+  },
+  {
+    "_id": "69a87c9c6d0aa8f180eb3a34",
+    "id": "43769a0a-ff08-48ea-be1f-7d82585535e4",
+    "contact_id": "842e46ce-c1d0-4340-ac2a-ac44279e9cc9",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T18:40:28.583700+00:00"
+  },
+  {
+    "_id": "69a87c9c6d0aa8f180eb3a36",
+    "id": "9773b3d8-ae39-43e9-ad9a-876d68258e4c",
+    "contact_id": "55a82f3b-ee0b-418b-93d7-2b03d2541e2f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:40:28.809623+00:00"
+  },
+  {
+    "_id": "69a87c9c6d0aa8f180eb3a37",
+    "id": "aeda4620-f4b1-4bf8-953c-ad2cfa78bbc5",
+    "contact_id": "55a82f3b-ee0b-418b-93d7-2b03d2541e2f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:40:28.876890+00:00"
+  },
+  {
+    "_id": "69a87c9c6d0aa8f180eb3a38",
+    "id": "8aa7b783-c920-4c1d-aa74-e30ae11b9d6d",
+    "contact_id": "55a82f3b-ee0b-418b-93d7-2b03d2541e2f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:40:28.947110+00:00"
+  },
+  {
+    "_id": "69a87c9d6d0aa8f180eb3a3a",
+    "id": "d3ac35f0-88cb-456c-a04e-b0505d9cd4e5",
+    "contact_id": "9a89aa1e-7d41-42dc-94d2-0129961d2708",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:40:29.280253+00:00"
+  },
+  {
+    "_id": "69a87c9d6d0aa8f180eb3a3c",
+    "id": "419bfcfc-40fa-4eb6-bfe6-22f0e43f4264",
+    "contact_id": "ba1845e1-1ebf-4b05-82f6-a8c2a69ec59b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:40:29.842543+00:00"
+  },
+  {
+    "_id": "69a87cc73e2bdd0b0b7cb0c7",
+    "id": "4f62fb57-6490-47b1-958a-e1a89b6a7075",
+    "contact_id": "88c37f9d-7f6f-4c0f-8c11-89f740584c8f",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:41:11.177797+00:00"
+  },
+  {
+    "_id": "69a87cc73e2bdd0b0b7cb0c9",
+    "id": "b1e6158b-7946-4004-84f4-b3ff5c9b8209",
+    "contact_id": "d9ce4977-aeeb-409d-a444-27824cdca28d",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T18:41:11.455981+00:00"
+  },
+  {
+    "_id": "69a87cc73e2bdd0b0b7cb0cb",
+    "id": "3f7ee109-b590-429d-bf42-933021b1bfee",
+    "contact_id": "ece7db56-b8b7-491e-bd5d-865fc0df0fa3",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:41:11.692542+00:00"
+  },
+  {
+    "_id": "69a87cc73e2bdd0b0b7cb0cc",
+    "id": "a6f901d5-af6a-4d39-b324-7414009976a3",
+    "contact_id": "ece7db56-b8b7-491e-bd5d-865fc0df0fa3",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:41:11.746319+00:00"
+  },
+  {
+    "_id": "69a87cc73e2bdd0b0b7cb0cd",
+    "id": "be4bcae0-e45c-432a-98ad-6949eff01ebc",
+    "contact_id": "ece7db56-b8b7-491e-bd5d-865fc0df0fa3",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:41:11.847802+00:00"
+  },
+  {
+    "_id": "69a87cc83e2bdd0b0b7cb0cf",
+    "id": "a855cfea-3c6e-4209-8c6b-962d2b9079d1",
+    "contact_id": "97bb923f-f696-45a9-b525-b01888b6a39c",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:41:12.151926+00:00"
+  },
+  {
+    "_id": "69a87cc83e2bdd0b0b7cb0d1",
+    "id": "2e2f390b-6d40-4bf2-a7d4-95863a05166d",
+    "contact_id": "db47d5fa-c061-4a43-92f9-0d376c776238",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:41:12.486929+00:00"
+  },
+  {
+    "_id": "69a87e673e2bdd0b0b7cb102",
+    "id": "d439c771-a743-4177-acde-6e62438f3ea2",
+    "contact_id": "ad588df3-5188-4f4e-9362-0f1adf9d6252",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:48:07.552870+00:00"
+  },
+  {
+    "_id": "69a87e673e2bdd0b0b7cb104",
+    "id": "9bd94213-2420-45ff-a3a9-0a960d0df69f",
+    "contact_id": "00bcb14e-7687-462e-ae50-82d96e7339d6",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T18:48:07.802012+00:00"
+  },
+  {
+    "_id": "69a87e683e2bdd0b0b7cb106",
+    "id": "fe9db261-60c9-45c0-ae3a-53ba998ccd96",
+    "contact_id": "afbb13aa-e417-4dd5-b8ef-2f93ca297953",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:48:08.019820+00:00"
+  },
+  {
+    "_id": "69a87e683e2bdd0b0b7cb107",
+    "id": "a6504cfe-53c8-4f0b-aa4f-53161eed842c",
+    "contact_id": "afbb13aa-e417-4dd5-b8ef-2f93ca297953",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:48:08.510147+00:00"
+  },
+  {
+    "_id": "69a87e683e2bdd0b0b7cb108",
+    "id": "79ed9cfa-ea1c-454d-9052-780ff68b05f0",
+    "contact_id": "afbb13aa-e417-4dd5-b8ef-2f93ca297953",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:48:08.865096+00:00"
+  },
+  {
+    "_id": "69a87e693e2bdd0b0b7cb10a",
+    "id": "3335bb10-02e0-4e46-ace1-d242b50b44b4",
+    "contact_id": "dd34e395-75b4-4fd8-bf07-0a800e230113",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:48:09.173933+00:00"
+  },
+  {
+    "_id": "69a87e693e2bdd0b0b7cb10c",
+    "id": "bb8ce5c2-58cb-43af-a8c2-3a97b4038770",
+    "contact_id": "36d5019b-f4a9-4d04-b5a0-5213f1ca35a1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T18:48:09.563977+00:00"
+  },
+  {
+    "_id": "69a8897143865a4e4d930947",
+    "id": "59790d9d-69c1-45cc-97bb-3cd35424f68a",
+    "contact_id": "354cfe67-bce2-498b-8d88-a6d8611044c4",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T19:35:13.505517+00:00"
+  },
+  {
+    "_id": "69a8897143865a4e4d930949",
+    "id": "26642f26-8d7f-4e3c-9ae8-b76effef6b22",
+    "contact_id": "1e9e968a-cfb8-4898-b9d5-b65bf37d8406",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T19:35:13.745933+00:00"
+  },
+  {
+    "_id": "69a8897143865a4e4d93094b",
+    "id": "6952e518-2298-4fc3-a7f1-b86f20130d7a",
+    "contact_id": "4ce1bf0c-3c31-4212-824a-b12553a0d4f1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T19:35:13.966037+00:00"
+  },
+  {
+    "_id": "69a8897243865a4e4d93094c",
+    "id": "04cb3e6c-adc6-4383-8772-f7e22619c020",
+    "contact_id": "4ce1bf0c-3c31-4212-824a-b12553a0d4f1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T19:35:14.018202+00:00"
+  },
+  {
+    "_id": "69a8897243865a4e4d93094d",
+    "id": "b8e41e76-4b31-48ec-a125-16f40ff8f87d",
+    "contact_id": "4ce1bf0c-3c31-4212-824a-b12553a0d4f1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T19:35:14.074568+00:00"
+  },
+  {
+    "_id": "69a8897243865a4e4d93094f",
+    "id": "47c1df24-d5fe-4be5-afda-e3cd8f5309fb",
+    "contact_id": "99eb6bcd-a597-4b85-9dd3-0ef63bacef9b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T19:35:14.392207+00:00"
+  },
+  {
+    "_id": "69a8897243865a4e4d930951",
+    "id": "ab2a581c-59a2-4a21-910c-67a8e6e92ecf",
+    "contact_id": "f132ebe9-9427-4382-acb8-9c531d8a153b",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T19:35:14.690239+00:00"
+  },
+  {
+    "_id": "69a892307d7756e521f9b4eb",
+    "id": "f1acd278-1799-4117-80b3-3aa669579a29",
+    "contact_id": "b1bdf23f-a5fe-4b12-9d48-638275c010b0",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:12:32.005248+00:00"
+  },
+  {
+    "_id": "69a892307d7756e521f9b4ed",
+    "id": "931dff22-661e-4044-b279-2db915d03b11",
+    "contact_id": "98ada1c0-d734-4292-9e04-eca8de678547",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T20:12:32.242789+00:00"
+  },
+  {
+    "_id": "69a892307d7756e521f9b4ef",
+    "id": "c51c1724-1863-44a4-a8c8-03a3a3dc5416",
+    "contact_id": "8fd2a1fa-4ff2-4d81-966f-c6302b0e6bdd",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:12:32.550144+00:00"
+  },
+  {
+    "_id": "69a892307d7756e521f9b4f0",
+    "id": "14bf334b-fc7d-460d-9e58-fbdecef1feee",
+    "contact_id": "8fd2a1fa-4ff2-4d81-966f-c6302b0e6bdd",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:12:32.608878+00:00"
+  },
+  {
+    "_id": "69a892307d7756e521f9b4f1",
+    "id": "b817cdd8-0d8b-478f-a17c-4dfc4da6a8c9",
+    "contact_id": "8fd2a1fa-4ff2-4d81-966f-c6302b0e6bdd",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:12:32.673932+00:00"
+  },
+  {
+    "_id": "69a892307d7756e521f9b4f3",
+    "id": "f30eb480-f038-41d9-936c-63320fc76021",
+    "contact_id": "75cb2fca-f850-40f4-918d-7cb3a866e4be",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:12:32.990611+00:00"
+  },
+  {
+    "_id": "69a892317d7756e521f9b4f5",
+    "id": "5f4e74d8-05db-4782-b5c9-659d6ae0192e",
+    "contact_id": "b275ce9a-8162-4a27-b7d8-8921abb131d8",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:12:33.310367+00:00"
+  },
+  {
+    "_id": "69a896e8c4a804978d63b424",
+    "id": "5fec9d32-dcbe-4bcb-a5cb-c5feb98209c0",
+    "contact_id": "43238824-a496-44a3-9574-7ff9277179a1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:32:40.659448+00:00"
+  },
+  {
+    "_id": "69a896e8c4a804978d63b426",
+    "id": "e2873259-1bc2-460a-bfb7-0d855215ea00",
+    "contact_id": "5cbdbe21-6bec-4803-bdcf-a600c82d6739",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T20:32:40.882737+00:00"
+  },
+  {
+    "_id": "69a896e9c4a804978d63b428",
+    "id": "670e8b47-1e2a-4538-a92b-2fb8d4c8ef11",
+    "contact_id": "7c12812a-200a-4827-9719-b902ada5e1de",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:32:41.140433+00:00"
+  },
+  {
+    "_id": "69a896e9c4a804978d63b429",
+    "id": "4a477f33-f851-4d06-8d41-6b227890c2a3",
+    "contact_id": "7c12812a-200a-4827-9719-b902ada5e1de",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:32:41.204710+00:00"
+  },
+  {
+    "_id": "69a896e9c4a804978d63b42a",
+    "id": "11675b26-c489-4e0c-9185-fea71924e29f",
+    "contact_id": "7c12812a-200a-4827-9719-b902ada5e1de",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:32:41.272322+00:00"
+  },
+  {
+    "_id": "69a896e9c4a804978d63b42c",
+    "id": "d976a90a-aa1a-45e1-a778-d91f00fdebbb",
+    "contact_id": "2294eb0d-42b3-4060-88a5-e994c604d627",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:32:41.573996+00:00"
+  },
+  {
+    "_id": "69a896e9c4a804978d63b42e",
+    "id": "7e748c8c-1a33-48ea-bbc5-c04229b9a025",
+    "contact_id": "c2730a4e-422e-4407-a009-5343f4745dae",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T20:32:41.907749+00:00"
+  },
+  {
+    "_id": "69a8bb6d573c094d6abbdc8b",
+    "id": "0fd40786-34c8-4b18-be98-597a6d11e218",
+    "contact_id": "84dc3a61-19b5-43ef-89ca-fa6fd25edf46",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Had a great conversation about partnership opportunities",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T23:08:29.980416+00:00"
+  },
+  {
+    "_id": "69a8bb6e573c094d6abbdc8d",
+    "id": "6e956653-3b25-4df9-801a-2655f927281f",
+    "contact_id": "b67302cc-7eaf-432f-9648-764d872761b7",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "meeting",
+    "notes": "In-person meeting at conference",
+    "date": "01/15/26",
+    "created_at": "2026-03-04T23:08:30.263150+00:00"
+  },
+  {
+    "_id": "69a8bb6e573c094d6abbdc8f",
+    "id": "38d72211-99dc-42e8-a516-f2a40b1e0566",
+    "contact_id": "c10b4a5b-3e16-4836-8932-7f223e0c1f2c",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "call",
+    "notes": "Test call log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T23:08:30.540535+00:00"
+  },
+  {
+    "_id": "69a8bb6e573c094d6abbdc90",
+    "id": "65809745-cdb9-4f97-a4cc-0afaf37e8c6f",
+    "contact_id": "c10b4a5b-3e16-4836-8932-7f223e0c1f2c",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "dm",
+    "notes": "Test dm log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T23:08:30.666171+00:00"
+  },
+  {
+    "_id": "69a8bb6e573c094d6abbdc91",
+    "id": "285ae5a3-4c78-4093-a2f7-c7d49e32a947",
+    "contact_id": "c10b4a5b-3e16-4836-8932-7f223e0c1f2c",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "email",
+    "notes": "Test email log",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T23:08:30.733397+00:00"
+  },
+  {
+    "_id": "69a8bb6f573c094d6abbdc93",
+    "id": "56f75fa2-ac5d-4cb1-8235-92e0f19426c5",
+    "contact_id": "00059368-6039-4d7a-96f3-17581503fea2",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "coffee_chat",
+    "notes": "Coffee meeting",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T23:08:31.030683+00:00"
+  },
+  {
+    "_id": "69a8bb6f573c094d6abbdc95",
+    "id": "1b2ecdee-3e2f-4ea8-b50c-dd9f186e94d1",
+    "contact_id": "4c631d87-2f30-4fb0-83f3-903e9a4f7fc1",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "action_type": "follow_up",
+    "notes": "Follow up call",
+    "date": "03/04/26",
+    "created_at": "2026-03-04T23:08:31.307192+00:00"
+  }
+]

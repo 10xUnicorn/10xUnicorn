@@ -1,0 +1,38 @@
+[
+  {
+    "_id": "69a86b8b3f2d913f3462de66",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "daily_checkin_enabled": true,
+    "daily_checkin_time": "08:30",
+    "deal_reminders_enabled": true,
+    "community_notifications_enabled": true,
+    "message_notifications_enabled": true
+  },
+  {
+    "_id": "69a87e563e2bdd0b0b7cb0e7",
+    "user_id": "98cd7bc4-c23d-447b-a677-17604c38bfb8",
+    "daily_checkin_enabled": true,
+    "daily_checkin_time": "09:00",
+    "deal_reminders_enabled": true,
+    "community_notifications_enabled": true,
+    "message_notifications_enabled": true
+  },
+  {
+    "_id": "69a88c4643865a4e4d930966",
+    "user_id": "8ca2402b-eb38-43fd-9949-dc9c0168fa04",
+    "daily_checkin_enabled": true,
+    "daily_checkin_time": "09:00",
+    "deal_reminders_enabled": true,
+    "community_notifications_enabled": true,
+    "message_notifications_enabled": true
+  },
+  {
+    "_id": "69a90ea4aa6b3fa72142061d",
+    "user_id": "efd268e3-06cd-41c1-b573-566326162393",
+    "daily_checkin_enabled": true,
+    "daily_checkin_time": "09:00",
+    "deal_reminders_enabled": true,
+    "community_notifications_enabled": true,
+    "message_notifications_enabled": true
+  }
+]

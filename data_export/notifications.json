@@ -1,0 +1,15 @@
+[
+  {
+    "_id": "69a87e973e2bdd0b0b7cb11b",
+    "id": "48fd6c55-9133-486e-ab32-5b4aa437e5f8",
+    "user_id": "2a1922b9-0526-4d97-af37-129562989c27",
+    "type": "message",
+    "title": "Message from Daniel",
+    "body": "[Test] Daniel: Hey everyone",
+    "data": {
+      "sender_id": "98cd7bc4-c23d-447b-a677-17604c38bfb8"
+    },
+    "sent": true,
+    "created_at": "2026-03-04T18:48:55.730725+00:00"
+  }
+]
