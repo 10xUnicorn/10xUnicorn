@@ -1,122 +1,240 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { api, setApiToken } from '../utils/api';
+/**
+ * AuthContext — Supabase Auth
+ * Replaces: Custom JWT + FastAPI auth endpoints
+ *
+ * Changes from Emergent version:
+ * - No manual token management (Supabase handles it)
+ * - No custom JWT decode (Supabase session auto-refresh)
+ * - Google OAuth via Supabase (not Emergent session exchange)
+ * - Password reset via Supabase (not custom endpoint)
+ */
 
-type User = {
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { Alert } from 'react-native';
+import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { supabase } from '../utils/supabase';
+import { Profile } from '../types/database';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+export interface AppUser {
   id: string;
   email: string;
   onboarded: boolean;
-  created_at?: string;
+  accountStatus?: string; // 'pending' | 'approved' | 'rejected' | 'deactivated'
+  role?: string; // 'admin' | 'member'
   name?: string;
-  picture?: string;
-};
+  displayName?: string;
+  emoji?: string;
+  avatarUrl?: string;
+  timezone?: string;
+  dailyCompoundTarget?: number;
+}
 
-type AuthState = {
-  token: string | null;
-  user: User | null;
+interface AuthState {
+  user: AppUser | null;
+  profile: Profile | null;
+  session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (sessionId: string) => Promise<void>;
+  register: (email: string, password: string, name?: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
   setUserOnboarded: () => void;
   refreshUser: () => Promise<void>;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+}
+
+// ─── Context ─────────────────────────────────────────────────────────────────
+
+const AuthContext = createContext<AuthState | undefined>(undefined);
+
+export const useAuth = (): AuthState => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within <AuthProvider>');
+  return ctx;
 };
 
-const AuthContext = createContext<AuthState>({
-  token: null,
-  user: null,
-  loading: true,
-  login: async () => {},
-  register: async () => {},
-  loginWithGoogle: async () => {},
-  logout: async () => {},
-  setUserOnboarded: () => {},
-  refreshUser: async () => {},
-});
+// ─── Provider ────────────────────────────────────────────────────────────────
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadAuth = useCallback(async () => {
-    try {
-      const stored = await AsyncStorage.getItem('auth_token');
-      if (stored) {
-        setToken(stored);
-        setApiToken(stored);
-        const me = await api.get('/auth/me', stored);
-        setUser(me);
-      }
-    } catch {
-      await AsyncStorage.removeItem('auth_token');
-      setToken(null);
-      setApiToken(null);
-      setUser(null);
-    } finally {
-      setLoading(false);
+  // ── Fetch profile from Supabase ──
+  const fetchProfile = useCallback(async (userId: string, email: string): Promise<Profile | null> => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[Auth] Profile fetch error:', error.message);
+      return null;
     }
+    return data;
   }, []);
 
+  // ── Build AppUser from profile ──
+  const buildAppUser = useCallback((supaUser: SupabaseUser, prof: Profile | null): AppUser => {
+    return {
+      id: supaUser.id,
+      email: supaUser.email || '',
+      onboarded: prof?.onboarding_completed ?? false,
+      accountStatus: (prof as any)?.account_status || 'pending',
+      role: (prof as any)?.role || 'member',
+      name: prof?.full_name || supaUser.user_metadata?.full_name || undefined,
+      displayName: prof?.display_name || undefined,
+      emoji: prof?.emoji || undefined,
+      avatarUrl: prof?.avatar_url || undefined,
+      timezone: prof?.timezone || undefined,
+      dailyCompoundTarget: prof?.daily_compound_target ?? 0,
+    };
+  }, []);
+
+  // ── Handle session change ──
+  const handleSession = useCallback(async (sess: Session | null) => {
+    setSession(sess);
+    if (sess?.user) {
+      const prof = await fetchProfile(sess.user.id, sess.user.email || '');
+      setProfile(prof);
+      setUser(buildAppUser(sess.user, prof));
+    } else {
+      setUser(null);
+      setProfile(null);
+    }
+    setLoading(false);
+  }, [fetchProfile, buildAppUser]);
+
+  // ── Initialize auth listener ──
   useEffect(() => {
-    loadAuth();
-  }, [loadAuth]);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      handleSession(initialSession);
+    });
 
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, newSession) => {
+        handleSession(newSession);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, [handleSession]);
+
+  // ── Login ──
   const login = async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
-    await AsyncStorage.setItem('auth_token', res.token);
-    setToken(res.token);
-    setApiToken(res.token);
-    const me = await api.get('/auth/me', res.token);
-    setUser(me);
-    return me;
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      setLoading(false);
+      throw new Error(error.message);
+    }
+    // Session change triggers handleSession via onAuthStateChange
   };
 
-  const register = async (email: string, password: string) => {
-    const res = await api.post('/auth/register', { email, password });
-    await AsyncStorage.setItem('auth_token', res.token);
-    setToken(res.token);
-    setApiToken(res.token);
-    const newUser = { id: res.user_id, email, onboarded: false };
-    setUser(newUser);
-    return newUser;
+  // ── Register ──
+  const register = async (email: string, password: string, name?: string) => {
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name || email.split('@')[0] },
+      },
+    });
+    if (error) {
+      setLoading(false);
+      throw new Error(error.message);
+    }
   };
 
-  const loginWithGoogle = async (sessionId: string) => {
-    // Exchange session_id for session data from Emergent Auth
-    const res = await api.post('/auth/google', { session_id: sessionId });
-    await AsyncStorage.setItem('auth_token', res.token);
-    setToken(res.token);
-    setApiToken(res.token);
-    const me = await api.get('/auth/me', res.token);
-    setUser(me);
-    return me;
+  // ── Google OAuth ──
+  const loginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'com.10xunicorn.app://auth/callback',
+        queryParams: { access_type: 'offline', prompt: 'consent' },
+      },
+    });
+    if (error) throw new Error(error.message);
   };
 
+  // ── Logout ──
   const logout = async () => {
-    await AsyncStorage.removeItem('auth_token');
-    setToken(null);
-    setApiToken(null);
+    await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
+    setSession(null);
   };
 
+  // ── Password Reset ──
+  const requestPasswordReset = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'com.10xunicorn.app://auth/reset',
+    });
+    if (error) throw new Error(error.message);
+  };
+
+  // ── Mark onboarded ──
   const setUserOnboarded = () => {
-    if (user) setUser({ ...user, onboarded: true });
+    if (user) {
+      setUser({ ...user, onboarded: true });
+      if (profile) setProfile({ ...profile, onboarding_completed: true });
+    }
   };
 
+  // ── Refresh user data ──
   const refreshUser = async () => {
-    if (token) {
-      const me = await api.get('/auth/me', token);
-      setUser(me);
+    if (!session?.user) return;
+    const prof = await fetchProfile(session.user.id, session.user.email || '');
+    setProfile(prof);
+    setUser(buildAppUser(session.user, prof));
+  };
+
+  // ── Update profile ──
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!session?.user) return;
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', session.user.id)
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+    if (data) {
+      setProfile(data);
+      setUser(buildAppUser(session.user, data));
     }
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, loading, login, register, loginWithGoogle, logout, setUserOnboarded, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        profile,
+        session,
+        loading,
+        login,
+        register,
+        loginWithGoogle,
+        logout,
+        requestPasswordReset,
+        setUserOnboarded,
+        refreshUser,
+        updateProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export default AuthContext;
