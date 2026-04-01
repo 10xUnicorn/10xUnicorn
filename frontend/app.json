@@ -1,17 +1,27 @@
 {
   "expo": {
     "name": "10x Unicorn",
-    "slug": "frontend",
-    "version": "1.0.0",
+    "slug": "10xunicorn",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "com.10xunicorn.app",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "imageSize": 200,
+      "style": "dark",
+      "backgroundColor": "#050505"
+    },
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.10xunicorn.app",
+      "buildNumber": "3",
       "infoPlist": {
-        "NSContactsUsageDescription": "Import contacts to your Wormhole network"
+        "NSContactsUsageDescription": "Import contacts to your Wormhole network",
+        "NSCameraUsageDescription": "Take photos for your profile avatar",
+        "NSPhotoLibraryUsageDescription": "Select photos for your profile avatar"
       }
     },
     "android": {
@@ -20,11 +30,15 @@
         "backgroundColor": "#050505"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["READ_CONTACTS"]
+      "package": "com.tenxunicorn.app",
+      "permissions": [
+        "android.permission.READ_CONTACTS",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -43,8 +57,22 @@
         {
           "contactsPermission": "Import contacts to your Wormhole network"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Select photos for your profile avatar",
+          "cameraPermission": "Take photos for your profile avatar"
+        }
       ]
     ],
+    "extra": {
+      "eas": {
+        "projectId": "YOUR_EAS_PROJECT_ID"
+      },
+      "supabaseUrl": "https://yzhpnaxnljvozatawclj.supabase.co",
+      "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY"
+    },
     "experiments": {
       "typedRoutes": true
     }
