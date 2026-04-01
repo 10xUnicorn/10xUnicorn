@@ -1,263 +1,512 @@
+/**
+ * AI Chat Modal — /app/ai-chat.tsx
+ * 10xUnicorn AI Companion chat interface (modal presentation)
+ * Receives date context via router params
+ * ~350 lines
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, KeyboardAvoidingView, Platform,
+  View, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity,
+  ActivityIndicator, KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { api } from '../src/utils/api';
-import { Colors, Radius, FontSize } from '../src/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../src/context/AuthContext';
+import {
+  sendAIMessage, buildAIContext, getSuggestedPrompts,
+} from '../src/utils/ai-companion';
+import { profiles, goals, dailyEntries, aiSessions } from '../src/utils/database';
+import { Colors, Spacing, BorderRadius, Typography } from '../src/constants/theme';
 
-type Message = { role: 'user' | 'assistant'; text: string };
+interface Message {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export default function AIChatScreen() {
   const router = useRouter();
-  const { date } = useLocalSearchParams<{ date: string }>();
-  const scrollRef = useRef<ScrollView>(null);
+  const { user } = useAuth();
+  const params = useLocalSearchParams();
+  const date = (params.date as string) || new Date().toISOString().split('T')[0];
+
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(true);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [sessionComplete, setSessionComplete] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    loadExistingSession();
+    initializeChat();
   }, []);
 
-  const loadExistingSession = async () => {
+  const initializeChat = async () => {
+    if (!user) {
+      setInitError('User not authenticated');
+      setInitializing(false);
+      return;
+    }
+
     try {
-      const sessions = await api.get(`/ai-session/by-date/${date || new Date().toISOString().split('T')[0]}`);
-      if (sessions.length > 0) {
-        const latest = sessions[0];
-        setSessionId(latest.id);
-        setMessages(latest.conversation_log.map((m: any) => ({ role: m.role, text: m.text })));
-        setSessionComplete(latest.marked_complete);
+      // Get or create AI session for this date
+      const { data: existingSession, error: sessionError } = await aiSessions.getByDate(user.id, date);
+
+      if (sessionError && sessionError.code !== 'PGRST116') {
+        // PGRST116 is "no rows found" which is expected for new dates
+        throw new Error(`Failed to load session: ${sessionError.message}`);
       }
-    } catch (e) {
-      console.error(e);
+
+      if (existingSession) {
+        setSessionId(existingSession.id);
+        // Load previous messages
+        const { data: msgs, error: msgError } = await aiSessions.getMessages(existingSession.id);
+        if (msgError) throw new Error(`Failed to load messages: ${msgError.message}`);
+        if (msgs) {
+          setMessages(
+            msgs.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+          );
+        }
+      } else {
+        // Create new session
+        const { data: newSession, error: createError } = await aiSessions.create(user.id, 'course_correction');
+        if (createError) throw new Error(`Failed to create session: ${createError.message}`);
+        if (newSession) {
+          setSessionId(newSession.id);
+        }
+      }
+
+      // Load context for suggested prompts
+      const { data: profile, error: profileError } = await profiles.get(user.id);
+      if (profileError) throw new Error(`Failed to load profile: ${profileError.message}`);
+
+      const { data: goal, error: goalError } = await goals.getActive(user.id);
+      // goalError might be "no rows" which is okay
+      if (goalError && goalError.code !== 'PGRST116') {
+        throw new Error(`Failed to load goal: ${goalError.message}`);
+      }
+
+      const { data: entry, error: entryError } = await dailyEntries.getByDate(user.id, date);
+      // entryError might be "no rows" which is okay
+      if (entryError && entryError.code !== 'PGRST116') {
+        throw new Error(`Failed to load daily entry: ${entryError.message}`);
+      }
+
+      setSuggestedPrompts(getSuggestedPrompts(entry));
+      setInitError(null);
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to initialize chat';
+      console.error('Chat init error:', err);
+      setInitError(errorMsg);
     } finally {
-      setInitialLoading(false);
+      setInitializing(false);
     }
   };
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const text = input.trim();
-    setInput('');
-    const userMsg: Message = { role: 'user', text };
-    setMessages(prev => [...prev, userMsg]);
+  const sendMessage = async (text: string) => {
+    if (!text.trim() || !user || !sessionId) {
+      if (!sessionId) {
+        setInitError('Chat session not ready. Please wait a moment and try again.');
+      }
+      return;
+    }
+
+    const userMessage = text.trim();
+    setInputText('');
+
+    // Add user message to UI
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setLoading(true);
 
     try {
-      let response;
-      if (!sessionId) {
-        const res = await api.post('/ai-session/start', {
-          message: text,
-          date: date || new Date().toISOString().split('T')[0],
-        });
-        setSessionId(res.session_id);
-        response = res.response;
-      } else {
-        const res = await api.post(`/ai-session/${sessionId}/message`, {
-          message: text,
-        });
-        response = res.response;
+      // Build AI context
+      const { data: profile, error: profileError } = await profiles.get(user.id);
+      if (profileError) throw new Error(`Failed to load profile: ${profileError.message}`);
+
+      const { data: goal, error: goalError } = await goals.getActive(user.id);
+      if (goalError && goalError.code !== 'PGRST116') {
+        throw new Error(`Failed to load goal: ${goalError.message}`);
       }
-      setMessages(prev => [...prev, { role: 'assistant', text: response }]);
-    } catch (e: any) {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        text: `Sorry, something went wrong. ${e.message || 'Please try again.'}`
-      }]);
+
+      const { data: entry, error: entryError } = await dailyEntries.getByDate(user.id, date);
+      if (entryError && entryError.code !== 'PGRST116') {
+        throw new Error(`Failed to load daily entry: ${entryError.message}`);
+      }
+
+      const context = buildAIContext(profile, goal, entry);
+
+      // Send to AI companion
+      const response = await sendAIMessage(sessionId, userMessage, messages, context);
+
+      if (response.error) {
+        const errorMessage = response.error.includes('ai-companion')
+          ? 'The AI Companion is currently unavailable. Please try again in a moment.'
+          : `I encountered an issue: ${response.error}. Let's try again.`;
+        setMessages(prev => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: errorMessage,
+          },
+        ]);
+      } else {
+        setMessages(prev => [...prev, { role: 'assistant', content: response.content }]);
+      }
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Connection issue. Please try again.';
+      console.error('Send message error:', err);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: errorMsg,
+        },
+      ]);
     } finally {
       setLoading(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      // Scroll to bottom
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     }
   };
 
-  const completeSession = async () => {
-    if (!sessionId) return;
-    try {
-      await api.post(`/ai-session/${sessionId}/complete`);
-      setSessionComplete(true);
-    } catch (e: any) {
-      console.error(e);
-    }
+  const handleSuggestedPrompt = (prompt: string) => {
+    sendMessage(prompt);
+  };
+
+  const handleDone = () => {
+    router.back();
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity testID="ai-chat-back-btn" onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Ionicons name="sparkles" size={20} color={Colors.brand.primary} />
-          <Text style={styles.headerTitle}>AI Course Correction</Text>
-        </View>
-        {sessionId && !sessionComplete && (
-          <TouchableOpacity testID="complete-session-btn" onPress={completeSession} style={styles.completeBtn}>
-            <Text style={styles.completeBtnText}>Done</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {sessionComplete && (
-        <View style={styles.completeBanner}>
-          <Ionicons name="checkmark-circle" size={18} color={Colors.status.success} />
-          <Text style={styles.completeBannerText}>Session completed - Day marked as course corrected</Text>
-        </View>
-      )}
-
-      {initialLoading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.brand.primary} />
-        </View>
-      ) : (
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.flex}
-          keyboardVerticalOffset={90}
-        >
-          <ScrollView
-            ref={scrollRef}
-            style={styles.messages}
-            contentContainerStyle={styles.messagesContent}
-            onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+      <LinearGradient
+        colors={Colors.gradient.primary}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <View>
+            <Text style={styles.headerTitle}>10x Companion</Text>
+            <Text style={styles.headerSubtitle}>Course Correction Coach</Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleDone}
+            style={styles.doneButton}
+            activeOpacity={0.7}
           >
-            {messages.length === 0 && (
-              <View style={styles.welcome}>
-                <View style={styles.aiIcon}>
-                  <Ionicons name="sparkles" size={32} color={Colors.brand.primary} />
-                </View>
-                <Text style={styles.welcomeTitle}>Course Correction Coach</Text>
-                <Text style={styles.welcomeText}>
-                  Tell me about your day. What happened? What blocked you? I'll help you course-correct and still make today count.
-                </Text>
-                <View style={styles.prompts}>
-                  {[
-                    "I didn't complete my top priority today",
-                    "I got distracted and lost focus",
-                    "I need help getting back on track",
-                  ].map((p, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      testID={`prompt-${i}`}
-                      style={styles.promptBtn}
-                      onPress={() => { setInput(p); }}
-                    >
-                      <Text style={styles.promptText}>{p}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            )}
+            <Text style={styles.doneButtonText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
 
-            {messages.map((m, i) => (
-              <View key={i} style={[styles.msgBubble, m.role === 'user' ? styles.userBubble : styles.aiBubble]}>
-                {m.role === 'assistant' && (
-                  <View style={styles.aiLabel}>
-                    <Ionicons name="sparkles" size={12} color={Colors.brand.primary} />
-                    <Text style={styles.aiLabelText}>10x Coach</Text>
-                  </View>
-                )}
-                <Text style={[styles.msgText, m.role === 'user' && styles.userMsgText]}>{m.text}</Text>
-              </View>
-            ))}
+      {/* Messages */}
+      <ScrollView
+        ref={scrollViewRef}
+        style={styles.messagesContainer}
+        contentContainerStyle={styles.messagesContent}
+        showsVerticalScrollIndicator={false}
+        onContentSizeChange={() => {
+          scrollViewRef.current?.scrollToEnd({ animated: false });
+        }}
+      >
+        {initializing && (
+          <View style={styles.emptyState}>
+            <ActivityIndicator size="large" color={Colors.brand.primary} />
+            <Text style={[styles.emptyStateTitle, { marginTop: Spacing.lg }]}>Loading Chat</Text>
+            <Text style={styles.emptyStateSubtitle}>Getting your session ready...</Text>
+          </View>
+        )}
 
-            {loading && (
-              <View style={[styles.msgBubble, styles.aiBubble]}>
-                <ActivityIndicator size="small" color={Colors.brand.primary} />
-              </View>
-            )}
-          </ScrollView>
-
-          <View style={styles.inputBar}>
-            <TextInput
-              testID="ai-chat-input"
-              style={styles.input}
-              value={input}
-              onChangeText={setInput}
-              placeholder={sessionComplete ? 'Session completed' : 'Type your message...'}
-              placeholderTextColor={Colors.text.tertiary}
-              editable={!sessionComplete}
-              multiline
-              maxLength={2000}
-            />
+        {initError && !initializing && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateEmoji}>⚠️</Text>
+            <Text style={styles.emptyStateTitle}>Chat Error</Text>
+            <Text style={styles.emptyStateSubtitle}>{initError}</Text>
             <TouchableOpacity
-              testID="ai-chat-send-btn"
-              style={[styles.sendBtn, (!input.trim() || loading || sessionComplete) && styles.sendBtnDisabled]}
-              onPress={sendMessage}
-              disabled={!input.trim() || loading || sessionComplete}
+              onPress={() => {
+                setInitError(null);
+                setInitializing(true);
+                initializeChat();
+              }}
+              style={[styles.suggestedPrompt, { marginTop: Spacing.lg }]}
             >
-              <Ionicons name="send" size={20} color={Colors.text.primary} />
+              <Text style={styles.suggestedPromptText}>Try Again</Text>
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
+        )}
+
+        {messages.length === 0 && !loading && !initializing && !initError && (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateEmoji}>🦄</Text>
+            <Text style={styles.emptyStateTitle}>Let's Execute</Text>
+            <Text style={styles.emptyStateSubtitle}>
+              I'm here to help you course-correct and stay locked on your 10x goal
+            </Text>
+          </View>
+        )}
+
+        {messages.map((msg, idx) => (
+          <View
+            key={idx}
+            style={[
+              styles.messageRow,
+              msg.role === 'user' ? styles.userRow : styles.assistantRow,
+            ]}
+          >
+            <View
+              style={[
+                styles.messageBubble,
+                msg.role === 'user'
+                  ? styles.userBubble
+                  : styles.assistantBubble,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.messageText,
+                  msg.role === 'user'
+                    ? styles.userMessageText
+                    : styles.assistantMessageText,
+                ]}
+              >
+                {msg.content}
+              </Text>
+            </View>
+          </View>
+        ))}
+
+        {loading && (
+          <View style={styles.messageRow}>
+            <View style={[styles.messageBubble, styles.assistantBubble]}>
+              <ActivityIndicator size="small" color={Colors.brand.primary} />
+            </View>
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Suggested Prompts */}
+      {messages.length === 0 && suggestedPrompts.length > 0 && !loading && !initializing && !initError && (
+        <View style={styles.suggestedContainer}>
+          <Text style={styles.suggestedLabel}>Quick Start</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.suggestedContent}
+          >
+            {suggestedPrompts.map((prompt, idx) => (
+              <TouchableOpacity
+                key={idx}
+                style={styles.suggestedPrompt}
+                onPress={() => handleSuggestedPrompt(prompt)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.suggestedPromptText}>{prompt}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
       )}
-    </SafeAreaView>
+
+      {/* Input */}
+      {!initializing && !initError && (
+        <View style={styles.inputContainer}>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="What's on your mind?"
+              placeholderTextColor={Colors.text.tertiary}
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+              maxLength={500}
+              editable={!loading && !initializing && !initError}
+            />
+            <TouchableOpacity
+              style={[styles.sendButton, (!inputText.trim() || loading) && styles.sendButtonDisabled]}
+              onPress={() => sendMessage(inputText)}
+              disabled={!inputText.trim() || loading || !sessionId}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sendButtonText}>›</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.charCount}>{inputText.length}/500</Text>
+        </View>
+      )}
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg.default },
-  flex: { flex: 1 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+  },
   header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
   },
-  backBtn: { width: 44, height: 44, justifyContent: 'center', alignItems: 'center' },
-  headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  headerTitle: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  completeBtn: {
-    backgroundColor: Colors.status.success, borderRadius: Radius.md,
-    paddingHorizontal: 16, paddingVertical: 8,
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  completeBtnText: { color: Colors.text.inverse, fontWeight: '700', fontSize: FontSize.sm },
-  completeBanner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: 'rgba(0,255,157,0.1)', paddingVertical: 10,
+  headerTitle: {
+    ...Typography.h2,
+    color: Colors.text.primary,
   },
-  completeBannerText: { color: Colors.status.success, fontSize: FontSize.sm },
-  messages: { flex: 1 },
-  messagesContent: { padding: 16, paddingBottom: 8 },
-  welcome: { alignItems: 'center', paddingVertical: 40 },
-  aiIcon: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: 'rgba(127,0,255,0.15)',
-    justifyContent: 'center', alignItems: 'center', marginBottom: 16,
+  headerSubtitle: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
   },
-  welcomeTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800', marginBottom: 8 },
-  welcomeText: { color: Colors.text.secondary, fontSize: FontSize.base, textAlign: 'center', lineHeight: 24, paddingHorizontal: 20, marginBottom: 24 },
-  prompts: { gap: 8, width: '100%' },
-  promptBtn: {
-    backgroundColor: Colors.bg.card, borderRadius: Radius.md, padding: 14,
-    borderWidth: 1, borderColor: Colors.border.default,
+  doneButton: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
-  promptText: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  msgBubble: { marginBottom: 12, borderRadius: Radius.lg, padding: 14, maxWidth: '85%' },
-  userBubble: { backgroundColor: Colors.brand.primary, alignSelf: 'flex-end', borderBottomRightRadius: 4 },
-  aiBubble: { backgroundColor: Colors.bg.card, alignSelf: 'flex-start', borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border.default },
-  aiLabel: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 6 },
-  aiLabelText: { color: Colors.brand.primary, fontSize: FontSize.xs, fontWeight: '600' },
-  msgText: { color: Colors.text.primary, fontSize: FontSize.base, lineHeight: 22 },
-  userMsgText: { color: Colors.text.primary },
-  inputBar: {
-    flexDirection: 'row', alignItems: 'flex-end', paddingHorizontal: 16,
-    paddingVertical: 12, borderTopWidth: 1, borderTopColor: Colors.border.default, gap: 8,
-    backgroundColor: Colors.bg.default,
+  doneButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  messagesContainer: {
+    flex: 1,
+  },
+  messagesContent: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xxxl,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyStateTitle: {
+    ...Typography.h2,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  emptyStateSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    maxWidth: 280,
+  },
+  messageRow: {
+    marginVertical: Spacing.sm,
+  },
+  userRow: {
+    alignItems: 'flex-end',
+  },
+  assistantRow: {
+    alignItems: 'flex-start',
+  },
+  messageBubble: {
+    maxWidth: '85%',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+  },
+  userBubble: {
+    backgroundColor: Colors.brand.primary,
+  },
+  assistantBubble: {
+    backgroundColor: Colors.background.elevated,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  messageText: {
+    ...Typography.body,
+  },
+  userMessageText: {
+    color: Colors.text.primary,
+  },
+  assistantMessageText: {
+    color: Colors.text.primary,
+  },
+  suggestedContainer: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.default,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+  },
+  suggestedLabel: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+    marginBottom: Spacing.sm,
+  },
+  suggestedContent: {
+    paddingRight: Spacing.lg,
+  },
+  suggestedPrompt: {
+    backgroundColor: Colors.background.elevated,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.full,
+    marginRight: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border.glow,
+  },
+  suggestedPromptText: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+  },
+  inputContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.default,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: Spacing.md,
   },
   input: {
-    flex: 1, backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14,
-    color: Colors.text.primary, fontSize: FontSize.base, maxHeight: 120,
-    borderWidth: 1, borderColor: Colors.border.default,
+    flex: 1,
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    color: Colors.text.primary,
+    ...Typography.body,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    maxHeight: 100,
   },
-  sendBtn: {
-    width: 48, height: 48, borderRadius: Radius.md, backgroundColor: Colors.brand.primary,
-    justifyContent: 'center', alignItems: 'center',
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.brand.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  sendBtnDisabled: { opacity: 0.4 },
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  sendButtonText: {
+    color: Colors.text.primary,
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  charCount: {
+    ...Typography.small,
+    color: Colors.text.tertiary,
+    marginTop: Spacing.xs,
+    textAlign: 'right',
+  },
 });

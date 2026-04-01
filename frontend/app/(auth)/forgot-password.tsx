@@ -1,307 +1,305 @@
+/**
+ * Forgot Password Screen — (auth)/forgot-password.tsx
+ * Password reset flow via email
+ * Features:
+ * - Email input
+ * - Submit button
+ * - Success message
+ * - Back to login link
+ */
+
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView,
+  View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { api } from '../../src/utils/api';
-import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
+import { useRouter, Link } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-
-type Step = 'email' | 'token' | 'success';
+import { useAuth } from '../../src/context/AuthContext';
+import { Colors, Spacing, Typography, BorderRadius } from '../../src/constants/theme';
 
 export default function ForgotPasswordScreen() {
-  const [step, setStep] = useState<Step>('email');
-  const [email, setEmail] = useState('');
-  const [token, setToken] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass] = useState(false);
   const router = useRouter();
+  const { requestPasswordReset } = useAuth();
 
-  const handleRequestReset = async () => {
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleReset = async () => {
     if (!email.trim()) {
-      setError('Please enter your email');
+      setError('Please enter your email address');
       return;
     }
+
     setError('');
-    setLoading(true);
+    setIsSubmitting(true);
+
     try {
-      const res = await api.post('/auth/request-password-reset', { email: email.trim().toLowerCase() });
-      setSuccess(res.message);
-      // For development, if a debug_token is returned, auto-fill it
-      if (res.debug_token) {
-        setToken(res.debug_token);
-      }
-      setStep('token');
-    } catch (e: any) {
-      setError(e.message || 'Failed to send reset request');
+      await requestPasswordReset(email);
+      setSuccess(true);
+    } catch (err: any) {
+      setError(err.message || 'Password reset request failed');
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
-
-  const handleResetPassword = async () => {
-    if (!token.trim()) {
-      setError('Please enter the reset code');
-      return;
-    }
-    if (!newPassword.trim()) {
-      setError('Please enter a new password');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
-      return;
-    }
-    setError('');
-    setLoading(true);
-    try {
-      await api.post('/auth/reset-password', { 
-        token: token.trim(), 
-        new_password: newPassword 
-      });
-      setStep('success');
-    } catch (e: any) {
-      setError(e.message || 'Failed to reset password');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (step === 'success') {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <ScrollView contentContainerStyle={styles.scroll}>
-          <View style={styles.successContainer}>
-            <View style={styles.successIcon}>
-              <Ionicons name="checkmark-circle" size={64} color={Colors.status.success} />
-            </View>
-            <Text style={styles.successTitle}>Password Reset!</Text>
-            <Text style={styles.successText}>
-              Your password has been reset successfully. You can now log in with your new password.
-            </Text>
-            <TouchableOpacity
-              testID="back-to-login-btn"
-              style={styles.btn}
-              onPress={() => router.replace('/(auth)/login')}
-            >
-              <Text style={styles.btnText}>Back to Login</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        bounces={false}
+        showsVerticalScrollIndicator={false}
       >
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity
-            testID="back-btn"
-            style={styles.backBtn}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={Colors.text.primary} />
-          </TouchableOpacity>
+        <View style={styles.container}>
+          {/* Back Button */}
+          <Link href="/(auth)/login" asChild>
+            <TouchableOpacity style={styles.backButton}>
+              <Ionicons name="chevron-back" size={24} color={Colors.brand.primary} />
+            </TouchableOpacity>
+          </Link>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>
-              {step === 'email' ? 'Forgot Password?' : 'Enter Reset Code'}
-            </Text>
-            <Text style={styles.subtitle}>
-              {step === 'email' 
-                ? "Enter your email and we'll send you a reset code"
-                : 'Enter the reset code from your email and create a new password'}
+          {/* Branding */}
+          <View style={styles.brandingContainer}>
+            <Text style={styles.brandingEmoji}>🔑</Text>
+            <Text style={styles.brandingTitle}>Reset Password</Text>
+            <Text style={styles.brandingSubtitle}>
+              {success
+                ? 'Check your email for reset instructions'
+                : 'Enter your email to receive a password reset link'}
             </Text>
           </View>
 
-          {error ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={16} color={Colors.status.error} />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          ) : null}
-
-          {success && step === 'token' ? (
-            <View style={styles.successBox}>
-              <Ionicons name="checkmark-circle" size={16} color={Colors.status.success} />
-              <Text style={styles.successBoxText}>{success}</Text>
-            </View>
-          ) : null}
-
-          {step === 'email' ? (
-            <>
+          {/* Form Container */}
+          {!success ? (
+            <View style={styles.formContainer}>
+              {/* Email Input */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  testID="reset-email-input"
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  placeholderTextColor={Colors.text.tertiary}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-
-              <TouchableOpacity
-                testID="send-reset-btn"
-                style={[styles.btn, loading && styles.btnDisabled]}
-                onPress={handleRequestReset}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={Colors.text.primary} />
-                ) : (
-                  <Text style={styles.btnText}>Send Reset Code</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Reset Code</Text>
-                <TextInput
-                  testID="reset-token-input"
-                  style={styles.input}
-                  value={token}
-                  onChangeText={setToken}
-                  placeholder="Paste the code from your email"
-                  placeholderTextColor={Colors.text.tertiary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>New Password</Text>
-                <View style={styles.passRow}>
-                  <TextInput
-                    testID="new-password-input"
-                    style={[styles.input, styles.passInput]}
-                    value={newPassword}
-                    onChangeText={setNewPassword}
-                    placeholder="Enter new password"
-                    placeholderTextColor={Colors.text.tertiary}
-                    secureTextEntry={!showPass}
+                <Text style={styles.label}>Email Address</Text>
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="mail-outline"
+                    size={20}
+                    color={Colors.text.secondary}
+                    style={styles.inputIcon}
                   />
-                  <TouchableOpacity
-                    style={styles.eyeBtn}
-                    onPress={() => setShowPass(!showPass)}
-                  >
-                    <Ionicons name={showPass ? 'eye-off' : 'eye'} size={20} color={Colors.text.secondary} />
-                  </TouchableOpacity>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="you@example.com"
+                    placeholderTextColor={Colors.text.muted}
+                    value={email}
+                    onChangeText={setEmail}
+                    editable={!isSubmitting}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
                 </View>
               </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm Password</Text>
-                <TextInput
-                  testID="confirm-password-input"
-                  style={styles.input}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="Confirm new password"
-                  placeholderTextColor={Colors.text.tertiary}
-                  secureTextEntry={!showPass}
+              {/* Error Message */}
+              {error ? (
+                <View style={styles.errorContainer}>
+                  <Ionicons name="alert-circle" size={16} color={Colors.status.error} />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              ) : null}
+
+              {/* Submit Button */}
+              <LinearGradient
+                colors={Colors.gradient.primary}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.gradientButton}
+              >
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleReset}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator color={Colors.text.primary} size="small" />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Send Reset Link</Text>
+                  )}
+                </TouchableOpacity>
+              </LinearGradient>
+
+              {/* Back to Login */}
+              <Link href="/(auth)/login" asChild>
+                <TouchableOpacity style={styles.backToLoginButton}>
+                  <Text style={styles.backToLoginText}>Back to login</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
+          ) : (
+            <View style={styles.successContainer}>
+              <View style={styles.successIconContainer}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={64}
+                  color={Colors.status.success}
                 />
               </View>
+              <Text style={styles.successTitle}>Email Sent!</Text>
+              <Text style={styles.successMessage}>
+                We've sent a password reset link to {email}. Check your inbox and follow the instructions.
+              </Text>
 
-              <TouchableOpacity
-                testID="reset-password-btn"
-                style={[styles.btn, loading && styles.btnDisabled]}
-                onPress={handleResetPassword}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color={Colors.text.primary} />
-                ) : (
-                  <Text style={styles.btnText}>Reset Password</Text>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                testID="resend-code-btn"
-                style={styles.linkBtn}
-                onPress={() => setStep('email')}
-              >
-                <Text style={styles.linkText}>
-                  Didn't receive the code? <Text style={styles.linkBold}>Resend</Text>
-                </Text>
-              </TouchableOpacity>
-            </>
+              <Link href="/(auth)/login" asChild>
+                <TouchableOpacity style={styles.successButton}>
+                  <Text style={styles.successButtonText}>Back to Login</Text>
+                </TouchableOpacity>
+              </Link>
+            </View>
           )}
-
-          <TouchableOpacity
-            testID="back-to-login-link"
-            style={styles.linkBtn}
-            onPress={() => router.back()}
-          >
-            <Text style={styles.linkText}>
-              Remember your password? <Text style={styles.linkBold}>Sign In</Text>
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg.default },
-  flex: { flex: 1 },
-  scroll: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 20 },
-  backBtn: { marginBottom: 20, padding: 4 },
-  header: { marginBottom: 32 },
-  title: { fontSize: FontSize.xxxl, fontWeight: '800', color: Colors.text.primary, marginBottom: 8 },
-  subtitle: { fontSize: FontSize.base, color: Colors.text.secondary, lineHeight: 22 },
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,0,85,0.1)',
-    borderRadius: Radius.md, padding: 12, marginBottom: 16, gap: 8,
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
   },
-  errorText: { color: Colors.status.error, fontSize: FontSize.sm, flex: 1 },
-  successBox: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(34,197,94,0.1)',
-    borderRadius: Radius.md, padding: 12, marginBottom: 16, gap: 8,
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
-  successBoxText: { color: Colors.status.success, fontSize: FontSize.sm, flex: 1 },
-  inputGroup: { marginBottom: 20 },
-  label: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.text.secondary, marginBottom: 8 },
+  backButton: {
+    alignSelf: 'flex-start',
+    padding: Spacing.sm,
+    marginBottom: Spacing.xl,
+  },
+  brandingContainer: {
+    alignItems: 'center',
+    marginBottom: Spacing.xxxl,
+  },
+  brandingEmoji: {
+    fontSize: 48,
+    marginBottom: Spacing.lg,
+  },
+  brandingTitle: {
+    ...Typography.h1,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  brandingSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+  },
+  formContainer: {
+    width: '100%',
+  },
+  inputGroup: {
+    marginBottom: Spacing.xl,
+  },
+  label: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  inputIcon: {
+    marginRight: Spacing.md,
+  },
   input: {
-    backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 16,
-    color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default,
+    flex: 1,
+    height: 48,
+    ...Typography.body,
+    color: Colors.text.primary,
   },
-  passRow: { position: 'relative' },
-  passInput: { paddingRight: 50 },
-  eyeBtn: { position: 'absolute', right: 16, top: 16 },
-  btn: {
-    backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16,
-    alignItems: 'center', marginTop: 8,
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.status.error,
   },
-  btnDisabled: { opacity: 0.6 },
-  btnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  linkBtn: { alignItems: 'center', marginTop: 24, padding: 12 },
-  linkText: { color: Colors.text.secondary, fontSize: FontSize.base },
-  linkBold: { color: Colors.brand.primary, fontWeight: '700' },
-  
-  // Success screen
-  successContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  successIcon: { marginBottom: 24 },
-  successTitle: { fontSize: FontSize.xxxl, fontWeight: '800', color: Colors.text.primary, marginBottom: 16 },
-  successText: { fontSize: FontSize.base, color: Colors.text.secondary, textAlign: 'center', lineHeight: 22, marginBottom: 32 },
+  errorText: {
+    ...Typography.caption,
+    color: Colors.status.error,
+    marginLeft: Spacing.sm,
+    flex: 1,
+  },
+  gradientButton: {
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.lg,
+  },
+  submitButton: {
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  submitButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  backToLoginButton: {
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  backToLoginText: {
+    ...Typography.bodyBold,
+    color: Colors.brand.primary,
+  },
+  successContainer: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+  },
+  successIconContainer: {
+    marginBottom: Spacing.xl,
+  },
+  successTitle: {
+    ...Typography.h2,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
+  },
+  successMessage: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xxxl,
+    lineHeight: 24,
+  },
+  successButton: {
+    width: '100%',
+  },
+  successButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.brand.primary,
+    textAlign: 'center',
+  },
 });

@@ -1,600 +1,969 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, FlatList, Modal,
-  KeyboardAvoidingView, Platform, RefreshControl, Switch,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
+  Modal,
+  ScrollView,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api } from '../../src/utils/api';
-import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
+import { useAuth } from '../../src/context/AuthContext';
+import {
+  signals as signalsDb,
+  contacts as contactsDb,
+  deals as dealsDb,
+} from '../../src/utils/database';
+import {
+  Colors,
+  Spacing,
+  BorderRadius,
+  Typography,
+  SIGNAL_TYPE_LABELS,
+} from '../../src/constants/theme';
+import {
+  Signal,
+  Contact,
+  Deal,
+  SignalType,
+  SignalStatus,
+} from '../../src/types/database';
 
-const IMPACT_LABELS: Record<number, string> = {
-  1: 'Easy',
-  2: '',
-  3: 'Low',
-  4: '',
-  5: 'Medium',
-  6: '',
-  7: 'Moderate',
-  8: '',
-  9: 'Hard',
-  10: 'High Impact',
-};
+const { height } = Dimensions.get('window');
 
-const getTomorrow = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
-};
-
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return '';
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const SIGNAL_POINTS: Record<SignalType, number> = {
+  revenue_generating: 100,
+  '10x_action': 120,
+  marketing: 80,
+  general_business: 50,
+  relational: 60,
 };
 
 export default function SignalsScreen() {
-  const [signals, setSignals] = useState<any[]>([]);
-  const [completions, setCompletions] = useState<any[]>([]);
-  const [pointsSummary, setPointsSummary] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [showComplete, setShowComplete] = useState<any>(null);
-  
-  // Add form state
-  const [newName, setNewName] = useState('');
-  const [newDescription, setNewDescription] = useState('');
-  const [newImpact, setNewImpact] = useState<number | null>(null);
-  const [newDueDate, setNewDueDate] = useState(getTomorrow());
-  const [newIsPublic, setNewIsPublic] = useState(true);
-  const [addLoading, setAddLoading] = useState(false);
-  
-  // Complete form state
-  const [completeNotes, setCompleteNotes] = useState('');
-  const [completeLoading, setCompleteLoading] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [showDueDatePicker, setShowDueDatePicker] = useState(false);
+  const [contactSearchQuery, setContactSearchQuery] = useState('');
+  const [dealSearchQuery, setDealSearchQuery] = useState('');
+  const [contactSearchResults, setContactSearchResults] = useState<Contact[]>([]);
+  const [dealSearchResults, setDealSearchResults] = useState<Deal[]>([]);
+  const [showContactSearch, setShowContactSearch] = useState(false);
+  const [showDealSearch, setShowDealSearch] = useState(false);
 
-  const loadData = useCallback(async () => {
+  const [newSignal, setNewSignal] = useState<Partial<Signal>>({
+    type: 'revenue_generating' as SignalType,
+    status: 'not_started' as SignalStatus,
+    due_date: new Date().toISOString().split('T')[0],
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [user])
+  );
+
+  const loadData = async () => {
+    if (!user) return;
+    setLoading(true);
     try {
-      const [signalsData, completionsData, pointsData] = await Promise.all([
-        api.get('/signals'),
-        api.get('/signal-completions?limit=20'),
-        api.get('/points/summary'),
+      const [signalsResult, contactsResult, dealsResult] = await Promise.all([
+        signalsDb.list(user.id),
+        contactsDb.list(user.id),
+        dealsDb.list(user.id),
       ]);
-      setSignals(signalsData);
-      setCompletions(completionsData);
-      setPointsSummary(pointsData);
-    } catch (e) {
-      console.error(e);
+      setSignals(signalsResult?.data || []);
+      setContacts(contactsResult?.data || []);
+      setDeals(dealsResult?.data || []);
+    } catch (error) {
+      console.error('Error loading signals:', error);
+      setSignals([]);
+      setContacts([]);
+      setDeals([]);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, []);
+  };
 
-  useEffect(() => { loadData(); }, []);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  };
 
-  const createSignal = async () => {
-    if (!newName.trim()) return;
-    setAddLoading(true);
+  const toggleSignalCompletion = async (signal: Signal) => {
     try {
-      await api.post('/signals', {
-        name: newName.trim(),
-        description: newDescription.trim(),
-        impact_rating: newImpact,
-        due_date: newDueDate,
-        is_public: newIsPublic,
+      const newStatus = signal.status === 'complete' ? 'not_started' : 'complete';
+      await signalsDb.update(signal.id, { status: newStatus });
+      await loadData();
+    } catch (error) {
+      console.error('Error updating signal:', error);
+    }
+  };
+
+  const saveSignal = async () => {
+    if (!user || !newSignal.title?.trim()) {
+      return;
+    }
+    try {
+      const signalData: Partial<Signal> = {
+        ...newSignal,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+      };
+      await signalsDb.create(user.id, signalData);
+      setNewSignal({ type: 'revenue_generating', status: 'not_started', due_date: new Date().toISOString().split('T')[0] });
+      setCreateModalVisible(false);
+      await loadData();
+    } catch (error) {
+      console.error('Error saving signal:', error);
+    }
+  };
+
+  const searchContacts = (query: string) => {
+    setContactSearchQuery(query);
+    if (query.trim()) {
+      const results = contacts.filter((c) =>
+        (c.full_name || '').toLowerCase().includes(query.toLowerCase()) ||
+        (c.company && c.company.toLowerCase().includes(query.toLowerCase()))
+      );
+      setContactSearchResults(results);
+    } else {
+      setContactSearchResults([]);
+    }
+  };
+
+  const searchDeals = (query: string) => {
+    setDealSearchQuery(query);
+    if (query.trim()) {
+      const results = deals.filter((d) =>
+        d.title.toLowerCase().includes(query.toLowerCase())
+      );
+      setDealSearchResults(results);
+    } else {
+      setDealSearchResults([]);
+    }
+  };
+
+  // Calculate stats
+  const activeSignals = useMemo(() => signals.filter((s) => s.status !== 'complete'), [signals]);
+  const completedSignals = useMemo(() => signals.filter((s) => s.status === 'complete'), [signals]);
+
+  const totalPointsEarned = useMemo(() => {
+    return completedSignals.reduce((sum, signal) => {
+      return sum + SIGNAL_POINTS[signal.type];
+    }, 0);
+  }, [completedSignals]);
+
+  const weeklyPoints = useMemo(() => {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    return completedSignals
+      .filter((s) => new Date(s.completed_at || s.created_at) >= oneWeekAgo)
+      .reduce((sum, signal) => sum + SIGNAL_POINTS[signal.type], 0);
+  }, [completedSignals]);
+
+  const currentStreak = useMemo(() => {
+    let streak = 0;
+    const today = new Date();
+    let currentDate = new Date(today);
+
+    for (let i = 0; i < 365; i++) {
+      const dayStart = new Date(currentDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(currentDate);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const dayCompletions = completedSignals.filter((s) => {
+        const completedDate = new Date(s.completed_at || s.created_at);
+        return completedDate >= dayStart && completedDate <= dayEnd;
       });
-      setShowAdd(false);
-      setNewName(''); setNewDescription(''); setNewImpact(null); setNewDueDate(getTomorrow()); setNewIsPublic(true);
-      loadData();
-    } catch (e: any) {
-      console.error(e);
-    } finally {
-      setAddLoading(false);
+
+      if (dayCompletions.length > 0) {
+        streak++;
+        currentDate.setDate(currentDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
-  };
 
-  const completeSignal = async () => {
-    if (!showComplete) return;
-    setCompleteLoading(true);
-    try {
-      await api.post(`/signals/${showComplete.id}/complete`, {
-        signal_id: showComplete.id,
-        notes: completeNotes.trim(),
-      });
-      setShowComplete(null);
-      setCompleteNotes('');
-      loadData();
-    } catch (e: any) {
-      console.error(e);
-    } finally {
-      setCompleteLoading(false);
-    }
-  };
-
-  const deleteSignal = async (id: string) => {
-    try {
-      await api.delete(`/signals/${id}`);
-      loadData();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}><ActivityIndicator size="large" color={Colors.brand.primary} /></View>
-      </SafeAreaView>
-    );
-  }
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayCompletions = completions.filter(c => c.date === todayStr);
-  const completedSignalIds = new Set(todayCompletions.map(c => c.signal_id));
-
-  // Check if due date qualifies for planned ahead bonus
-  const checkPlannedAhead = (signal: any) => {
-    if (!signal.due_date || !signal.created_at) return false;
-    try {
-      const due = new Date(signal.due_date);
-      const created = new Date(signal.created_at);
-      return (due.getTime() - created.getTime()) / (1000 * 60 * 60 * 24) >= 1;
-    } catch {
-      return false;
-    }
-  };
+    return streak;
+  }, [completedSignals]);
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={Colors.brand.primary} />}
-      >
-        {/* Points Header */}
-        <LinearGradient
-          colors={[Colors.brand.primary + '30', 'transparent']}
-          style={styles.pointsHeader}
-        >
-          <View style={styles.pointsRow}>
-            <View style={styles.pointsMain}>
-              <Text style={styles.pointsValue}>{pointsSummary?.total_points || 0}</Text>
-              <Text style={styles.pointsLabel}>Total Points</Text>
-            </View>
-            <View style={styles.pointsStats}>
-              <View style={styles.pointsStat}>
-                <Text style={styles.statValue}>{pointsSummary?.weekly_points || 0}</Text>
-                <Text style={styles.statLabel}>This Week</Text>
-              </View>
-              <View style={styles.pointsStat}>
-                <Text style={styles.statValue}>{pointsSummary?.signal_streak || 0}</Text>
-                <Text style={styles.statLabel}>Streak</Text>
-              </View>
-              <View style={styles.pointsStat}>
-                <Text style={styles.statValue}>#{pointsSummary?.rank || '-'}</Text>
-                <Text style={styles.statLabel}>Rank</Text>
-              </View>
-            </View>
-          </View>
-        </LinearGradient>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <LinearGradient colors={Colors.gradient.primary} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.header}>
+        <Text style={styles.headerTitle}>Signals & Progress</Text>
+      </LinearGradient>
 
-        {/* My Signals */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Signals</Text>
-            <TouchableOpacity
-              testID="add-signal-btn"
-              style={styles.addBtn}
-              onPress={() => setShowAdd(true)}
-            >
-              <Ionicons name="add" size={20} color={Colors.text.primary} />
-            </TouchableOpacity>
-          </View>
-          
-          {signals.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Ionicons name="flash-outline" size={40} color={Colors.text.tertiary} />
-              <Text style={styles.emptyText}>No signals yet</Text>
-              <Text style={styles.emptySub}>Create measurable actions tied to your 10x goal</Text>
-            </View>
-          ) : (
-            signals.map(signal => {
-              const isCompleted = completedSignalIds.has(signal.id);
-              const plannedAhead = checkPlannedAhead(signal);
-              const impact = signal.impact_rating || 5;
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.brand.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={[{ type: 'header' }, { type: 'content' }]}
+          keyExtractor={(item) => item.type}
+          renderItem={({ item }) => {
+            if (item.type === 'header') {
               return (
-                <View key={signal.id} style={[styles.signalCard, isCompleted && styles.signalCardCompleted]}>
-                  <View style={styles.signalInfo}>
-                    <View style={styles.signalHeader}>
-                      <Text style={styles.signalName}>{signal.name}</Text>
-                      {signal.impact_rating && (
-                        <View style={styles.impactBadge}>
-                          <Text style={styles.impactBadgeText}>{signal.impact_rating} pts</Text>
-                        </View>
-                      )}
+                <View>
+                  {/* Points Header */}
+                  <View style={styles.pointsSection}>
+                    <View style={styles.pointCard}>
+                      <View style={styles.pointCardContent}>
+                        <Text style={styles.pointCardLabel}>Total Points</Text>
+                        <Text style={styles.pointCardValue}>{totalPointsEarned}</Text>
+                      </View>
+                      <Ionicons name="star" size={32} color={Colors.brand.primary} />
                     </View>
-                    {signal.description ? (
-                      <Text style={styles.signalDesc}>{signal.description}</Text>
-                    ) : null}
-                    <View style={styles.signalMeta}>
-                      {signal.due_date && (
-                        <View style={styles.dueDateBadge}>
-                          <Ionicons name="calendar-outline" size={12} color={Colors.text.tertiary} />
-                          <Text style={styles.dueDateText}>{formatDate(signal.due_date)}</Text>
-                        </View>
-                      )}
-                      {plannedAhead && (
-                        <View style={styles.plannedBadge}>
-                          <Ionicons name="moon" size={12} color={Colors.brand.accent} />
-                          <Text style={styles.plannedText}>+5 bonus</Text>
-                        </View>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.publicToggle, signal.is_public && styles.publicToggleActive]}
-                      >
-                        <Ionicons 
-                          name={signal.is_public ? "globe" : "lock-closed"} 
-                          size={14} 
-                          color={signal.is_public ? Colors.brand.accent : Colors.text.tertiary} 
-                        />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => deleteSignal(signal.id)}
-                        style={styles.deleteBtn}
-                      >
-                        <Ionicons name="trash-outline" size={16} color={Colors.text.tertiary} />
-                      </TouchableOpacity>
+
+                    <View style={styles.pointCard}>
+                      <View style={styles.pointCardContent}>
+                        <Text style={styles.pointCardLabel}>Weekly Points</Text>
+                        <Text style={styles.pointCardValue}>{weeklyPoints}</Text>
+                      </View>
+                      <Ionicons name="flame" size={32} color={Colors.status.success} />
+                    </View>
+
+                    <View style={styles.pointCard}>
+                      <View style={styles.pointCardContent}>
+                        <Text style={styles.pointCardLabel}>Streak</Text>
+                        <Text style={styles.pointCardValue}>{currentStreak}</Text>
+                      </View>
+                      <Ionicons name="trending-up" size={32} color={Colors.status.warning} />
                     </View>
                   </View>
-                  {isCompleted ? (
-                    <View style={styles.completedBadge}>
-                      <Ionicons name="checkmark-circle" size={28} color={Colors.status.success} />
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      testID={`complete-signal-${signal.id}`}
-                      style={styles.completeBtn}
-                      onPress={() => setShowComplete(signal)}
-                    >
-                      <Ionicons name="flash" size={20} color={Colors.text.primary} />
-                    </TouchableOpacity>
-                  )}
+
+                  {/* Active Signals Header */}
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionTitle}>Active Signals</Text>
+                    <Text style={styles.sectionCount}>{activeSignals.length}</Text>
+                  </View>
                 </View>
               );
-            })
-          )}
-        </View>
+            }
 
-        {/* Today's Completions */}
-        {todayCompletions.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Wins</Text>
-            {todayCompletions.map(c => (
-              <View key={c.id} style={styles.completionCard}>
-                <View style={styles.completionInfo}>
-                  <Text style={styles.completionName}>{c.signal_name}</Text>
-                  {c.notes ? <Text style={styles.completionNotes}>{c.notes}</Text> : null}
-                  {c.bonuses?.length > 0 && (
-                    <View style={styles.bonusList}>
-                      {c.bonuses.map((b: any, i: number) => (
-                        <View key={i} style={styles.bonusTag}>
-                          <Text style={styles.bonusText}>+{b.points} {b.type.replace('_', ' ')}</Text>
+            return (
+              <View style={{ paddingBottom: 20 }}>
+                {/* Active Signals List */}
+                {activeSignals.length > 0 ? (
+                  <FlatList
+                    data={activeSignals}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.signalCard}
+                        onPress={() => toggleSignalCompletion(item)}
+                      >
+                        <View style={styles.signalCardLeft}>
+                          <View style={styles.checkboxContainer}>
+                            <Ionicons
+                              name={item.status === 'complete' ? 'checkmark-circle' : 'ellipse-outline'}
+                              size={28}
+                              color={item.status === 'complete' ? Colors.status.success : Colors.text.secondary}
+                            />
+                          </View>
+                          <View style={styles.signalInfo}>
+                            <Text style={styles.signalTitle}>{item.title}</Text>
+                            <View style={styles.signalMeta}>
+                              <Text style={styles.signalType}>{SIGNAL_TYPE_LABELS[item.type]}</Text>
+                              <Text style={styles.signalScore}>Score: {item.score || 5}/10</Text>
+                              {item.due_date && (
+                                <Text style={styles.signalDueDate}>
+                                  Due: {new Date(item.due_date).toLocaleDateString()}
+                                </Text>
+                              )}
+                            </View>
+                          </View>
                         </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                <View style={styles.completionPoints}>
-                  <Text style={styles.completionPointsValue}>+{c.total_points}</Text>
-                  <Text style={styles.completionPointsLabel}>pts</Text>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
-
-      {/* Add Signal Modal */}
-      <Modal visible={showAdd} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
-            <View style={styles.modal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>New Signal</Text>
-                <TouchableOpacity onPress={() => setShowAdd(false)}>
-                  <Ionicons name="close" size={24} color={Colors.text.primary} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView keyboardShouldPersistTaps="handled">
-                <Text style={styles.inputLabel}>Signal Name *</Text>
-                <TextInput
-                  testID="signal-name-input"
-                  style={styles.modalInput}
-                  value={newName}
-                  onChangeText={setNewName}
-                  placeholder="e.g., Booked a meeting"
-                  placeholderTextColor={Colors.text.tertiary}
-                />
-                
-                <Text style={styles.inputLabel}>Description</Text>
-                <TextInput
-                  testID="signal-desc-input"
-                  style={[styles.modalInput, { minHeight: 80 }]}
-                  value={newDescription}
-                  onChangeText={setNewDescription}
-                  placeholder="What does completing this look like?"
-                  placeholderTextColor={Colors.text.tertiary}
-                  multiline
-                />
-                
-                <Text style={styles.inputLabel}>Due Date</Text>
-                <TextInput
-                  testID="signal-due-input"
-                  style={styles.modalInput}
-                  value={newDueDate}
-                  onChangeText={setNewDueDate}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={Colors.text.tertiary}
-                />
-                <Text style={styles.inputHint}>Set a future date to earn +5 planned ahead bonus</Text>
-                
-                <Text style={styles.inputLabel}>Impact Rating (Points Value)</Text>
-                <View style={styles.impactRow}>
-                  {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                    <TouchableOpacity
-                      key={n}
-                      testID={`impact-${n}`}
-                      style={[styles.impactBtn, newImpact === n && styles.impactBtnActive]}
-                      onPress={() => setNewImpact(n)}
-                    >
-                      <Text style={[styles.impactNum, newImpact === n && styles.impactNumActive]}>{n}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-                <View style={styles.impactLabels}>
-                  <Text style={styles.impactLabelLeft}>Easy / Low</Text>
-                  <Text style={styles.impactLabelRight}>Hard / High</Text>
-                </View>
-                {newImpact && (
-                  <Text style={styles.impactSelected}>
-                    {newImpact} point{newImpact > 1 ? 's' : ''} • {newImpact <= 3 ? 'Easy task' : newImpact <= 6 ? 'Moderate effort' : 'High impact'}
-                  </Text>
-                )}
-                
-                <View style={styles.publicRow}>
-                  <View style={styles.publicInfo}>
-                    <Ionicons name="globe" size={20} color={newIsPublic ? Colors.brand.accent : Colors.text.tertiary} />
-                    <Text style={styles.publicLabel}>Public Signal</Text>
-                  </View>
-                  <Switch
-                    value={newIsPublic}
-                    onValueChange={setNewIsPublic}
-                    trackColor={{ false: Colors.bg.input, true: Colors.brand.accent }}
-                    thumbColor={Colors.text.primary}
+                        <View style={styles.signalReward}>
+                          <Text style={styles.signalPoints}>{SIGNAL_POINTS[item.type]}</Text>
+                          <Ionicons name="star" size={16} color={Colors.primary} />
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={
+                      <Text style={styles.emptyText}>No active signals</Text>
+                    }
                   />
-                </View>
-                <Text style={styles.publicHint}>Public signals appear in the community feed</Text>
-                
-                <TouchableOpacity
-                  testID="save-signal-btn"
-                  style={[styles.saveBtn, (!newName.trim() || addLoading) && styles.saveBtnDisabled]}
-                  onPress={createSignal}
-                  disabled={!newName.trim() || addLoading}
-                >
-                  {addLoading ? <ActivityIndicator color={Colors.text.primary} /> : <Text style={styles.saveBtnText}>Create Signal</Text>}
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
+                ) : (
+                  <View style={styles.emptyContainer}>
+                    <Ionicons name="checkmark-done-outline" size={48} color={Colors.primary} />
+                    <Text style={styles.emptyMessage}>All signals complete! Create new ones to continue.</Text>
+                  </View>
+                )}
 
-      {/* Complete Signal Modal */}
-      <Modal visible={!!showComplete} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
-            <View style={styles.modal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Complete Signal</Text>
-                <TouchableOpacity onPress={() => setShowComplete(null)}>
-                  <Ionicons name="close" size={24} color={Colors.text.primary} />
-                </TouchableOpacity>
+                {/* Today's Wins Section */}
+                {completedSignals.length > 0 && (
+                  <>
+                    <View style={styles.sectionHeader}>
+                      <Text style={styles.sectionTitle}>Completed Signals</Text>
+                      <Text style={styles.sectionCount}>{completedSignals.length}</Text>
+                    </View>
+
+                    <FlatList
+                      data={completedSignals}
+                      keyExtractor={(item) => item.id}
+                      scrollEnabled={false}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={[styles.signalCard, styles.completedSignalCard]}
+                          onPress={() => toggleSignalCompletion(item)}
+                        >
+                          <View style={styles.signalCardLeft}>
+                            <View style={styles.checkboxContainer}>
+                              <Ionicons
+                                name="checkmark-circle"
+                                size={28}
+                                color={Colors.status.success}
+                              />
+                            </View>
+                            <View style={styles.signalInfo}>
+                              <Text style={[styles.signalTitle, styles.completedSignalTitle]}>
+                                {item.title}
+                              </Text>
+                              <View style={styles.signalMeta}>
+                                <Text style={styles.signalType}>{SIGNAL_TYPE_LABELS[item.type]}</Text>
+                                {item.completed_at && (
+                                  <Text style={styles.completedDate}>
+                                    Completed: {new Date(item.completed_at).toLocaleDateString()}
+                                  </Text>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                          <View style={styles.signalReward}>
+                            <Text style={[styles.signalPoints, styles.earnedPoints]}>
+                              +{SIGNAL_POINTS[item.type]}
+                            </Text>
+                            <Ionicons name="star" size={16} color={Colors.status.success} />
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    />
+                  </>
+                )}
               </View>
-              <ScrollView keyboardShouldPersistTaps="handled">
-                <View style={styles.completeSignalInfo}>
-                  <Text style={styles.completeSignalName}>{showComplete?.name}</Text>
-                  <View style={styles.impactBadge}>
-                    <Text style={styles.impactBadgeText}>{showComplete?.impact_rating || 5} base pts</Text>
-                  </View>
-                </View>
-                
-                <Text style={styles.inputLabel}>Notes (optional)</Text>
-                <TextInput
-                  testID="complete-notes-input"
-                  style={[styles.modalInput, { minHeight: 80 }]}
-                  value={completeNotes}
-                  onChangeText={setCompleteNotes}
-                  placeholder="What did you accomplish?"
-                  placeholderTextColor={Colors.text.tertiary}
-                  multiline
-                />
-                
-                <View style={styles.bonusSection}>
-                  <Text style={styles.bonusSectionTitle}>Potential Bonuses</Text>
-                  
-                  {showComplete && checkPlannedAhead(showComplete) && (
-                    <View style={styles.bonusRow}>
-                      <View style={styles.bonusInfo}>
-                        <Ionicons name="moon" size={18} color={Colors.brand.accent} />
-                        <Text style={styles.bonusLabel}>Planned Ahead</Text>
-                        <Text style={styles.bonusPoints}>+5 pts</Text>
-                      </View>
-                      <Ionicons name="checkmark-circle" size={20} color={Colors.status.success} />
-                    </View>
-                  )}
-                  
-                  <View style={styles.bonusRow}>
-                    <View style={styles.bonusInfo}>
-                      <Ionicons name="sunny" size={18} color={Colors.status.warning} />
-                      <Text style={styles.bonusLabel}>Before 6 PM</Text>
-                      <Text style={styles.bonusPoints}>+10 pts</Text>
-                    </View>
-                    <Text style={styles.bonusAuto}>Auto</Text>
-                  </View>
-                </View>
-                
-                <TouchableOpacity
-                  testID="confirm-complete-btn"
-                  style={[styles.completeConfirmBtn, completeLoading && styles.saveBtnDisabled]}
-                  onPress={completeSignal}
-                  disabled={completeLoading}
-                >
-                  {completeLoading ? (
-                    <ActivityIndicator color={Colors.text.primary} />
-                  ) : (
-                    <>
-                      <Ionicons name="flash" size={20} color={Colors.text.primary} />
-                      <Text style={styles.saveBtnText}>Complete & Earn Points</Text>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </ScrollView>
+            );
+          }}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
+          }
+          contentContainerStyle={{ paddingBottom: Spacing.lg }}
+        />
+      )}
+
+      {/* Create Signal FAB */}
+      <TouchableOpacity style={styles.fab} onPress={() => setCreateModalVisible(true)}>
+        <Ionicons name="add-circle" size={24} color="white" />
+      </TouchableOpacity>
+
+      {/* Create Signal Modal */}
+      <Modal visible={createModalVisible} animationType="slide" transparent>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setCreateModalVisible(false)}>
+                <Ionicons name="close" size={24} color={Colors.text.primary} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Create Signal</Text>
+              <View style={{ width: 24 }} />
             </View>
-          </KeyboardAvoidingView>
-        </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <Text style={styles.label}>Title *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Signal title..."
+                placeholderTextColor={Colors.textSecondary}
+                value={newSignal.title || ''}
+                onChangeText={(text) => setNewSignal({ ...newSignal, title: text })}
+              />
+
+              <Text style={styles.label}>Details (Optional)</Text>
+              <TextInput
+                style={styles.textArea}
+                placeholder="Add context and details..."
+                placeholderTextColor={Colors.textSecondary}
+                value={newSignal.details || ''}
+                onChangeText={(text) => setNewSignal({ ...newSignal, details: text })}
+                multiline
+              />
+
+              <Text style={styles.label}>Type</Text>
+              <View style={styles.typeGrid}>
+                {(['revenue_generating', 'cost_saving', 'expansion', 'risk'] as SignalType[]).map((type) => (
+                  <TouchableOpacity
+                    key={type}
+                    style={[
+                      styles.typeButton,
+                      newSignal.type === type && styles.typeButtonActive,
+                    ]}
+                    onPress={() => setNewSignal({ ...newSignal, type })}
+                  >
+                    <Text style={[styles.typeButtonText, newSignal.type === type && styles.typeButtonActiveText]}>
+                      {SIGNAL_TYPE_LABELS[type]}
+                    </Text>
+                    <Text style={[styles.typePoints, newSignal.type === type && styles.typePointsActive]}>
+                      {SIGNAL_POINTS[type]} pts
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <Text style={styles.label}>Score (1-10)</Text>
+              <TextInput
+                style={styles.input}
+                keyboardType="number-pad"
+                placeholder="5"
+                placeholderTextColor={Colors.textSecondary}
+                value={newSignal.score?.toString() || '5'}
+                onChangeText={(text) => setNewSignal({ ...newSignal, score: Math.min(10, Math.max(1, parseInt(text) || 5)) })}
+              />
+
+              <Text style={styles.label}>Due Date</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setShowDueDatePicker(true)}
+              >
+                <Ionicons name="calendar" size={18} color={Colors.brand.primary} />
+                <Text style={styles.dateButtonText}>
+                  {newSignal.due_date ? new Date(newSignal.due_date).toLocaleDateString() : 'Select date'}
+                </Text>
+              </TouchableOpacity>
+
+              {showDueDatePicker && (
+                <Modal visible={showDueDatePicker} transparent animationType="fade">
+                  <View style={styles.datePickerOverlay}>
+                    <View style={styles.datePickerContainer}>
+                      <View style={styles.datePickerHeader}>
+                        <Text style={styles.datePickerTitle}>Select Due Date</Text>
+                        <TouchableOpacity onPress={() => setShowDueDatePicker(false)}>
+                          <Ionicons name="close" size={24} color={Colors.text} />
+                        </TouchableOpacity>
+                      </View>
+                      <TextInput
+                        style={styles.dateInput}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={Colors.textSecondary}
+                        value={newSignal.due_date ? new Date(newSignal.due_date).toISOString().split('T')[0] : ''}
+                        onChangeText={(text) => {
+                          if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+                            setNewSignal({ ...newSignal, due_date: new Date(text).toISOString() });
+                          } else if (text.trim() === '') {
+                            setNewSignal({ ...newSignal, due_date: undefined });
+                          }
+                        }}
+                      />
+                      <TouchableOpacity
+                        style={styles.datePickerConfirm}
+                        onPress={() => setShowDueDatePicker(false)}
+                      >
+                        <Text style={styles.datePickerConfirmText}>Done</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </Modal>
+              )}
+
+              <Text style={styles.label}>Associated Contact</Text>
+              <TouchableOpacity
+                style={styles.searchButton}
+                onPress={() => setShowContactSearch(!showContactSearch)}
+              >
+                <Ionicons name="search" size={18} color={Colors.brand.primary} />
+                <Text style={styles.searchButtonText}>
+                  {newSignal.contact_id
+                    ? contacts.find((c) => c.id === newSignal.contact_id)?.full_name || 'Select contact'
+                    : 'Search contacts...'}
+                </Text>
+              </TouchableOpacity>
+
+              {showContactSearch && (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Type contact name..."
+                    placeholderTextColor={Colors.textSecondary}
+                    value={contactSearchQuery}
+                    onChangeText={searchContacts}
+                  />
+                  <FlatList
+                    data={contactSearchResults}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.searchResult}
+                        onPress={() => {
+                          setNewSignal({ ...newSignal, contact_id: item.id });
+                          setShowContactSearch(false);
+                          setContactSearchQuery('');
+                        }}
+                      >
+                        <Text style={styles.searchResultText}>{item.full_name}</Text>
+                        {item.company && <Text style={styles.searchResultSubtext}>{item.company}</Text>}
+                      </TouchableOpacity>
+                    )}
+                  />
+                </>
+              )}
+
+              <Text style={styles.label}>Associated Deal</Text>
+              <TouchableOpacity
+                style={styles.searchButton}
+                onPress={() => setShowDealSearch(!showDealSearch)}
+              >
+                <Ionicons name="search" size={18} color={Colors.brand.primary} />
+                <Text style={styles.searchButtonText}>
+                  {newSignal.deal_id
+                    ? deals.find((d) => d.id === newSignal.deal_id)?.title || 'Select deal'
+                    : 'Search deals...'}
+                </Text>
+              </TouchableOpacity>
+
+              {showDealSearch && (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Type deal name..."
+                    placeholderTextColor={Colors.textSecondary}
+                    value={dealSearchQuery}
+                    onChangeText={searchDeals}
+                  />
+                  <FlatList
+                    data={dealSearchResults}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={false}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.searchResult}
+                        onPress={() => {
+                          setNewSignal({ ...newSignal, deal_id: item.id });
+                          setShowDealSearch(false);
+                          setDealSearchQuery('');
+                        }}
+                      >
+                        <Text style={styles.searchResultText}>{item.title}</Text>
+                        <Text style={styles.searchResultSubtext}>${item.value?.toLocaleString()}</Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </>
+              )}
+
+              <TouchableOpacity style={styles.primaryButton} onPress={saveSignal}>
+                <Text style={styles.primaryButtonText}>Create Signal</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg.default },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scroll: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 8 },
-  
-  // Points Header
-  pointsHeader: { borderRadius: Radius.lg, padding: 20, marginBottom: 20 },
-  pointsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pointsMain: { alignItems: 'flex-start' },
-  pointsValue: { fontSize: 48, fontWeight: '900', color: Colors.text.primary },
-  pointsLabel: { fontSize: FontSize.sm, color: Colors.text.secondary },
-  pointsStats: { flexDirection: 'row', gap: 16 },
-  pointsStat: { alignItems: 'center' },
-  statValue: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.brand.primary },
-  statLabel: { fontSize: FontSize.xs, color: Colors.text.tertiary },
-  
-  // Section
-  section: { marginBottom: 24 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  sectionTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.text.primary },
-  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center' },
-  
-  // Empty State
-  emptyCard: { 
-    backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 32, 
-    alignItems: 'center', borderWidth: 1, borderColor: Colors.border.default,
-    borderStyle: 'dashed',
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
   },
-  emptyText: { color: Colors.text.secondary, fontSize: FontSize.lg, fontWeight: '600', marginTop: 12 },
-  emptySub: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4, textAlign: 'center' },
-  
-  // Signal Card
+  header: {
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+  },
+  headerTitle: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: '700',
+    color: 'white',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pointsSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    gap: Spacing.md,
+  },
+  pointCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background.elevated,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  pointCardContent: {
+    flex: 1,
+  },
+  pointCardLabel: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.xs,
+  },
+  pointCardValue: {
+    fontSize: Typography.sizes.xl,
+    fontWeight: '700',
+    color: Colors.brand.primary,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    paddingTop: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  sectionTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: Colors.text.primary,
+  },
+  sectionCount: {
+    fontSize: Typography.sizes.md,
+    color: Colors.brand.primary,
+    fontWeight: '600',
+  },
   signalCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16,
-    marginBottom: 12, borderWidth: 1, borderColor: Colors.border.default,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.background.elevated,
+    marginHorizontal: Spacing.lg,
+    marginVertical: Spacing.sm,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
   },
-  signalCardCompleted: { borderColor: Colors.status.success, opacity: 0.7 },
-  signalInfo: { flex: 1 },
-  signalHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  signalName: { fontSize: FontSize.base, fontWeight: '600', color: Colors.text.primary, flex: 1 },
-  impactBadge: { backgroundColor: Colors.brand.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.sm },
-  impactBadgeText: { color: Colors.brand.primary, fontSize: FontSize.xs, fontWeight: '600' },
-  signalDesc: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
-  signalMeta: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 },
-  dueDateBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.bg.input, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  dueDateText: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  plannedBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.brand.accent + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  plannedText: { color: Colors.brand.accent, fontSize: FontSize.xs },
-  publicToggle: { padding: 4 },
-  publicToggleActive: {},
-  deleteBtn: { padding: 4 },
-  completeBtn: { 
-    width: 44, height: 44, borderRadius: 22, 
-    backgroundColor: Colors.brand.primary, 
-    justifyContent: 'center', alignItems: 'center',
-    marginLeft: 12,
+  completedSignalCard: {
+    opacity: 0.7,
   },
-  completedBadge: { marginLeft: 12 },
-  
-  // Completion Card
-  completionCard: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16,
-    marginBottom: 12, borderWidth: 1, borderColor: Colors.status.success + '40',
+  signalCardLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
   },
-  completionInfo: { flex: 1 },
-  completionName: { fontSize: FontSize.base, fontWeight: '600', color: Colors.text.primary },
-  completionNotes: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
-  bonusList: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
-  bonusTag: { backgroundColor: Colors.status.success + '20', paddingHorizontal: 8, paddingVertical: 2, borderRadius: Radius.sm },
-  bonusText: { color: Colors.status.success, fontSize: FontSize.xs, fontWeight: '500' },
-  completionPoints: { alignItems: 'center', marginLeft: 12 },
-  completionPointsValue: { fontSize: FontSize.xl, fontWeight: '900', color: Colors.status.success },
-  completionPointsLabel: { fontSize: FontSize.xs, color: Colors.text.tertiary },
-  
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalWrap: { maxHeight: '90%' },
-  modal: { backgroundColor: Colors.bg.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: 24, maxHeight: '100%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
-  inputLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 8, marginTop: 12 },
-  inputHint: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginTop: 4 },
-  modalInput: { backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14, color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default },
-  
-  // Impact Rating
-  impactRow: { flexDirection: 'row', gap: 4, marginTop: 8 },
-  impactBtn: { 
-    flex: 1, paddingVertical: 12, borderRadius: Radius.sm, 
-    backgroundColor: Colors.bg.input, alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.border.default,
+  checkboxContainer: {
+    width: 28,
+    justifyContent: 'center',
   },
-  impactBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
-  impactNum: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
-  impactNumActive: { color: Colors.text.primary },
-  impactLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  impactLabelLeft: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  impactLabelRight: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  impactSelected: { color: Colors.brand.primary, fontSize: FontSize.sm, textAlign: 'center', marginTop: 8 },
-  
-  publicRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
-  publicInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  publicLabel: { color: Colors.text.primary, fontSize: FontSize.base },
-  publicHint: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginTop: 4 },
-  saveBtn: { backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16, alignItems: 'center', marginTop: 24 },
-  saveBtnDisabled: { opacity: 0.4 },
-  saveBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  
-  // Complete Modal
-  completeSignalInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
-  completeSignalName: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.text.primary, flex: 1 },
-  bonusSection: { backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 16, marginTop: 16 },
-  bonusSectionTitle: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600', marginBottom: 12 },
-  bonusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
-  bonusInfo: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
-  bonusLabel: { color: Colors.text.primary, fontSize: FontSize.base, flex: 1 },
-  bonusPoints: { color: Colors.status.success, fontSize: FontSize.sm, fontWeight: '600' },
-  bonusAuto: { color: Colors.text.tertiary, fontSize: FontSize.sm },
-  completeConfirmBtn: { 
-    backgroundColor: Colors.status.success, borderRadius: Radius.md, padding: 16, 
-    alignItems: 'center', marginTop: 24, flexDirection: 'row', justifyContent: 'center', gap: 8 
+  signalInfo: {
+    flex: 1,
+  },
+  signalTitle: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '700',
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  completedSignalTitle: {
+    textDecorationLine: 'line-through',
+    color: Colors.text.secondary,
+  },
+  signalMeta: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  signalType: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.brand.primary,
+    backgroundColor: Colors.brand.primary + '15',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.md,
+    overflow: 'hidden',
+  },
+  signalScore: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.text.secondary,
+  },
+  signalDueDate: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.status.warning,
+  },
+  completedDate: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.status.success,
+  },
+  signalReward: {
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  signalPoints: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: Colors.brand.primary,
+  },
+  earnedPoints: {
+    color: Colors.status.success,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xl,
+    marginTop: Spacing.lg,
+  },
+  emptyMessage: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.secondary,
+    marginTop: Spacing.md,
+    textAlign: 'center',
+    paddingHorizontal: Spacing.lg,
+  },
+  emptyText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    paddingVertical: Spacing.lg,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: Spacing.lg,
+    right: Spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.brand.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.background.elevated,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    maxHeight: height * 0.9,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: Colors.text.primary,
+  },
+  modalBody: {
+    padding: Spacing.lg,
+  },
+  label: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  input: {
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.sizes.md,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    marginBottom: Spacing.md,
+  },
+  textArea: {
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.sizes.md,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    marginBottom: Spacing.md,
+  },
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  typeButton: {
+    flex: 0.45,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.input,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    alignItems: 'center',
+  },
+  typeButtonActive: {
+    backgroundColor: Colors.brand.primary,
+    borderColor: Colors.brand.primary,
+  },
+  typeButtonText: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.primary,
+    fontWeight: '600',
+    marginBottom: Spacing.xs,
+  },
+  typeButtonActiveText: {
+    color: 'white',
+  },
+  typePoints: {
+    fontSize: Typography.sizes.xs,
+    color: Colors.text.secondary,
+  },
+  typePointsActive: {
+    color: 'white',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  dateButtonText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.primary,
+  },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    marginBottom: Spacing.md,
+    gap: Spacing.md,
+  },
+  searchButtonText: {
+    fontSize: Typography.sizes.md,
+    color: Colors.text.primary,
+  },
+  searchResult: {
+    backgroundColor: Colors.background.input,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  searchResultText: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  searchResultSubtext: {
+    fontSize: Typography.sizes.sm,
+    color: Colors.text.secondary,
+    marginTop: Spacing.xs,
+  },
+  primaryButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  primaryButtonText: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '700',
+    color: 'white',
+  },
+  datePickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  datePickerContainer: {
+    backgroundColor: Colors.background.elevated,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+  },
+  datePickerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
+  },
+  datePickerTitle: {
+    fontSize: Typography.sizes.lg,
+    fontWeight: '700',
+    color: Colors.text.primary,
+  },
+  dateInput: {
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontSize: Typography.sizes.md,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    marginBottom: Spacing.lg,
+  },
+  datePickerConfirm: {
+    backgroundColor: Colors.brand.primary,
+    borderRadius: BorderRadius.lg,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  datePickerConfirmText: {
+    fontSize: Typography.sizes.md,
+    fontWeight: '700',
+    color: 'white',
   },
 });

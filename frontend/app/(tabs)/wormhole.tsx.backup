@@ -19,11 +19,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-// expo-contacts is native-only — conditionally import
-let Contacts: any = null;
-if (Platform.OS !== 'web') {
-  Contacts = require('expo-contacts');
-}
+import * as Contacts from 'expo-contacts';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -102,12 +98,6 @@ export default function WormholeScreen() {
   const [interactionType, setInteractionType] = useState<InteractionType>('email');
   const [interactionImpact, setInteractionImpact] = useState(5);
   const [interactionDescription, setInteractionDescription] = useState('');
-
-  // Phone contact picker state
-  const [phoneContacts, setPhoneContacts] = useState<any[]>([]);
-  const [showPhoneContactPicker, setShowPhoneContactPicker] = useState(false);
-  const [selectedPhoneContacts, setSelectedPhoneContacts] = useState<Set<string>>(new Set());
-  const [phoneContactSearch, setPhoneContactSearch] = useState('');
 
   // Load contacts and interactions
   const loadData = useCallback(async () => {
@@ -217,11 +207,7 @@ export default function WormholeScreen() {
         created_at: new Date().toISOString(),
       };
 
-      await interactionsDb.create(user.id, selectedContact.id, {
-          type: interactionType,
-          description: interactionDescription || undefined,
-          impact_rating: interactionImpact,
-        });
+      await interactionsDb.create(newInteraction);
       setInteractions((prev) => [newInteraction, ...prev]);
       setInteractionType('email');
       setInteractionImpact(5);
@@ -233,11 +219,7 @@ export default function WormholeScreen() {
     }
   }, [user?.id, selectedContact, interactionType, interactionImpact, interactionDescription]);
 
-const handleBulkImport = useCallback(async () => {
-    if (Platform.OS === 'web') {
-      Alert.alert('Not Available', 'Contact import is only available in the mobile app. Please use the Add Contact form instead.');
-      return;
-    }
+  const handleBulkImport = useCallback(async () => {
     try {
       const permission = await Contacts.requestPermissionsAsync();
       if (permission.status !== 'granted') {
@@ -250,69 +232,60 @@ const handleBulkImport = useCallback(async () => {
           Contacts.Fields.Emails,
           Contacts.Fields.PhoneNumbers,
           Contacts.Fields.Name,
-          Contacts.Fields.Company,
-          Contacts.Fields.JobTitle,
         ],
-        sort: Contacts.SortTypes.LastName,
       });
 
       if (data.length === 0) {
-        Alert.alert('No Contacts', 'No contacts found on your device');
+        Alert.alert('No Contacts', 'No contacts found to import');
         return;
       }
 
-      // Filter out contacts without names
-      const validContacts = data.filter(c => c.name || c.firstName || c.lastName);
-      setPhoneContacts(validContacts);
-      setSelectedPhoneContacts(new Set());
-      setPhoneContactSearch('');
-      setShowPhoneContactPicker(true);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to access contacts');
-      console.error('Error accessing contacts:', error);
-    }
-  }, []);
+      let imported = 0;
+      for (const contact of data) {
+        if ((contact.name || contact.full_name) && user?.id) {
+          const email = contact.emails?.[0]?.email || '';
+          const phone = contact.phoneNumbers?.[0]?.number || '';
 
-  const importSelectedContacts = useCallback(async () => {
-    if (!user?.id || selectedPhoneContacts.size === 0) {
-      Alert.alert('No Selection', 'Please select at least one contact to import');
-      return;
-    }
+          const newContact: Contact = {
+            id: `contact_${Date.now()}_${Math.random()}`,
+            user_id: user.id,
+            full_name: contact.name || contact.full_name,
+            company: '',
+            email,
+            phone,
+            type: 'prospect',
+            connection_level: 2 as any, // 'weak' = 2 on integer scale
+            best_contact_method: email ? 'email' : 'phone',
+            leverage_potential: '',
+            social_profiles: {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
 
-    let imported = 0;
-    const toImport = phoneContacts.filter(c => selectedPhoneContacts.has(c.id));
-    
-    for (const contact of toImport) {
-      const contactName = contact.name || `${contact.firstName || ''} ${contact.lastName || ''}`.trim();
-      if (!contactName) continue;
-
-      const email = contact.emails?.[0]?.email || '';
-      const phone = contact.phoneNumbers?.[0]?.number || '';
-      const company = contact.company || '';
-      const title = contact.jobTitle || '';
-
-      try {
-        await contactsDb.create(user.id, {
-          full_name: contactName,
-          email: email || undefined,
-          phone: phone || undefined,
-          company: company || undefined,
-          title: title || undefined,
-          type: 'prospect' as any,
-          connection_level: 2 as any,
-        });
-        imported++;
-      } catch (err) {
-        console.error('Error importing contact:', contactName, err);
+          try {
+            await contactsDb.create(user.id, {
+              full_name: newContact.full_name,
+              email: newContact.email || undefined,
+              phone: newContact.phone || undefined,
+              type: newContact.type,
+              connection_level: newContact.connection_level,
+            });
+            imported++;
+          } catch (err) {
+            console.error('Error importing contact:', err);
+          }
+        }
       }
-    }
 
-    setShowPhoneContactPicker(false);
-    if (imported > 0) {
-      Alert.alert('Success', `Imported ${imported} contact${imported !== 1 ? 's' : ''}`);
-      await loadData();
+      if (imported > 0) {
+        Alert.alert('Success', `Imported ${imported} contacts`);
+        await loadData();
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to import contacts');
+      console.error('Error importing contacts:', error);
     }
-  }, [user?.id, phoneContacts, selectedPhoneContacts, loadData]);
+  }, [user?.id, loadData]);
 
   const getContactInteractions = useCallback(
     (contactId: string) => {
@@ -501,94 +474,6 @@ const handleBulkImport = useCallback(async () => {
           </View>
         }
       />
-
-      {/* Phone Contact Picker Modal */}
-      <Modal visible={showPhoneContactPicker} animationType="slide" transparent={false}>
-        <View style={[styles.container, { paddingTop: insets.top }]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowPhoneContactPicker(false)}>
-              <Text style={styles.modalHeaderClose}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalHeaderTitle}>Select Contacts</Text>
-            <TouchableOpacity onPress={importSelectedContacts}>
-              <Text style={styles.modalHeaderSave}>
-                Import{selectedPhoneContacts.size > 0 ? ` (${selectedPhoneContacts.size})` : ''}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search phone contacts..."
-            placeholderTextColor={Colors.text.secondary}
-            value={phoneContactSearch}
-            onChangeText={setPhoneContactSearch}
-          />
-
-          {/* Select All / Deselect All */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: Spacing.lg, paddingVertical: Spacing.sm }}>
-            <Text style={{ color: Colors.text.secondary, fontSize: 13 }}>
-              {phoneContacts.length} contacts found
-            </Text>
-            <TouchableOpacity onPress={() => {
-              if (selectedPhoneContacts.size === phoneContacts.length) {
-                setSelectedPhoneContacts(new Set());
-              } else {
-                setSelectedPhoneContacts(new Set(phoneContacts.map(c => c.id)));
-              }
-            }}>
-              <Text style={{ color: Colors.brand.primary, fontSize: 13, fontWeight: '600' }}>
-                {selectedPhoneContacts.size === phoneContacts.length ? 'Deselect All' : 'Select All'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <FlatList
-            data={phoneContacts.filter(c => {
-              if (!phoneContactSearch.trim()) return true;
-              const name = (c.name || `${c.firstName || ''} ${c.lastName || ''}`).toLowerCase();
-              const company = (c.company || '').toLowerCase();
-              const q = phoneContactSearch.toLowerCase();
-              return name.includes(q) || company.includes(q);
-            })}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => {
-              const name = item.name || `${item.firstName || ''} ${item.lastName || ''}`.trim();
-              const email = item.emails?.[0]?.email;
-              const phone = item.phoneNumbers?.[0]?.number;
-              const isSelected = selectedPhoneContacts.has(item.id);
-              return (
-                <TouchableOpacity
-                  style={[styles.contactCard, isSelected && { borderColor: Colors.brand.primary, borderWidth: 1 }]}
-                  onPress={() => {
-                    setSelectedPhoneContacts(prev => {
-                      const next = new Set(prev);
-                      if (next.has(item.id)) next.delete(item.id);
-                      else next.add(item.id);
-                      return next;
-                    });
-                  }}
-                >
-                  <View style={styles.contactHeader}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.contactName}>{name}</Text>
-                      {item.company && <Text style={styles.contactCompany}>{item.company}</Text>}
-                      {email && <Text style={{ fontSize: 12, color: Colors.text.secondary }}>{email}</Text>}
-                      {phone && <Text style={{ fontSize: 12, color: Colors.text.secondary }}>{phone}</Text>}
-                    </View>
-                    <Ionicons
-                      name={isSelected ? 'checkbox' : 'square-outline'}
-                      size={24}
-                      color={isSelected ? Colors.brand.primary : Colors.text.tertiary}
-                    />
-                  </View>
-                </TouchableOpacity>
-              );
-            }}
-            contentContainerStyle={styles.listContent}
-          />
-        </View>
-      </Modal>
 
       {/* Add Contact Modal */}
       <Modal visible={showAddModal} animationType="slide" transparent={false}>
@@ -781,24 +666,7 @@ const handleBulkImport = useCallback(async () => {
                 />
               </TouchableOpacity>
               <Text style={styles.modalHeaderTitle}>Contact Details</Text>
-              <View style={{ flexDirection: 'row', gap: 12 }}>
-                <TouchableOpacity onPress={() => {
-                  if (!selectedContact) return;
-                  Alert.alert('Delete Contact', `Delete ${selectedContact.full_name}?`, [
-                    { text: 'Cancel' },
-                    { text: 'Delete', style: 'destructive', onPress: async () => {
-                      try {
-                        await contactsDb.delete(selectedContact.id);
-                        setShowDetailModal(false);
-                        setSelectedContact(null);
-                        await loadData();
-                      } catch (e) { Alert.alert('Error', 'Failed to delete'); }
-                    }},
-                  ]);
-                }}>
-                  <Ionicons name="trash-outline" size={22} color={Colors.status?.error || '#EF4444'} />
-                </TouchableOpacity>
-              </View>
+              <View style={{ width: 24 }} />
             </View>
 
             {selectedContact && (

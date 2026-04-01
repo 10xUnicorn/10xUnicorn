@@ -1,673 +1,1012 @@
-import React, { useState, useEffect, useCallback } from 'react';
+/**
+ * Community Screen
+ * Tab-based interface: Leaderboard | Feed | Directory
+ * Shows community engagement, top performers, activity, and member directory
+ */
+
+import React, { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, FlatList, Modal,
-  RefreshControl, Image, Linking, Alert,
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  TextInput,
+  Linking,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../../src/context/AuthContext';
+import { community, pointsDb, profiles as profilesDb, streaks } from '../../src/utils/database';
+import { Colors, Spacing, BorderRadius, Typography, DETERMINATION_EMOJIS } from '../../src/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api } from '../../src/utils/api';
-import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
+import { Profile, Signal } from '../../src/types/database';
+import CosmicBackground from '../../src/components/CosmicBackground';
+import UnicornHeader from '../../src/components/UnicornHeader';
 
 type TabType = 'leaderboard' | 'feed' | 'directory';
 
-// Social link handlers
-const openSocialLink = (url: string) => {
-  if (!url) return;
-  // Add https if not present
-  const fullUrl = url.startsWith('http') ? url : `https://${url}`;
-  Linking.openURL(fullUrl).catch(err => console.error('Error opening link:', err));
-};
+interface LeaderboardEntry {
+  rank: number;
+  profile: Profile;
+  totalPoints: number;
+  streak: number;
+}
 
-const openPhone = (phone: string) => {
-  if (!phone) return;
-  Alert.alert('Contact', 'How would you like to reach out?', [
-    { text: 'Call', onPress: () => Linking.openURL(`tel:${phone}`) },
-    { text: 'Message', onPress: () => Linking.openURL(`sms:${phone}`) },
-    { text: 'Cancel', style: 'cancel' },
-  ]);
-};
-
-const openEmail = (email: string, displayName?: string) => {
-  if (!email) return;
-  const subject = encodeURIComponent('Connecting from the 10xUNICORN community');
-  const body = encodeURIComponent(`Hi${displayName ? ` ${displayName}` : ''},\n\n`);
-  Linking.openURL(`mailto:${email}?subject=${subject}&body=${body}`);
-};
-
-// Status ring colors based on goal progress
-const RING_COLORS: Record<string, [string, string]> = {
-  green_fire: ['#00FF88', '#22C55E'],  // Crushing it / on fire
-  green: ['#22C55E', '#34D399'],  // On track
-  maroon_blue: ['#7C3AED', '#6D28D9'],  // Showing up
-  orange: ['#F97316', '#FB923C'],  // Leaning off
-  red_pulse: ['#EF4444', '#F87171'],  // Needs support
-  gray: ['#6B7280', '#9CA3AF'],  // No goal / incomplete
-};
+interface FeedEntry {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  userEmoji?: string;
+  action: string;
+  actionType: string;
+  timestamp: string;
+  badge?: string;
+  points: number;
+  streakDays?: number;
+}
 
 export default function CommunityScreen() {
-  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('leaderboard');
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [feed, setFeed] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [search, setSearch] = useState('');
-  const [showMember, setShowMember] = useState<any>(null);
-  const [memberDetail, setMemberDetail] = useState<any>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [feed, setFeed] = useState<FeedEntry[]>([]);
+  const [directory, setDirectory] = useState<Profile[]>([]);
+  const [selectedMember, setSelectedMember] = useState<Profile | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const loadData = useCallback(async () => {
+  // Load leaderboard data
+  const loadLeaderboard = useCallback(async () => {
     try {
-      const [lb, f, m] = await Promise.all([
-        api.get('/points/leaderboard?limit=50'),
-        api.get('/community/feed?limit=30'),
-        api.get('/community/members?limit=100'),
-      ]);
-      setLeaderboard(lb);
-      setFeed(f);
-      setMembers(m);
+      setLoading(true);
+      const { data, error } = await community.getLeaderboard(50);
+      if (!error && data) {
+        const entries: LeaderboardEntry[] = data.map((item, idx) => ({
+          rank: idx + 1,
+          profile: item.profile,
+          totalPoints: item.total_points,
+          streak: item.current_streak || 0,
+        }));
+        setLeaderboard(entries);
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Error loading leaderboard:', e);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, []);
 
-  useEffect(() => { loadData(); }, []);
-
-  const openMemberProfile = async (userId: string) => {
+  // Load feed data
+  const loadFeed = useCallback(async () => {
     try {
-      const detail = await api.get(`/member/${userId}`);
-      setMemberDetail(detail);
-      setShowMember(true);
+      setLoading(true);
+      const { data, error } = await community.getActivityFeed(30);
+      if (!error && data) {
+        const feedItems: FeedEntry[] = data.map((item) => ({
+          id: item.id,
+          userId: item.user_id || '',
+          userName: item.user?.display_name || item.user?.full_name || 'Unicorn',
+          userAvatar: item.user?.avatar_url || undefined,
+          userEmoji: item.user?.emoji || undefined,
+          action: item.title || getActionDescription(item.type || item.action),
+          actionType: item.type || '',
+          timestamp: item.timestamp ? new Date(item.timestamp).toLocaleDateString() : '',
+          badge: item.badge_earned,
+          points: item.points || 0,
+          streakDays: item.streak_days,
+        }));
+        setFeed(feedItems);
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Error loading feed:', e);
+    } finally {
+      setLoading(false);
     }
+  }, []);
+
+  // Load directory
+  const loadDirectory = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await community.getDirectory();
+      if (!error && data) {
+        setDirectory(data);
+      }
+    } catch (e) {
+      console.error('Error loading directory:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'leaderboard') {
+      loadLeaderboard();
+    } else if (activeTab === 'feed') {
+      loadFeed();
+    } else if (activeTab === 'directory') {
+      loadDirectory();
+    }
+  }, [activeTab, loadLeaderboard, loadFeed, loadDirectory]);
+
+  // Filter directory by search
+  const filteredDirectory = directory.filter(
+    (member) =>
+      (member.display_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (member.company || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getMedalEmoji = (rank: number) => {
+    if (rank === 1) return '🥇';
+    if (rank === 2) return '🥈';
+    if (rank === 3) return '🥉';
+    return '';
   };
 
-  const formatTime = (iso: string) => {
-    const d = new Date(iso);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
+  const getActionDescription = (action: string, title?: string): string => {
+    const baseActions: Record<string, string> = {
+      signal_completed: 'Completed a revenue-generating signal',
+      signal_complete: 'Completed a signal',
+      ten_x_action_completed: 'Completed their 10x action',
+      '10x_action_completed': 'Completed their 10x action',
+      'future_self_completed': 'Wrote to their Future Self',
+      'daily_compound_increment': 'Added to their Daily Compound',
+      'wormhole_activated': 'Activated a Wormhole connection',
+      'tomorrow_prepared': 'Prepared for tomorrow',
+      'course_corrected': 'Course corrected their day',
+      'determination_level_10': 'Hit Determination Level 10',
+      '10x_unicorn_win_bonus': 'Achieved a full 10x Unicorn WIN',
+      achievement_unlocked: 'Unlocked an achievement',
+      streak_milestone: 'Hit a new streak milestone',
+      goal_progress: 'Advanced their 10x goal',
+    };
+    // If we have a title from the feed data, use it
+    if (title) return title;
+    return baseActions[action] || action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   };
 
-  const getRingColors = (ringColor: string | null): [string, string] | null => {
-    if (!ringColor) return null;
-    return RING_COLORS[ringColor] || RING_COLORS.gray;
+  const getPointsBadgeText = (actionType: string, points: number, streakDays?: number): string => {
+    if (actionType === 'ten_x_unicorn_win' && streakDays) {
+      return `+${points} pts 🦄`;
+    } else if (actionType === 'signal_completed' && streakDays) {
+      return `+${streakDays * 2} pts ⭐`;
+    } else if (actionType === 'ten_x_action_completed') {
+      return `+10 pts 🦄`;
+    }
+    return `+${points} pts`;
   };
 
-  const filteredMembers = search
-    ? members.filter(m => 
-        m.display_name?.toLowerCase().includes(search.toLowerCase()) ||
-        m.company?.toLowerCase().includes(search.toLowerCase()) ||
-        m.goal_title?.toLowerCase().includes(search.toLowerCase())
-      )
-    : members;
+  // ──────────────────────────────────────────────────────────────────────────────
+  // LEADERBOARD TAB
+  // ──────────────────────────────────────────────────────────────────────────────
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}><ActivityIndicator size="large" color={Colors.brand.primary} /></View>
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <Text style={styles.pageTitle}>Community</Text>
-        <View style={styles.headerButtons}>
-          <TouchableOpacity
-            testID="messages-btn"
-            style={styles.headerBtn}
-            onPress={() => router.push('/(main)/messages')}
-          >
-            <Ionicons name="chatbubbles-outline" size={24} color={Colors.brand.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            testID="profile-icon-btn"
-            style={styles.profileIconBtn}
-            onPress={() => router.push('/(tabs)/profile')}
-          >
-            <Ionicons name="person-circle-outline" size={32} color={Colors.brand.primary} />
-          </TouchableOpacity>
+  const renderLeaderboardItem = ({ item }: { item: LeaderboardEntry }) => (
+    <View style={styles.leaderboardItem}>
+      <View style={styles.leaderboardRank}>
+        <Text style={styles.medalEmoji}>{getMedalEmoji(item.rank)}</Text>
+        <Text style={styles.rankNumber}>#{item.rank}</Text>
+      </View>
+      <View style={styles.leaderboardProfile}>
+        {item.profile.avatar_url ? (
+          <Image
+            source={{ uri: item.profile.avatar_url }}
+            style={styles.leaderboardAvatar}
+          />
+        ) : (
+          <View style={[styles.leaderboardAvatar, styles.avatarPlaceholder]}>
+            <Text style={styles.avatarPlaceholderText}>
+              {item.profile.emoji || (item.profile.display_name || 'U')[0].toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={styles.leaderboardInfo}>
+          <Text style={styles.leaderboardName}>{item.profile.display_name || 'Unnamed'}</Text>
+          <View style={styles.leaderboardMeta}>
+            {item.profile.company && (
+              <Text style={styles.leaderboardCompany}>{item.profile.company}</Text>
+            )}
+            {item.streak > 0 && (
+              <View style={styles.streakBadgeLeaderboard}>
+                <Text style={styles.streakTextLeaderboard}>🔥 {item.streak} day streak</Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
+      <LinearGradient
+        colors={[Colors.brand.primary, Colors.brand.primaryDark]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.leaderboardPointsGradient}
+      >
+        <View style={styles.leaderboardPointsContent}>
+          <Text style={styles.pointsValue}>{item.totalPoints.toLocaleString()}</Text>
+          <Text style={styles.pointsLabel}>pts</Text>
+          {item.streak > 0 && (
+            <Text style={styles.streakBonusText}>+{item.streak} streak bonus</Text>
+          )}
+        </View>
+      </LinearGradient>
+    </View>
+  );
 
-      {/* Tab Bar */}
-      <View style={styles.tabBar}>
-        {(['leaderboard', 'feed', 'directory'] as TabType[]).map(tab => (
+  // ──────────────────────────────────────────────────────────────────────────────
+  // FEED TAB
+  // ──────────────────────────────────────────────────────────────────────────────
+
+  const renderFeedItem = ({ item }: { item: FeedEntry }) => (
+    <View style={styles.feedItem}>
+      <View style={styles.feedHeader}>
+        {item.userAvatar ? (
+          <Image
+            source={{ uri: item.userAvatar }}
+            style={styles.feedAvatar}
+          />
+        ) : (
+          <View style={[styles.feedAvatar, styles.avatarPlaceholder]}>
+            <Text style={styles.avatarPlaceholderText}>
+              {item.userEmoji || (item.userName || 'U')[0].toUpperCase()}
+            </Text>
+          </View>
+        )}
+        <View style={styles.feedMeta}>
+          <Text style={styles.feedName}>{item.userName}</Text>
+          <Text style={styles.feedTime}>{item.timestamp}</Text>
+        </View>
+        <View style={styles.feedPointsBadge}>
+          <Text style={styles.feedPointsText}>
+            {getPointsBadgeText(item.actionType, item.points, item.streakDays)}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.feedAction}>{item.action}</Text>
+      {item.badge && (
+        <View style={styles.badgeContainer}>
+          <Text style={styles.badgeText}>{item.badge}</Text>
+        </View>
+      )}
+    </View>
+  );
+
+  // ──────────────────────────────────────────────────────────────────────────────
+  // DIRECTORY TAB
+  // ──────────────────────────────────────────────────────────────────────────────
+
+  const renderDirectoryItem = ({ item }: { item: Profile }) => (
+    <TouchableOpacity
+      style={styles.directoryItem}
+      onPress={() => setSelectedMember(item)}
+    >
+      {item.avatar_url ? (
+        <Image
+          source={{ uri: item.avatar_url }}
+          style={styles.directoryAvatar}
+        />
+      ) : (
+        <View style={[styles.directoryAvatar, styles.avatarPlaceholder]}>
+          <Text style={styles.avatarPlaceholderText}>
+            {(item.display_name || 'U')[0].toUpperCase()}
+          </Text>
+        </View>
+      )}
+      <View style={styles.directoryInfo}>
+        <Text style={styles.directoryName}>{item.display_name || 'Unnamed'}</Text>
+        {item.company && <Text style={styles.directoryCompany}>{item.company}</Text>}
+        {item.bio && (
+          <Text numberOfLines={2} style={styles.directoryBio}>
+            {item.bio}
+          </Text>
+        )}
+        {item.services_offered && item.services_offered.length > 0 && (
+          <View style={styles.servicesRow}>
+            {item.services_offered.slice(0, 2).map((service, idx) => (
+              <Text key={idx} style={styles.serviceTag}>
+                {service}
+              </Text>
+            ))}
+          </View>
+        )}
+      </View>
+      <Ionicons name="chevron-forward" size={20} color={Colors.brand.primary} />
+    </TouchableOpacity>
+  );
+
+  return (
+    <CosmicBackground>
+    <View style={styles.container}>
+      <UnicornHeader>
+        <View>
+          <Text style={styles.headerTitle}>Community</Text>
+          <Text style={styles.headerSubtitle}>Connect with 10x performers</Text>
+        </View>
+      </UnicornHeader>
+
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        {(['leaderboard', 'feed', 'directory'] as TabType[]).map((tab) => (
           <TouchableOpacity
             key={tab}
-            testID={`tab-${tab}`}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
+            style={[
+              styles.tabButton,
+              activeTab === tab && styles.tabButtonActive,
+            ]}
             onPress={() => setActiveTab(tab)}
           >
-            <Ionicons 
-              name={tab === 'leaderboard' ? 'trophy' : tab === 'feed' ? 'newspaper' : 'people'} 
-              size={18} 
-              color={activeTab === tab ? Colors.brand.primary : Colors.text.tertiary} 
-            />
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            <Text
+              style={[
+                styles.tabLabel,
+                activeTab === tab && styles.tabLabelActive,
+              ]}
+            >
+              {tab === 'leaderboard' ? 'Leaderboard' : tab === 'feed' ? 'Feed' : 'Directory'}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {/* Leaderboard Tab */}
-      {activeTab === 'leaderboard' && (
-        <FlatList
-          data={leaderboard}
-          keyExtractor={(item, i) => `${item.user_id}-${i}`}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={Colors.brand.primary} />}
-          ListHeaderComponent={
-            <View style={styles.leaderboardHeader}>
-              <Text style={styles.leaderboardTitle}>🏆 Top Performers</Text>
-              <Text style={styles.leaderboardSub}>Ranked by total points earned</Text>
-            </View>
-          }
-          renderItem={({ item, index }) => (
-            <TouchableOpacity
-              testID={`leaderboard-${item.user_id}`}
-              style={[styles.leaderboardItem, index < 3 && styles.topThree]}
-              onPress={() => openMemberProfile(item.user_id)}
-            >
-              <View style={[styles.rankBadge, index === 0 && styles.gold, index === 1 && styles.silver, index === 2 && styles.bronze]}>
-                <Text style={styles.rankText}>{item.rank}</Text>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>{item.display_name}</Text>
-                <Text style={styles.memberGoal} numberOfLines={1}>{item.goal_title}</Text>
-              </View>
-              <View style={styles.statsCol}>
-                <Text style={styles.pointsValue}>{item.total_points}</Text>
-                <Text style={styles.pointsLabel}>pts</Text>
-              </View>
-              <View style={styles.statsCol}>
-                <Text style={styles.streakValue}>{item.signal_streak}</Text>
-                <Text style={styles.streakLabel}>🔥</Text>
-              </View>
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-
-      {/* Feed Tab */}
-      {activeTab === 'feed' && (
-        <FlatList
-          data={feed}
-          keyExtractor={(item, i) => `${item.id}-${i}`}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={Colors.brand.primary} />}
-          ListHeaderComponent={
-            <View style={styles.feedHeader}>
-              <Text style={styles.feedTitle}>⚡ Activity Feed</Text>
-              <Text style={styles.feedSub}>See what the community is accomplishing</Text>
-            </View>
-          }
-          renderItem={({ item }) => {
-            const ringColors = getRingColors(item.ring_color);
-            const isHelpRequest = item.type === 'help_request';
-            
-            return (
-              <TouchableOpacity
-                style={styles.feedItem}
-                onPress={() => openMemberProfile(item.user_id)}
-              >
-                {/* Avatar with status ring */}
-                <View style={styles.avatarWrapper}>
-                  {ringColors ? (
-                    <LinearGradient
-                      colors={ringColors}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                      style={styles.statusRing}
-                    >
-                      <View style={styles.feedAvatar}>
-                        {item.profile_photo_url ? (
-                          <Image source={{ uri: item.profile_photo_url }} style={styles.avatarImage} />
-                        ) : (
-                          <Text style={styles.feedAvatarText}>{item.display_name?.[0]?.toUpperCase() || '?'}</Text>
-                        )}
-                      </View>
-                    </LinearGradient>
-                  ) : (
-                    <View style={styles.feedAvatar}>
-                      {item.profile_photo_url ? (
-                        <Image source={{ uri: item.profile_photo_url }} style={styles.avatarImage} />
-                      ) : (
-                        <Text style={styles.feedAvatarText}>{item.display_name?.[0]?.toUpperCase() || '?'}</Text>
-                      )}
-                    </View>
-                  )}
-                  {item.goal_status === 'crushing_it' && (
-                    <View style={styles.fireIndicator}>
-                      <Text style={styles.fireEmoji}>🔥</Text>
-                    </View>
-                  )}
-                  {item.goal_status === 'needs_support' && (
-                    <View style={styles.pulseIndicator}>
-                      <Ionicons name="heart" size={12} color={Colors.text.primary} />
-                    </View>
-                  )}
-                </View>
-                
-                <View style={styles.feedContent}>
-                  <View style={styles.feedTop}>
-                    <Text style={styles.feedName}>{item.display_name}</Text>
-                    <Text style={styles.feedTime}>{formatTime(item.created_at)}</Text>
-                  </View>
-                  
-                  {isHelpRequest ? (
-                    <>
-                      <View style={styles.helpRequestBadge}>
-                        <Ionicons name="hand-left" size={14} color={Colors.status.error} />
-                        <Text style={styles.helpRequestText}>Needs Help</Text>
-                      </View>
-                      <Text style={styles.feedNotes}>"{item.description}"</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={styles.feedAction}>
-                        Completed <Text style={styles.feedSignal}>{item.signal_name}</Text>
-                      </Text>
-                      {item.notes ? <Text style={styles.feedNotes}>"{item.notes}"</Text> : null}
-                      <View style={styles.feedFooter}>
-                        <View style={styles.feedPointsBadge}>
-                          <Ionicons name="flash" size={12} color={Colors.status.success} />
-                          <Text style={styles.feedPoints}>+{item.total_points} pts</Text>
-                        </View>
-                        <Text style={styles.feedGoal} numberOfLines={1}>→ {item.goal_title}</Text>
-                      </View>
-                    </>
-                  )}
-                </View>
-              </TouchableOpacity>
-            );
-          }}
-          ListEmptyComponent={
-            <View style={styles.emptyFeed}>
-              <Ionicons name="newspaper-outline" size={48} color={Colors.text.tertiary} />
-              <Text style={styles.emptyText}>No activity yet</Text>
-              <Text style={styles.emptySub}>Complete signals to appear here</Text>
-            </View>
-          }
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-
-      {/* Directory Tab */}
-      {activeTab === 'directory' && (
-        <View style={styles.directoryContainer}>
-          <View style={styles.searchBar}>
-            <Ionicons name="search" size={18} color={Colors.text.tertiary} />
-            <TextInput
-              testID="member-search-input"
-              style={styles.searchInput}
-              value={search}
-              onChangeText={setSearch}
-              placeholder="Search members..."
-              placeholderTextColor={Colors.text.tertiary}
-            />
-          </View>
-          <FlatList
-            data={filteredMembers}
-            keyExtractor={(item, i) => `${item.user_id}-${i}`}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadData(); }} tintColor={Colors.brand.primary} />}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                testID={`member-${item.user_id}`}
-                style={styles.memberCard}
-                onPress={() => openMemberProfile(item.user_id)}
-              >
-                <View style={styles.memberAvatar}>
-                  <Text style={styles.memberAvatarText}>{item.display_name?.[0]?.toUpperCase() || '?'}</Text>
-                </View>
-                <View style={styles.memberDetails}>
-                  <Text style={styles.memberCardName}>{item.display_name}</Text>
-                  {item.company && <Text style={styles.memberCardCompany}>{item.company}{item.title ? ` • ${item.title}` : ''}</Text>}
-                  {item.goal_title && <Text style={styles.memberCardGoal} numberOfLines={1}>🎯 {item.goal_title}</Text>}
-                  {item.services_offered?.length > 0 && (
-                    <View style={styles.serviceTags}>
-                      {item.services_offered.slice(0, 2).map((s: string) => (
-                        <View key={s} style={styles.serviceTag}>
-                          <Text style={styles.serviceTagText}>{s.replace('_', ' ')}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-                <View style={styles.memberPoints}>
-                  <Text style={styles.memberPointsValue}>{item.total_points}</Text>
-                  <Text style={styles.memberPointsLabel}>pts</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <View style={styles.emptyFeed}>
-                <Ionicons name="people-outline" size={48} color={Colors.text.tertiary} />
-                <Text style={styles.emptyText}>No members found</Text>
-              </View>
-            }
-            contentContainerStyle={styles.listContent}
-          />
+      {/* Content */}
+      {loading && activeTab === 'leaderboard' && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.brand.primary} />
         </View>
       )}
 
-      {/* Member Detail Modal */}
-      <Modal visible={showMember} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Member Profile</Text>
-              <TouchableOpacity testID="close-member-modal" onPress={() => setShowMember(false)}>
-                <Ionicons name="close" size={24} color={Colors.text.primary} />
-              </TouchableOpacity>
+      {!loading && activeTab === 'leaderboard' && (
+        <FlatList
+          data={leaderboard}
+          renderItem={renderLeaderboardItem}
+          keyExtractor={(item) => `${item.profile.id}`}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={true}
+        />
+      )}
+
+      {!loading && activeTab === 'feed' && (
+        <FlatList
+          data={feed}
+          renderItem={renderFeedItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={true}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateIcon}>📭</Text>
+              <Text style={styles.emptyStateText}>No activity yet</Text>
             </View>
-            {memberDetail && (
-              <ScrollView showsVerticalScrollIndicator={false}>
-                <View style={styles.profileHeader}>
-                  <View style={styles.profileAvatar}>
-                    <Text style={styles.profileAvatarText}>{memberDetail.display_name?.[0]?.toUpperCase() || '?'}</Text>
+          }
+        />
+      )}
+
+      {activeTab === 'directory' && (
+        <>
+          <View style={styles.searchContainer}>
+            <Ionicons name="search" size={18} color={Colors.text.tertiary} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or company"
+              placeholderTextColor={Colors.text.tertiary}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+          <FlatList
+            data={filteredDirectory}
+            renderItem={renderDirectoryItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            scrollEnabled={true}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>🔍</Text>
+                <Text style={styles.emptyStateText}>No members found</Text>
+              </View>
+            }
+          />
+        </>
+      )}
+
+      {/* Member Profile Modal */}
+      <Modal
+        visible={selectedMember !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedMember(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setSelectedMember(null)}
+            >
+              <Ionicons name="close" size={24} color={Colors.text.primary} />
+            </TouchableOpacity>
+
+            {selectedMember && (
+              <ScrollView contentContainerStyle={styles.modalBody}>
+                {/* Avatar & Name */}
+                {selectedMember.avatar_url ? (
+                  <Image
+                    source={{ uri: selectedMember.avatar_url }}
+                    style={styles.modalAvatar}
+                  />
+                ) : (
+                  <View style={[styles.modalAvatar, styles.avatarPlaceholder]}>
+                    <Text style={styles.avatarPlaceholderText}>
+                      {(selectedMember.display_name || 'U')[0].toUpperCase()}
+                    </Text>
                   </View>
-                  <Text style={styles.profileName}>{memberDetail.display_name}</Text>
-                  {memberDetail.company && <Text style={styles.profileCompany}>{memberDetail.company}</Text>}
-                  {memberDetail.title && <Text style={styles.profileTitle}>{memberDetail.title}</Text>}
-                  {memberDetail.location && (
-                    <View style={styles.profileLocation}>
-                      <Ionicons name="location" size={14} color={Colors.text.tertiary} />
-                      <Text style={styles.profileLocationText}>{memberDetail.location}</Text>
+                )}
+                <Text style={styles.modalName}>{selectedMember.display_name}</Text>
+                {selectedMember.title && (
+                  <Text style={styles.modalTitle}>{selectedMember.title}</Text>
+                )}
+                {selectedMember.company && (
+                  <Text style={styles.modalCompany}>{selectedMember.company}</Text>
+                )}
+
+                {/* Bio */}
+                {selectedMember.bio && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>About</Text>
+                    <Text style={styles.modalBio}>{selectedMember.bio}</Text>
+                  </View>
+                )}
+
+                {/* Services */}
+                {selectedMember.services_offered && selectedMember.services_offered.length > 0 && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Services Offered</Text>
+                    <View style={styles.servicesContainer}>
+                      {selectedMember.services_offered.map((service, idx) => (
+                        <Text key={idx} style={styles.serviceTag}>
+                          {service}
+                        </Text>
+                      ))}
                     </View>
+                  </View>
+                )}
+
+                {/* Industries */}
+                {selectedMember.industries && selectedMember.industries.length > 0 && (
+                  <View style={styles.modalSection}>
+                    <Text style={styles.modalSectionTitle}>Industries</Text>
+                    <View style={styles.industriesContainer}>
+                      {selectedMember.industries.map((industry, idx) => (
+                        <Text key={idx} style={styles.industryTag}>
+                          {industry}
+                        </Text>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Contact Options */}
+                <View style={styles.contactSection}>
+                  {selectedMember.email && (
+                    <TouchableOpacity
+                      style={styles.contactButton}
+                      onPress={() =>
+                        Linking.openURL(`mailto:${selectedMember.email}`)
+                      }
+                    >
+                      <Ionicons name="mail" size={18} color={Colors.brand.primary} />
+                      <Text style={styles.contactButtonText}>Email</Text>
+                    </TouchableOpacity>
+                  )}
+                  {selectedMember.phone && (
+                    <TouchableOpacity
+                      style={styles.contactButton}
+                      onPress={() =>
+                        Linking.openURL(`sms:${selectedMember.phone}`)
+                      }
+                    >
+                      <Ionicons name="call" size={18} color={Colors.brand.primary} />
+                      <Text style={styles.contactButtonText}>SMS</Text>
+                    </TouchableOpacity>
+                  )}
+                  {selectedMember.phone && (
+                    <TouchableOpacity
+                      style={styles.contactButton}
+                      onPress={() =>
+                        Linking.openURL(`tel:${selectedMember.phone}`)
+                      }
+                    >
+                      <Ionicons name="phone-portrait" size={18} color={Colors.brand.primary} />
+                      <Text style={styles.contactButtonText}>Call</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
 
-                <View style={styles.statsRow}>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statBoxValue}>{memberDetail.total_points}</Text>
-                    <Text style={styles.statBoxLabel}>Total Points</Text>
-                  </View>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statBoxValue}>{memberDetail.weekly_points || 0}</Text>
-                    <Text style={styles.statBoxLabel}>This Week</Text>
-                  </View>
-                  <View style={styles.statBox}>
-                    <Text style={styles.statBoxValue}>{memberDetail.signal_streak || 0}</Text>
-                    <Text style={styles.statBoxLabel}>Streak 🔥</Text>
-                  </View>
-                </View>
-
-                {memberDetail.goal_title && (
-                  <LinearGradient colors={[Colors.brand.primary + '20', 'transparent']} style={styles.goalBox}>
-                    <Text style={styles.goalBoxLabel}>10x Goal</Text>
-                    <Text style={styles.goalBoxTitle}>{memberDetail.goal_title}</Text>
-                    {memberDetail.goal_description && <Text style={styles.goalBoxDesc}>{memberDetail.goal_description}</Text>}
-                  </LinearGradient>
-                )}
-
-                {memberDetail.bio && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>About</Text>
-                    <Text style={styles.bioText}>{memberDetail.bio}</Text>
-                  </View>
-                )}
-
-                {memberDetail.good_connection_for && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Good Connection For</Text>
-                    <Text style={styles.sectionText}>{memberDetail.good_connection_for}</Text>
-                  </View>
-                )}
-
-                {memberDetail.seeking_partnerships && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Seeking Partnerships</Text>
-                    <Text style={styles.sectionText}>{memberDetail.seeking_partnerships}</Text>
-                  </View>
-                )}
-
-                {memberDetail.services_offered?.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Services Offered</Text>
-                    <View style={styles.chipRow}>
-                      {memberDetail.services_offered.map((s: string) => (
-                        <View key={s} style={styles.chip}>
-                          <Text style={styles.chipText}>{s.replace('_', ' ')}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {memberDetail.needs?.length > 0 && (
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Looking For</Text>
-                    <View style={styles.chipRow}>
-                      {memberDetail.needs.map((n: string) => (
-                        <View key={n} style={[styles.chip, styles.needChip]}>
-                          <Text style={[styles.chipText, styles.needChipText]}>{n.replace('_', ' ')}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {(memberDetail.linkedin || memberDetail.twitter || memberDetail.instagram || memberDetail.phone || memberDetail.email) && (
-                  <View style={styles.socialRow}>
-                    {memberDetail.linkedin && (
-                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.linkedin)}>
-                        <Ionicons name="logo-linkedin" size={28} color={Colors.brand.accent} />
+                {/* Social Links */}
+                {(selectedMember.linkedin_url ||
+                  selectedMember.twitter_url ||
+                  selectedMember.instagram_url ||
+                  selectedMember.youtube_url) && (
+                  <View style={styles.socialSection}>
+                    {selectedMember.linkedin_url && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(selectedMember.linkedin_url!)
+                        }
+                      >
+                        <Ionicons name="logo-linkedin" size={24} color={Colors.brand.primary} />
                       </TouchableOpacity>
                     )}
-                    {memberDetail.twitter && (
-                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.twitter)}>
-                        <Ionicons name="logo-twitter" size={28} color={Colors.brand.accent} />
+                    {selectedMember.twitter_url && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(selectedMember.twitter_url!)
+                        }
+                      >
+                        <Ionicons name="logo-twitter" size={24} color={Colors.brand.primary} />
                       </TouchableOpacity>
                     )}
-                    {memberDetail.instagram && (
-                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.instagram)}>
-                        <Ionicons name="logo-instagram" size={28} color={Colors.brand.accent} />
+                    {selectedMember.instagram_url && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(selectedMember.instagram_url!)
+                        }
+                      >
+                        <Ionicons name="logo-instagram" size={24} color={Colors.brand.primary} />
                       </TouchableOpacity>
                     )}
-                    {memberDetail.youtube && (
-                      <TouchableOpacity onPress={() => openSocialLink(memberDetail.youtube)}>
-                        <Ionicons name="logo-youtube" size={28} color={Colors.brand.accent} />
-                      </TouchableOpacity>
-                    )}
-                    {memberDetail.phone && (
-                      <TouchableOpacity onPress={() => openPhone(memberDetail.phone)}>
-                        <Ionicons name="call" size={28} color={Colors.status.success} />
-                      </TouchableOpacity>
-                    )}
-                    {memberDetail.email && (
-                      <TouchableOpacity onPress={() => openEmail(memberDetail.email, memberDetail.display_name)}>
-                        <Ionicons name="mail" size={28} color={Colors.brand.primary} />
+                    {selectedMember.youtube_url && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          Linking.openURL(selectedMember.youtube_url!)
+                        }
+                      >
+                        <Ionicons name="logo-youtube" size={24} color={Colors.brand.primary} />
                       </TouchableOpacity>
                     )}
                   </View>
                 )}
-
-                <View style={{ height: 40 }} />
               </ScrollView>
             )}
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </View>
+    </CosmicBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg.default },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: 20, 
-    paddingTop: 8, 
-    marginBottom: 12 
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
-  pageTitle: { fontSize: FontSize.xxxl, fontWeight: '900', color: Colors.text.primary, letterSpacing: -0.5 },
-  profileIconBtn: { padding: 4 },
-  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerBtn: { padding: 8 },
-  
-  // Tab Bar
-  tabBar: { flexDirection: 'row', paddingHorizontal: 20, marginBottom: 12, gap: 8 },
-  tab: { 
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 12, borderRadius: Radius.md, backgroundColor: Colors.bg.card,
+  header: {
+    paddingTop: Spacing.xl,
+    paddingBottom: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
   },
-  tabActive: { backgroundColor: Colors.brand.primary + '20', borderWidth: 1, borderColor: Colors.brand.primary },
-  tabText: { color: Colors.text.tertiary, fontSize: FontSize.sm, fontWeight: '600' },
-  tabTextActive: { color: Colors.brand.primary },
-  
-  // Leaderboard
-  leaderboardHeader: { paddingHorizontal: 20, paddingVertical: 16 },
-  leaderboardTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.text.primary },
-  leaderboardSub: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4 },
+  headerTitle: {
+    ...Typography.h2,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  headerSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+    backgroundColor: Colors.background.secondary,
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabButtonActive: {
+    borderBottomColor: Colors.brand.primary,
+  },
+  tabLabel: {
+    ...Typography.body,
+    color: Colors.text.tertiary,
+  },
+  tabLabelActive: {
+    color: Colors.brand.primary,
+    fontWeight: '600',
+  },
+  listContent: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // ──── Leaderboard ────
   leaderboardItem: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16,
-    backgroundColor: Colors.bg.card, borderRadius: Radius.md, marginBottom: 8,
-    borderWidth: 1, borderColor: Colors.border.default,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
   },
-  topThree: { borderColor: Colors.brand.primary + '50' },
-  rankBadge: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.bg.input, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  gold: { backgroundColor: '#FFD700' },
-  silver: { backgroundColor: '#C0C0C0' },
-  bronze: { backgroundColor: '#CD7F32' },
-  rankText: { color: Colors.text.primary, fontWeight: '700', fontSize: FontSize.base },
-  memberInfo: { flex: 1 },
-  memberName: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
-  memberGoal: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  statsCol: { alignItems: 'center', marginLeft: 12 },
-  pointsValue: { color: Colors.brand.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  pointsLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  streakValue: { color: Colors.status.warning, fontSize: FontSize.lg, fontWeight: '700' },
-  streakLabel: { fontSize: FontSize.xs },
-  
-  // Feed
-  feedHeader: { paddingHorizontal: 20, paddingVertical: 16 },
-  feedTitle: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.text.primary },
-  feedSub: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4 },
+  leaderboardRank: {
+    width: 50,
+    alignItems: 'center',
+  },
+  rankNumber: {
+    ...Typography.bodyBold,
+    color: Colors.text.secondary,
+  },
+  medalEmoji: {
+    fontSize: 20,
+    marginBottom: Spacing.xs,
+  },
+  leaderboardProfile: {
+    flex: 1,
+    flexDirection: 'row',
+    marginLeft: Spacing.md,
+  },
+  leaderboardAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: BorderRadius.full,
+    marginRight: Spacing.md,
+  },
+  leaderboardInfo: {
+    flex: 1,
+  },
+  leaderboardName: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  leaderboardMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  leaderboardCompany: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+    marginRight: Spacing.md,
+  },
+  streakBadge: {
+    backgroundColor: Colors.background.tertiary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+  streakText: {
+    ...Typography.small,
+    color: Colors.status.warning,
+  },
+  leaderboardPoints: {
+    alignItems: 'flex-end',
+    marginLeft: Spacing.md,
+  },
+  pointsValue: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: '#FFFFFF',
+  },
+  pointsLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 2,
+  },
+  leaderboardPointsGradient: {
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+  },
+  leaderboardPointsContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakBonusText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFD700',
+    marginTop: 4,
+  },
+  streakBadgeLeaderboard: {
+    backgroundColor: 'rgba(248, 113, 113, 0.15)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+    marginTop: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.status.warning,
+  },
+  streakTextLeaderboard: {
+    ...Typography.small,
+    color: Colors.status.warning,
+    fontWeight: '600',
+  },
+
+  // ──── Feed ────
   feedItem: {
-    flexDirection: 'row', padding: 16,
-    backgroundColor: Colors.bg.card, borderRadius: Radius.md, marginBottom: 8,
-    borderWidth: 1, borderColor: Colors.border.default,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.brand.primary,
   },
-  
-  // Avatar with status ring
-  avatarWrapper: { position: 'relative', marginRight: 12 },
-  statusRing: { 
-    width: 52, height: 52, borderRadius: 26, 
-    justifyContent: 'center', alignItems: 'center', 
-    padding: 3 
+  feedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
   },
-  feedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center' },
-  feedAvatarText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  avatarImage: { width: 44, height: 44, borderRadius: 22 },
-  fireIndicator: { position: 'absolute', bottom: -2, right: -2, backgroundColor: Colors.bg.card, borderRadius: 8, padding: 2 },
-  fireEmoji: { fontSize: 12 },
-  pulseIndicator: { 
-    position: 'absolute', bottom: -2, right: -2, 
-    backgroundColor: Colors.status.error, borderRadius: 8, 
-    padding: 2 
+  feedAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: BorderRadius.full,
+    marginRight: Spacing.md,
   },
-  helpRequestBadge: { 
-    flexDirection: 'row', alignItems: 'center', gap: 6, 
-    backgroundColor: Colors.status.error + '20', 
-    paddingHorizontal: 10, paddingVertical: 4, 
-    borderRadius: Radius.sm, alignSelf: 'flex-start', 
-    marginBottom: 6 
+  feedMeta: {
+    flex: 1,
   },
-  helpRequestText: { color: Colors.status.error, fontSize: FontSize.sm, fontWeight: '600' },
-  
-  feedContent: { flex: 1 },
-  feedTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  feedName: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
-  feedTime: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  feedAction: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  feedSignal: { color: Colors.brand.accent, fontWeight: '600' },
-  feedNotes: { color: Colors.text.tertiary, fontSize: FontSize.sm, fontStyle: 'italic', marginTop: 4 },
-  feedFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8, gap: 12 },
-  feedPointsBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.status.success + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: Radius.sm },
-  feedPoints: { color: Colors.status.success, fontSize: FontSize.xs, fontWeight: '600' },
-  feedGoal: { color: Colors.text.tertiary, fontSize: FontSize.xs, flex: 1 },
-  emptyFeed: { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyText: { color: Colors.text.secondary, fontSize: FontSize.lg, fontWeight: '600' },
-  emptySub: { color: Colors.text.tertiary, fontSize: FontSize.sm },
-  
-  // Directory
-  directoryContainer: { flex: 1 },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.bg.input, borderRadius: Radius.md, marginHorizontal: 20, paddingHorizontal: 14, marginBottom: 12, borderWidth: 1, borderColor: Colors.border.default, gap: 8 },
-  searchInput: { flex: 1, color: Colors.text.primary, fontSize: FontSize.base, paddingVertical: 12 },
-  memberCard: {
-    flexDirection: 'row', alignItems: 'center', padding: 14,
-    backgroundColor: Colors.bg.card, borderRadius: Radius.md, marginBottom: 8,
-    borderWidth: 1, borderColor: Colors.border.default,
+  feedName: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
   },
-  memberAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
-  memberAvatarText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  memberDetails: { flex: 1 },
-  memberCardName: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
-  memberCardCompany: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  memberCardGoal: { color: Colors.brand.accent, fontSize: FontSize.xs, marginTop: 2 },
-  serviceTags: { flexDirection: 'row', gap: 4, marginTop: 4 },
-  serviceTag: { backgroundColor: Colors.brand.primary + '20', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  serviceTagText: { color: Colors.brand.primary, fontSize: FontSize.xs, textTransform: 'capitalize' },
-  memberPoints: { alignItems: 'center' },
-  memberPointsValue: { color: Colors.brand.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  memberPointsLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  
-  listContent: { paddingHorizontal: 20, paddingBottom: 100 },
-  
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: Colors.bg.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: 24, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
-  
-  // Profile
-  profileHeader: { alignItems: 'center', marginBottom: 20 },
-  profileAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center', marginBottom: 12 },
-  profileAvatarText: { color: Colors.text.primary, fontSize: 32, fontWeight: '700' },
-  profileName: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
-  profileCompany: { color: Colors.text.secondary, fontSize: FontSize.base, marginTop: 4 },
-  profileTitle: { color: Colors.text.tertiary, fontSize: FontSize.sm },
-  profileLocation: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
-  profileLocationText: { color: Colors.text.tertiary, fontSize: FontSize.sm },
-  
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  statBox: { flex: 1, backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14, alignItems: 'center' },
-  statBoxValue: { color: Colors.brand.primary, fontSize: FontSize.xxl, fontWeight: '800' },
-  statBoxLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginTop: 2 },
-  
-  goalBox: { borderRadius: Radius.md, padding: 16, marginBottom: 20 },
-  goalBoxLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs, marginBottom: 4 },
-  goalBoxTitle: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  goalBoxDesc: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
-  
-  section: { marginBottom: 16 },
-  sectionTitle: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '700', marginBottom: 8 },
-  sectionText: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  bioText: { color: Colors.text.secondary, fontSize: FontSize.base, lineHeight: 22 },
-  
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { backgroundColor: Colors.brand.primary + '20', paddingHorizontal: 12, paddingVertical: 6, borderRadius: Radius.sm },
-  chipText: { color: Colors.brand.primary, fontSize: FontSize.sm, textTransform: 'capitalize' },
-  needChip: { backgroundColor: Colors.brand.accent + '20' },
-  needChipText: { color: Colors.brand.accent },
-  
-  socialRow: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 16 },
+  feedTime: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+  },
+  badgeEmoji: {
+    fontSize: 18,
+  },
+  feedAction: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.md,
+  },
+  badgeContainer: {
+    backgroundColor: Colors.background.elevated,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    alignSelf: 'flex-start',
+  },
+  badgeText: {
+    ...Typography.caption,
+    color: Colors.status.success,
+  },
+  feedPointsBadge: {
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    borderWidth: 1,
+    borderColor: Colors.brand.primary,
+    borderRadius: BorderRadius.sm,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    marginLeft: Spacing.sm,
+  },
+  feedPointsText: {
+    ...Typography.caption,
+    color: Colors.brand.primary,
+    fontWeight: '600',
+  },
+
+  // ──── Directory ────
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: Spacing.md,
+    marginVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  searchInput: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    ...Typography.body,
+    color: Colors.text.primary,
+  },
+  directoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  directoryAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: BorderRadius.full,
+    marginRight: Spacing.md,
+  },
+  directoryInfo: {
+    flex: 1,
+  },
+  directoryName: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.xs,
+  },
+  directoryCompany: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+    marginBottom: Spacing.xs,
+  },
+  directoryBio: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
+  },
+  servicesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  serviceTag: {
+    ...Typography.small,
+    backgroundColor: Colors.background.tertiary,
+    color: Colors.brand.primary,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.sm,
+  },
+
+  // ──── Modal ────
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.background.primary,
+    borderTopLeftRadius: BorderRadius.xl,
+    borderTopRightRadius: BorderRadius.xl,
+    maxHeight: '90%',
+    paddingTop: Spacing.lg,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: Spacing.lg,
+    right: Spacing.lg,
+    zIndex: 1,
+  },
+  modalBody: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.xxxl,
+  },
+  modalAvatar: {
+    width: 100,
+    height: 100,
+    borderRadius: BorderRadius.full,
+    alignSelf: 'center',
+    marginBottom: Spacing.lg,
+  },
+  modalName: {
+    ...Typography.h2,
+    color: Colors.text.primary,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  modalTitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  modalCompany: {
+    ...Typography.bodyBold,
+    color: Colors.brand.primary,
+    textAlign: 'center',
+    marginBottom: Spacing.xl,
+  },
+  modalSection: {
+    marginBottom: Spacing.xl,
+  },
+  modalSectionTitle: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
+  },
+  modalBio: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    lineHeight: 24,
+  },
+  servicesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  industriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  industryTag: {
+    ...Typography.caption,
+    backgroundColor: Colors.background.tertiary,
+    color: Colors.brand.cyan,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  contactSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: Spacing.xl,
+  },
+  contactButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.card,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  contactButtonText: {
+    ...Typography.body,
+    color: Colors.text.primary,
+    marginLeft: Spacing.sm,
+  },
+  socialSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: Spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.default,
+  },
+
+  // ──── Avatar Placeholder ────
+  avatarPlaceholder: {
+    backgroundColor: Colors.background.tertiary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholderText: {
+    ...Typography.h3,
+    color: Colors.brand.primary,
+  },
+
+  // ──── Empty State ────
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+  },
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: Spacing.md,
+  },
+  emptyStateText: {
+    ...Typography.body,
+    color: Colors.text.tertiary,
+  },
 });

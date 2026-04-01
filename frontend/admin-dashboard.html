@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10xUnicorn Admin Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #050510;
+    --bg2: #0a0a20;
+    --bg3: #16162e;
+    --card: #121228;
+    --border: #2a2a4a;
+    --purple: #A855F7;
+    --purple-dark: #7F00FF;
+    --cyan: #06B6D4;
+    --pink: #E040FB;
+    --green: #00FF9D;
+    --red: #FF4B6E;
+    --orange: #FFB800;
+    --text: #FFFFFF;
+    --text2: #B0B0CC;
+    --text3: #6B6B8D;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Login Screen */
+  #loginScreen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #050510, #0d0828, #050510);
+  }
+  .login-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px;
+    width: 380px;
+    text-align: center;
+  }
+  .login-box h1 { font-size: 28px; margin-bottom: 4px; }
+  .login-box .subtitle { color: var(--text2); margin-bottom: 24px; font-size: 14px; }
+  .login-box .logo-text { color: var(--purple); font-size: 36px; font-weight: 900; margin-bottom: 4px; }
+  .login-box input {
+    width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg3); color: var(--text); font-size: 14px; margin-bottom: 12px; outline: none;
+  }
+  .login-box input:focus { border-color: var(--purple); }
+  .login-box button {
+    width: 100%; padding: 14px; border-radius: 10px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+    color: white; font-size: 15px; font-weight: 700; margin-top: 8px;
+  }
+  .login-box button:hover { opacity: 0.9; }
+  .login-error { color: var(--red); font-size: 13px; margin-bottom: 8px; display: none; }
+
+  /* Dashboard */
+  #dashboard { display: none; }
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 24px; background: var(--bg2); border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; }
+  .topbar-logo { font-size: 22px; font-weight: 900; }
+  .topbar-logo span { color: var(--purple); }
+  .topbar-badge { background: var(--purple); color: white; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
+  .topbar-user { color: var(--text2); font-size: 13px; }
+  .logout-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--text2);
+    padding: 6px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+  }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+
+  .main { display: flex; min-height: calc(100vh - 57px); }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px; background: var(--bg2); border-right: 1px solid var(--border);
+    padding: 16px 0; flex-shrink: 0;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 20px;
+    color: var(--text2); cursor: pointer; font-size: 14px; transition: all 0.15s;
+  }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { color: var(--purple); background: rgba(168,85,247,0.08); border-right: 3px solid var(--purple); }
+  .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+  .nav-badge { background: var(--red); color: white; font-size: 10px; padding: 1px 7px; border-radius: 10px; margin-left: auto; }
+
+  /* Content */
+  .content { flex: 1; padding: 24px; overflow-y: auto; }
+
+  /* Stats Cards */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .stat-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--purple), var(--cyan));
+  }
+  .stat-label { color: var(--text3); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .stat-value { font-size: 28px; font-weight: 800; }
+  .stat-value.purple { color: var(--purple); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-value.cyan { color: var(--cyan); }
+  .stat-value.red { color: var(--red); }
+  .stat-sub { color: var(--text3); font-size: 12px; margin-top: 4px; }
+
+  /* Tables */
+  .table-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    overflow: hidden; margin-bottom: 24px;
+  }
+  .table-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .table-title { font-size: 16px; font-weight: 700; }
+  .table-actions { display: flex; gap: 8px; }
+  .filter-btn {
+    padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); cursor: pointer; font-size: 12px;
+  }
+  .filter-btn.active { background: var(--purple); border-color: var(--purple); color: white; }
+  .search-input {
+    padding: 8px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg3); color: var(--text); font-size: 13px; outline: none; width: 220px;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; padding: 10px 16px; color: var(--text3); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border); }
+  td { padding: 12px 16px; border-bottom: 1px solid rgba(42,42,74,0.4); font-size: 13px; }
+  tr:hover td { background: rgba(168,85,247,0.03); }
+
+  .badge {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-approved { background: rgba(0,255,157,0.12); color: var(--green); }
+  .badge-pending { background: rgba(255,184,0,0.12); color: var(--orange); }
+  .badge-rejected { background: rgba(255,75,110,0.12); color: var(--red); }
+  .badge-deactivated { background: rgba(107,107,141,0.15); color: var(--text3); }
+  .badge-admin { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .badge-member { background: rgba(6,182,212,0.12); color: var(--cyan); }
+  .badge-free { background: rgba(107,107,141,0.12); color: var(--text3); }
+  .badge-premium { background: rgba(168,85,247,0.15); color: var(--purple); }
+  .badge-10x { background: rgba(255,184,0,0.15); color: var(--orange); }
+
+  .action-btn {
+    padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+    background: transparent; color: var(--text2); cursor: pointer; font-size: 11px; margin-right: 4px;
+  }
+  .action-btn:hover { border-color: var(--purple); color: var(--purple); }
+  .action-btn.approve { border-color: var(--green); color: var(--green); }
+  .action-btn.approve:hover { background: rgba(0,255,157,0.1); }
+  .action-btn.reject { border-color: var(--red); color: var(--red); }
+  .action-btn.reject:hover { background: rgba(255,75,110,0.1); }
+  .action-btn.deactivate { border-color: var(--orange); color: var(--orange); }
+  .action-btn.deactivate:hover { background: rgba(255,184,0,0.1); }
+
+  .avatar-cell { display: flex; align-items: center; gap: 10px; }
+  .avatar-circle {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--bg3);
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+    border: 1px solid var(--border);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); display: none; justify-content: center;
+    align-items: center; z-index: 200;
+  }
+  .modal-overlay.visible { display: flex; }
+  .modal {
+    background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; width: 480px; max-height: 80vh; overflow-y: auto;
+  }
+  .modal h2 { margin-bottom: 20px; font-size: 18px; }
+  .modal label { display: block; color: var(--text2); font-size: 12px; margin-bottom: 4px; margin-top: 12px; }
+  .modal input, .modal select, .modal textarea {
+    width: 100%; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg3); color: var(--text); font-size: 13px; outline: none;
+  }
+  .modal textarea { min-height: 60px; resize: vertical; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; justify-content: flex-end; }
+  .modal-actions button {
+    padding: 10px 20px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600;
+  }
+  .modal-actions .save-btn { background: var(--purple); color: white; }
+  .modal-actions .cancel-btn { background: var(--bg3); color: var(--text2); border: 1px solid var(--border); }
+
+  /* Charts */
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .chart-card h3 { font-size: 14px; color: var(--text2); margin-bottom: 16px; }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* Live indicator */
+  .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #00FF9D; margin-right: 6px; animation: livePulse 1.5s infinite; }
+  @keyframes livePulse { 0%,100% { opacity: 1; box-shadow: 0 0 4px #00FF9D; } 50% { opacity: 0.4; box-shadow: none; } }
+  .stat-live { border: 1px solid rgba(0,255,157,0.3); }
+  .stat-live::after { background: linear-gradient(90deg, #00FF9D, #06B6D4); }
+
+  /* DAU chart */
+  .dau-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+  @media (max-width: 768px) { .dau-row { grid-template-columns: 1fr; } }
+
+  /* Create member button */
+  .create-btn {
+    padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--purple), var(--purple-dark));
+    color: white; font-size: 13px; font-weight: 600;
+  }
+  .create-btn:hover { opacity: 0.9; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 10px;
+    background: var(--green); color: #050510; font-weight: 600; font-size: 13px;
+    z-index: 300; display: none; animation: fadeIn 0.3s;
+  }
+  .toast.error { background: var(--red); color: white; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .charts-row { grid-template-columns: 1fr; }
+    .modal { width: 95%; margin: 0 10px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Login Screen -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="logo-text">10xUnicorn</div>
+    <h1>Admin Dashboard</h1>
+    <p class="subtitle">Sign in with your admin account</p>
+    <div class="login-error" id="loginError"></div>
+    <input type="email" id="loginEmail" placeholder="Email" value="dknightunicorn@gmail.com">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button onclick="handleLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">10x<span>Unicorn</span></div>
+      <div class="topbar-badge">ADMIN</div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="adminEmail"></span>
+      <button class="logout-btn" onclick="handleLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="sidebar">
+      <div class="nav-item active" data-section="overview" onclick="switchSection('overview', this)">
+        <span class="nav-icon">📊</span> Overview
+      </div>
+      <div class="nav-item" data-section="members" onclick="switchSection('members', this)">
+        <span class="nav-icon">👥</span> Members
+        <span class="nav-badge" id="pendingBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-section="pending" onclick="switchSection('pending', this)">
+        <span class="nav-icon">⏳</span> Pending Approval
+      </div>
+      <div class="nav-item" data-section="contacts" onclick="switchSection('contacts', this)">
+        <span class="nav-icon">📇</span> Contacts
+      </div>
+      <div class="nav-item" data-section="deals" onclick="switchSection('deals', this)">
+        <span class="nav-icon">💰</span> Deals
+      </div>
+      <div class="nav-item" data-section="signals" onclick="switchSection('signals', this)">
+        <span class="nav-icon">⚡</span> Signals
+      </div>
+      <div class="nav-item" data-section="analytics" onclick="switchSection('analytics', this)">
+        <span class="nav-icon">📈</span> Analytics
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- OVERVIEW SECTION -->
+      <div class="section active" id="sec-overview">
+        <h2 style="margin-bottom:20px">Dashboard Overview</h2>
+        <div class="stats-row" id="overviewStats"></div>
+        <div class="dau-row">
+          <div class="chart-card"><h3>Daily Active Users (Last 30 Days)</h3><canvas id="dauChart"></canvas></div>
+          <div class="chart-card"><h3>Member Breakdown</h3><canvas id="memberChart"></canvas></div>
+        </div>
+        <div class="charts-row">
+          <div class="chart-card"><h3>Deal Pipeline</h3><canvas id="dealChart"></canvas></div>
+          <div class="chart-card"><h3>Engagement Heatmap (Last 7 Days)</h3><div id="heatmapContainer" style="padding:8px 0"></div></div>
+        </div>
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Recent Signups</span></div>
+          <table><thead><tr><th>Member</th><th>Email</th><th>Company</th><th>Status</th><th>Joined</th></tr></thead>
+          <tbody id="recentSignups"></tbody></table>
+        </div>
+      </div>
+
+      <!-- MEMBERS SECTION -->
+      <div class="section" id="sec-members">
+        <div class="table-card">
+          <div class="table-header">
+            <span class="table-title">All Members</span>
+            <div class="table-actions">
+              <button class="create-btn" onclick="openCreateMember()">+ Add Member</button>
+              <button class="filter-btn active" onclick="filterMembers('all', this)">All</button>
+              <button class="filter-btn" onclick="filterMembers('approved', this)">Approved</button>
+              <button class="filter-btn" onclick="filterMembers('pending', this)">Pending</button>
+              <button class="filter-btn" onclick="filterMembers('deactivated', this)">Deactivated</button>
+              <input class="search-input" placeholder="Search members..." oninput="searchMembers(this.value)">
+            </div>
+          </div>
+          <table><thead><tr><th>Member</th><th>Email</th><th>Company</th><th>Role</th><th>Status</th><th>Tier</th><th>Actions</th></tr></thead>
+          <tbody id="membersTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- PENDING SECTION -->
+      <div class="section" id="sec-pending">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">Pending Approvals</span></div>
+          <table><thead><tr><th>Member</th><th>Email</th><th>Company</th><th>Bio</th><th>Signed Up</th><th>Actions</th></tr></thead>
+          <tbody id="pendingTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- CONTACTS SECTION -->
+      <div class="section" id="sec-contacts">
+        <div class="table-card">
+          <div class="table-header">
+            <span class="table-title">All Contacts</span>
+            <input class="search-input" placeholder="Search contacts..." oninput="searchContacts(this.value)">
+          </div>
+          <table><thead><tr><th>Name</th><th>Company</th><th>Type</th><th>Connection</th><th>Wormhole</th><th>Owner</th></tr></thead>
+          <tbody id="contactsTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- DEALS SECTION -->
+      <div class="section" id="sec-deals">
+        <div class="stats-row" id="dealStats"></div>
+        <div class="table-card">
+          <div class="table-header">
+            <span class="table-title">All Deals</span>
+            <div class="table-actions">
+              <button class="filter-btn active" onclick="filterDeals('all', this)">All</button>
+              <button class="filter-btn" onclick="filterDeals('lead', this)">Lead</button>
+              <button class="filter-btn" onclick="filterDeals('proposal', this)">Proposal</button>
+              <button class="filter-btn" onclick="filterDeals('negotiation', this)">Negotiation</button>
+              <button class="filter-btn" onclick="filterDeals('closed_won', this)">Won</button>
+            </div>
+          </div>
+          <table><thead><tr><th>Title</th><th>Value</th><th>Stage</th><th>Contact</th><th>Close Date</th><th>Owner</th></tr></thead>
+          <tbody id="dealsTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- SIGNALS SECTION -->
+      <div class="section" id="sec-signals">
+        <div class="table-card">
+          <div class="table-header"><span class="table-title">All Signals</span></div>
+          <table><thead><tr><th>Title</th><th>Type</th><th>Score</th><th>Status</th><th>Due Date</th><th>Owner</th></tr></thead>
+          <tbody id="signalsTable"></tbody></table>
+        </div>
+      </div>
+
+      <!-- ANALYTICS SECTION -->
+      <div class="section" id="sec-analytics">
+        <h2 style="margin-bottom:20px">Analytics</h2>
+        <div class="stats-row" id="analyticsStats"></div>
+        <div class="charts-row">
+          <div class="chart-card"><h3>Signals by Type</h3><canvas id="signalTypeChart"></canvas></div>
+          <div class="chart-card"><h3>Contacts by Type</h3><canvas id="contactTypeChart"></canvas></div>
+        </div>
+        <div class="charts-row">
+          <div class="chart-card"><h3>Points Leaderboard (Top 10)</h3><canvas id="leaderChart"></canvas></div>
+          <div class="chart-card"><h3>Deal Values by Stage</h3><canvas id="dealValueChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Member Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h2>Edit Member</h2>
+    <input type="hidden" id="editId">
+    <label>Display Name</label>
+    <input type="text" id="editName">
+    <label>Email</label>
+    <input type="email" id="editEmail" disabled>
+    <label>Company</label>
+    <input type="text" id="editCompany">
+    <label>Bio</label>
+    <textarea id="editBio"></textarea>
+    <label>Role</label>
+    <select id="editRole"><option value="member">Member</option><option value="admin">Admin</option></select>
+    <label>Account Status</label>
+    <select id="editStatus">
+      <option value="pending">Pending</option><option value="approved">Approved</option>
+      <option value="rejected">Rejected</option><option value="deactivated">Deactivated</option>
+    </select>
+    <label>Membership Tier</label>
+    <select id="editTier">
+      <option value="free">Free</option><option value="premium">Premium ($99/mo)</option>
+      <option value="10x_unicorn">10xUnicorn ($997/mo)</option><option value="10x_mastermind">10x Mastermind ($10k/yr)</option>
+    </select>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="save-btn" onclick="saveMember()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Member Modal -->
+<div class="modal-overlay" id="createModal">
+  <div class="modal">
+    <h2>➕ Add New Member</h2>
+    <label>Email *</label>
+    <input type="email" id="createEmail" placeholder="member@example.com">
+    <label>Password *</label>
+    <input type="password" id="createPassword" placeholder="Min 8 characters" value="10xUnicorn2026!">
+    <label>Display Name *</label>
+    <input type="text" id="createName" placeholder="Full Name">
+    <label>Company</label>
+    <input type="text" id="createCompany" placeholder="Company name">
+    <label>Title</label>
+    <input type="text" id="createTitle" placeholder="CEO, Founder, etc.">
+    <label>Bio</label>
+    <textarea id="createBio" placeholder="Short bio..."></textarea>
+    <label>Role</label>
+    <select id="createRole"><option value="member">Member</option><option value="admin">Admin</option></select>
+    <label>Account Status</label>
+    <select id="createStatus"><option value="approved">Approved (skip approval)</option><option value="pending">Pending</option></select>
+    <label>Membership Tier</label>
+    <select id="createTier">
+      <option value="free">Free</option><option value="premium">Premium ($99/mo)</option>
+      <option value="10x_unicorn">10xUnicorn ($997/mo)</option><option value="10x_mastermind">10x Mastermind ($10k/yr)</option>
+    </select>
+    <div id="createError" style="color:var(--red);font-size:13px;margin-top:8px;display:none"></div>
+    <div class="modal-actions">
+      <button class="cancel-btn" onclick="closeCreateModal()">Cancel</button>
+      <button class="save-btn" onclick="createMember()">Create Member</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://yzhpnaxnljvozatawclj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl6aHBuYXhubGp2b3phdGF3Y2xqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3NDc0OTIsImV4cCI6MjA5MDMyMzQ5Mn0.NHf_ABZ7nPM8s743SgUVqzl_yb6RQiie3xKMzG2iUZw';
+let accessToken = null;
+let currentUser = null;
+let allMembers = [];
+let allContacts = [];
+let allDeals = [];
+let allSignals = [];
+let allPoints = [];
+let allDailyEntries = [];
+let allStreaks = [];
+
+// ── API helpers ──
+async function api(path, opts = {}) {
+  const headers = { 'apikey': SUPABASE_KEY, 'Content-Type': 'application/json', ...opts.headers };
+  if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
+  const res = await fetch(`${SUPABASE_URL}${path}`, { ...opts, headers });
+  if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.message || err.msg || res.statusText); }
+  return res.json();
+}
+
+async function rpc(table, query = '') {
+  return api(`/rest/v1/${table}?${query}`, { headers: { 'Prefer': 'return=representation' } });
+}
+
+async function patch(table, id, data) {
+  return api(`/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH', body: JSON.stringify(data),
+    headers: { 'Prefer': 'return=representation' }
+  });
+}
+
+// ── Auth ──
+async function handleLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  try {
+    const res = await api('/auth/v1/token?grant_type=password', {
+      method: 'POST', body: JSON.stringify({ email, password })
+    });
+    accessToken = res.access_token;
+    currentUser = res.user;
+    // Check admin role
+    const profiles = await rpc('profiles', `id=eq.${currentUser.id}&select=role,account_status`);
+    if (!profiles.length || profiles[0].role !== 'admin') {
+      errEl.textContent = 'Access denied. Admin role required.';
+      errEl.style.display = 'block';
+      accessToken = null;
+      return;
+    }
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('adminEmail').textContent = email;
+    await loadAllData();
+  } catch (e) {
+    errEl.textContent = e.message || 'Login failed';
+    errEl.style.display = 'block';
+  }
+}
+
+function handleLogout() {
+  accessToken = null;
+  currentUser = null;
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+// ── Data Loading ──
+async function loadAllData() {
+  try {
+    [allMembers, allContacts, allDeals, allSignals, allPoints, allDailyEntries, allStreaks] = await Promise.all([
+      rpc('profiles', 'select=*&order=created_at.desc'),
+      rpc('contacts', 'select=*,profiles!contacts_user_id_fkey(display_name)&order=created_at.desc'),
+      rpc('deals', 'select=*,contacts(full_name),profiles!deals_user_id_fkey(display_name)&order=created_at.desc'),
+      rpc('signals', 'select=*,profiles!signals_user_id_fkey(display_name)&order=created_at.desc'),
+      rpc('points', 'select=*'),
+      rpc('daily_entries', 'select=user_id,entry_date,status&order=entry_date.desc&limit=5000'),
+      rpc('streaks', 'select=*'),
+    ]);
+  } catch(e) {
+    [allMembers, allContacts, allDeals, allSignals, allPoints] = await Promise.all([
+      rpc('profiles', 'select=*&order=created_at.desc'),
+      rpc('contacts', 'select=*&order=created_at.desc'),
+      rpc('deals', 'select=*&order=created_at.desc'),
+      rpc('signals', 'select=*&order=created_at.desc'),
+      rpc('points', 'select=*'),
+    ]);
+    allDailyEntries = []; allStreaks = [];
+  }
+  renderOverview();
+  renderMembers();
+  renderPending();
+  renderContacts();
+  renderDeals();
+  renderSignals();
+  renderAnalytics();
+}
+
+// ── Toast ──
+function showToast(msg, isError = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isError ? 'toast error' : 'toast';
+  t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+
+// ── Navigation ──
+function switchSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`sec-${name}`).classList.add('active');
+  el.classList.add('active');
+}
+
+// ── Helper: date string YYYY-MM-DD ──
+function toDateStr(d) { return d.toISOString().slice(0, 10); }
+function daysAgo(n) { const d = new Date(); d.setDate(d.getDate() - n); return toDateStr(d); }
+
+// ── OVERVIEW ──
+function renderOverview() {
+  const pending = allMembers.filter(m => m.account_status === 'pending').length;
+  const approved = allMembers.filter(m => m.account_status === 'approved').length;
+  const totalPipeline = allDeals.reduce((s, d) => s + (d.value || 0), 0);
+  const wonValue = allDeals.filter(d => d.stage === 'closed_won').reduce((s, d) => s + (d.value || 0), 0);
+  const activeSignals = allSignals.filter(s => s.status === 'active' || s.status === 'not_started').length;
+
+  // Live / DAU calculations
+  const today = toDateStr(new Date());
+  const todayEntries = allDailyEntries.filter(e => e.entry_date === today);
+  const uniqueTodayUsers = new Set(todayEntries.map(e => e.user_id)).size;
+
+  // Active today (entries created today OR points earned today)
+  const todayPoints = allPoints.filter(p => p.created_at && p.created_at.startsWith(today));
+  const activeTodayUsers = new Set([...todayEntries.map(e => e.user_id), ...todayPoints.map(p => p.user_id)]).size;
+
+  // Weekly active (last 7 days)
+  const week7 = daysAgo(7);
+  const weekEntries = allDailyEntries.filter(e => e.entry_date >= week7);
+  const weeklyActive = new Set(weekEntries.map(e => e.user_id)).size;
+
+  // Monthly active (last 30 days)
+  const day30 = daysAgo(30);
+  const monthEntries = allDailyEntries.filter(e => e.entry_date >= day30);
+  const monthlyActive = new Set(monthEntries.map(e => e.user_id)).size;
+
+  const badge = document.getElementById('pendingBadge');
+  if (pending > 0) { badge.style.display = 'inline'; badge.textContent = pending; }
+  else badge.style.display = 'none';
+
+  document.getElementById('overviewStats').innerHTML = `
+    <div class="stat-card stat-live"><div class="stat-label"><span class="live-dot"></span>Active Today</div><div class="stat-value green">${activeTodayUsers}</div><div class="stat-sub">${uniqueTodayUsers} daily entries</div></div>
+    <div class="stat-card"><div class="stat-label">Weekly Active (7d)</div><div class="stat-value cyan">${weeklyActive}</div><div class="stat-sub">unique users</div></div>
+    <div class="stat-card"><div class="stat-label">Monthly Active (30d)</div><div class="stat-value purple">${monthlyActive}</div><div class="stat-sub">unique users</div></div>
+    <div class="stat-card"><div class="stat-label">Total Members</div><div class="stat-value purple">${allMembers.length}</div><div class="stat-sub">${approved} approved</div></div>
+    <div class="stat-card"><div class="stat-label">Pending Approval</div><div class="stat-value orange">${pending}</div><div class="stat-sub">awaiting review</div></div>
+    <div class="stat-card"><div class="stat-label">Pipeline Value</div><div class="stat-value green">$${totalPipeline.toLocaleString()}</div><div class="stat-sub">$${wonValue.toLocaleString()} closed won</div></div>
+    <div class="stat-card"><div class="stat-label">Active Signals</div><div class="stat-value purple">${activeSignals}</div><div class="stat-sub">${allSignals.length} total</div></div>
+    <div class="stat-card"><div class="stat-label">Total Deals</div><div class="stat-value cyan">${allDeals.length}</div></div>
+  `;
+
+  // Recent signups
+  document.getElementById('recentSignups').innerHTML = allMembers.slice(0, 8).map(m => `
+    <tr>
+      <td><div class="avatar-cell"><div class="avatar-circle">${m.emoji || '👤'}</div>${m.display_name || m.full_name || 'Unknown'}</div></td>
+      <td style="color:var(--text2)">${m.email || ''}</td>
+      <td>${m.company || '-'}</td>
+      <td><span class="badge badge-${m.account_status}">${m.account_status}</span></td>
+      <td style="color:var(--text3)">${m.created_at ? new Date(m.created_at).toLocaleDateString() : '-'}</td>
+    </tr>
+  `).join('');
+
+  // Engagement heatmap (last 7 days)
+  renderHeatmap();
+  renderCharts();
+  renderDAUChart();
+}
+
+function renderCharts() {
+  // Member by status
+  const statusCounts = {};
+  allMembers.forEach(m => { statusCounts[m.account_status || 'unknown'] = (statusCounts[m.account_status || 'unknown'] || 0) + 1; });
+
+  new Chart(document.getElementById('memberChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(statusCounts),
+      datasets: [{ data: Object.values(statusCounts), backgroundColor: ['#00FF9D', '#FFB800', '#FF4B6E', '#6B6B8D'], borderWidth: 0 }]
+    },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#B0B0CC' } } } }
+  });
+
+  // Deal pipeline
+  const stages = ['lead', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
+  const stageValues = stages.map(s => allDeals.filter(d => d.stage === s).reduce((sum, d) => sum + (d.value || 0), 0));
+  new Chart(document.getElementById('dealChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Lead', 'Proposal', 'Negotiation', 'Won', 'Lost'],
+      datasets: [{ data: stageValues, backgroundColor: ['#06B6D4', '#A855F7', '#FFB800', '#00FF9D', '#FF4B6E'], borderRadius: 6 }]
+    },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#6B6B8D' }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#6B6B8D' }, grid: { display: false } } } }
+  });
+}
+
+// ── MEMBERS ──
+let memberFilter = 'all';
+let memberSearch = '';
+
+function renderMembers() {
+  let filtered = allMembers;
+  if (memberFilter !== 'all') filtered = filtered.filter(m => m.account_status === memberFilter);
+  if (memberSearch) filtered = filtered.filter(m =>
+    (m.display_name || '').toLowerCase().includes(memberSearch) ||
+    (m.email || '').toLowerCase().includes(memberSearch) ||
+    (m.company || '').toLowerCase().includes(memberSearch)
+  );
+
+  document.getElementById('membersTable').innerHTML = filtered.map(m => `
+    <tr>
+      <td><div class="avatar-cell"><div class="avatar-circle">${m.emoji || '👤'}</div>${m.display_name || m.full_name || 'Unknown'}</div></td>
+      <td style="color:var(--text2)">${m.email || ''}</td>
+      <td>${m.company || '-'}</td>
+      <td><span class="badge badge-${m.role}">${m.role}</span></td>
+      <td><span class="badge badge-${m.account_status}">${m.account_status}</span></td>
+      <td><span class="badge badge-${m.membership_tier === '10x_unicorn' || m.membership_tier === '10x_mastermind' ? '10x' : m.membership_tier || 'free'}">${(m.membership_tier || 'free').replace('_', ' ')}</span></td>
+      <td>
+        <button class="action-btn" onclick="editMember('${m.id}')">Edit</button>
+        ${m.account_status === 'approved' ? `<button class="action-btn deactivate" onclick="setStatus('${m.id}','deactivated')">Deactivate</button>` : ''}
+        ${m.account_status === 'deactivated' ? `<button class="action-btn approve" onclick="setStatus('${m.id}','approved')">Reactivate</button>` : ''}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function filterMembers(status, btn) {
+  memberFilter = status;
+  document.querySelectorAll('#sec-members .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMembers();
+}
+function searchMembers(q) { memberSearch = q.toLowerCase(); renderMembers(); }
+
+// ── PENDING ──
+function renderPending() {
+  const pending = allMembers.filter(m => m.account_status === 'pending');
+  document.getElementById('pendingTable').innerHTML = pending.length ? pending.map(m => `
+    <tr>
+      <td><div class="avatar-cell"><div class="avatar-circle">${m.emoji || '👤'}</div>${m.display_name || m.full_name || 'Unknown'}</div></td>
+      <td style="color:var(--text2)">${m.email || ''}</td>
+      <td>${m.company || '-'}</td>
+      <td style="color:var(--text2);max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.bio || '-'}</td>
+      <td style="color:var(--text3)">${m.created_at ? new Date(m.created_at).toLocaleDateString() : '-'}</td>
+      <td>
+        <button class="action-btn approve" onclick="setStatus('${m.id}','approved')">Approve</button>
+        <button class="action-btn reject" onclick="setStatus('${m.id}','rejected')">Reject</button>
+        <button class="action-btn" onclick="editMember('${m.id}')">Edit</button>
+      </td>
+    </tr>
+  `).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:40px">No pending approvals</td></tr>';
+}
+
+// ── ACTIONS ──
+async function setStatus(id, status) {
+  try {
+    const updates = { account_status: status };
+    if (status === 'approved') { updates.approved_at = new Date().toISOString(); updates.approved_by = currentUser.id; }
+    await patch('profiles', id, updates);
+    const idx = allMembers.findIndex(m => m.id === id);
+    if (idx > -1) Object.assign(allMembers[idx], updates);
+    renderMembers(); renderPending(); renderOverview();
+    showToast(`Member ${status} successfully`);
+  } catch (e) { showToast(e.message, true); }
+}
+
+function editMember(id) {
+  const m = allMembers.find(x => x.id === id);
+  if (!m) return;
+  document.getElementById('editId').value = id;
+  document.getElementById('editName').value = m.display_name || m.full_name || '';
+  document.getElementById('editEmail').value = m.email || '';
+  document.getElementById('editCompany').value = m.company || '';
+  document.getElementById('editBio').value = m.bio || '';
+  document.getElementById('editRole').value = m.role || 'member';
+  document.getElementById('editStatus').value = m.account_status || 'pending';
+  document.getElementById('editTier').value = m.membership_tier || 'free';
+  document.getElementById('editModal').classList.add('visible');
+}
+
+async function saveMember() {
+  const id = document.getElementById('editId').value;
+  const updates = {
+    display_name: document.getElementById('editName').value,
+    company: document.getElementById('editCompany').value || null,
+    bio: document.getElementById('editBio').value || null,
+    role: document.getElementById('editRole').value,
+    account_status: document.getElementById('editStatus').value,
+    membership_tier: document.getElementById('editTier').value,
+  };
+  if (updates.account_status === 'approved') {
+    updates.approved_at = new Date().toISOString();
+    updates.approved_by = currentUser.id;
+  }
+  try {
+    await patch('profiles', id, updates);
+    const idx = allMembers.findIndex(m => m.id === id);
+    if (idx > -1) Object.assign(allMembers[idx], updates);
+    closeModal();
+    renderMembers(); renderPending(); renderOverview();
+    showToast('Member updated successfully');
+  } catch (e) { showToast(e.message, true); }
+}
+
+function closeModal() { document.getElementById('editModal').classList.remove('visible'); }
+
+// ── CONTACTS ──
+let contactSearch = '';
+function renderContacts() {
+  let filtered = allContacts;
+  if (contactSearch) filtered = filtered.filter(c =>
+    (c.full_name || '').toLowerCase().includes(contactSearch) ||
+    (c.company || '').toLowerCase().includes(contactSearch)
+  );
+  document.getElementById('contactsTable').innerHTML = filtered.map(c => `
+    <tr>
+      <td>${c.full_name}</td>
+      <td>${c.company || '-'}</td>
+      <td><span class="badge badge-${c.type === 'client' ? 'approved' : c.type === 'prospect' ? 'pending' : 'member'}">${(c.type || '').replace('_', ' ')}</span></td>
+      <td>${c.connection_level || '-'}/10</td>
+      <td>${c.is_wormhole ? '🌀 Yes' : '-'}</td>
+      <td style="color:var(--text3)">${c.profiles?.display_name || '-'}</td>
+    </tr>
+  `).join('');
+}
+function searchContacts(q) { contactSearch = q.toLowerCase(); renderContacts(); }
+
+// ── DEALS ──
+let dealFilter = 'all';
+function renderDeals() {
+  let filtered = allDeals;
+  if (dealFilter !== 'all') filtered = filtered.filter(d => d.stage === dealFilter);
+
+  const total = filtered.reduce((s, d) => s + (d.value || 0), 0);
+  const won = filtered.filter(d => d.stage === 'closed_won').reduce((s, d) => s + (d.value || 0), 0);
+  document.getElementById('dealStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Filtered Pipeline</div><div class="stat-value green">$${total.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">Won Revenue</div><div class="stat-value cyan">$${won.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">Deals Shown</div><div class="stat-value purple">${filtered.length}</div></div>
+  `;
+
+  const stageColors = { lead: 'cyan', proposal: 'purple', negotiation: 'orange', closed_won: 'green', closed_lost: 'red' };
+  document.getElementById('dealsTable').innerHTML = filtered.map(d => `
+    <tr>
+      <td>${d.title}</td>
+      <td style="font-weight:700;color:var(--green)">$${(d.value || 0).toLocaleString()}</td>
+      <td><span class="badge badge-${stageColors[d.stage] === 'orange' ? 'pending' : stageColors[d.stage] === 'green' ? 'approved' : stageColors[d.stage] === 'red' ? 'rejected' : 'member'}">${(d.stage || '').replace('_', ' ')}</span></td>
+      <td>${d.contacts?.full_name || '-'}</td>
+      <td style="color:var(--text3)">${d.expected_close_date ? new Date(d.expected_close_date).toLocaleDateString() : '-'}</td>
+      <td style="color:var(--text3)">${d.profiles?.display_name || '-'}</td>
+    </tr>
+  `).join('');
+}
+function filterDeals(stage, btn) {
+  dealFilter = stage;
+  document.querySelectorAll('#sec-deals .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDeals();
+}
+
+// ── SIGNALS ──
+function renderSignals() {
+  const typeColors = { revenue_generating: 'green', '10x_action': 'orange', marketing: 'purple', general_business: 'cyan', relational: 'pink' };
+  document.getElementById('signalsTable').innerHTML = allSignals.map(s => `
+    <tr>
+      <td>${s.title}</td>
+      <td><span class="badge badge-${s.type === 'revenue_generating' ? 'approved' : s.type === '10x_action' ? 'pending' : 'member'}">${(s.type || '').replace('_', ' ')}</span></td>
+      <td style="font-weight:700;color:var(--purple)">${s.score || '-'}/10</td>
+      <td><span class="badge badge-${s.status === 'completed' ? 'approved' : s.status === 'active' ? 'pending' : 'member'}">${s.status}</span></td>
+      <td style="color:var(--text3)">${s.due_date || '-'}</td>
+      <td style="color:var(--text3)">${s.profiles?.display_name || '-'}</td>
+    </tr>
+  `).join('');
+}
+
+// ── ANALYTICS ──
+function renderAnalytics() {
+  const totalPoints = allPoints.reduce((s, p) => s + (p.amount || 0), 0);
+  const wormholeContacts = allContacts.filter(c => c.is_wormhole).length;
+  const avgConnection = allContacts.length ? (allContacts.reduce((s, c) => s + (c.connection_level || 0), 0) / allContacts.length).toFixed(1) : 0;
+
+  document.getElementById('analyticsStats').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Total Points Earned</div><div class="stat-value purple">${totalPoints.toLocaleString()}</div></div>
+    <div class="stat-card"><div class="stat-label">Wormhole Contacts</div><div class="stat-value cyan">${wormholeContacts}</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Connection Level</div><div class="stat-value green">${avgConnection}</div></div>
+  `;
+
+  // Signal types
+  const signalTypes = {};
+  allSignals.forEach(s => { signalTypes[s.type || 'unknown'] = (signalTypes[s.type || 'unknown'] || 0) + 1; });
+  new Chart(document.getElementById('signalTypeChart'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(signalTypes).map(t => t.replace('_', ' ')), datasets: [{ data: Object.values(signalTypes), backgroundColor: ['#00FF9D', '#FFB800', '#A855F7', '#06B6D4', '#E040FB'], borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#B0B0CC' } } } }
+  });
+
+  // Contact types
+  const contactTypes = {};
+  allContacts.forEach(c => { contactTypes[c.type || 'unknown'] = (contactTypes[c.type || 'unknown'] || 0) + 1; });
+  new Chart(document.getElementById('contactTypeChart'), {
+    type: 'doughnut',
+    data: { labels: Object.keys(contactTypes).map(t => t.replace('_', ' ')), datasets: [{ data: Object.values(contactTypes), backgroundColor: ['#A855F7', '#06B6D4', '#FFB800', '#00FF9D', '#FF4B6E'], borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { labels: { color: '#B0B0CC' } } } }
+  });
+
+  // Points leaderboard
+  const pointsByUser = {};
+  allPoints.forEach(p => { pointsByUser[p.user_id] = (pointsByUser[p.user_id] || 0) + p.amount; });
+  const top10 = Object.entries(pointsByUser).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const top10Labels = top10.map(([uid]) => { const m = allMembers.find(x => x.id === uid); return m?.display_name || 'Unknown'; });
+  new Chart(document.getElementById('leaderChart'), {
+    type: 'bar',
+    data: { labels: top10Labels, datasets: [{ data: top10.map(t => t[1]), backgroundColor: '#A855F7', borderRadius: 6 }] },
+    options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#6B6B8D' }, grid: { color: '#2a2a4a' } }, y: { ticks: { color: '#B0B0CC' }, grid: { display: false } } } }
+  });
+
+  // Deal values by stage
+  const stages = ['lead', 'proposal', 'negotiation', 'closed_won', 'closed_lost'];
+  const stageValues = stages.map(s => allDeals.filter(d => d.stage === s).reduce((sum, d) => sum + (d.value || 0), 0));
+  new Chart(document.getElementById('dealValueChart'), {
+    type: 'bar',
+    data: { labels: ['Lead', 'Proposal', 'Negotiation', 'Won', 'Lost'], datasets: [{ data: stageValues, backgroundColor: ['#06B6D4', '#A855F7', '#FFB800', '#00FF9D', '#FF4B6E'], borderRadius: 6 }] },
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { ticks: { color: '#6B6B8D', callback: v => '$' + v.toLocaleString() }, grid: { color: '#2a2a4a' } }, x: { ticks: { color: '#6B6B8D' }, grid: { display: false } } } }
+  });
+}
+
+// ── DAU Chart ──
+function renderDAUChart() {
+  const labels = [];
+  const data = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = daysAgo(i);
+    labels.push(new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    const users = new Set(allDailyEntries.filter(e => e.entry_date === d).map(e => e.user_id)).size;
+    data.push(users);
+  }
+  new Chart(document.getElementById('dauChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        borderColor: '#A855F7',
+        backgroundColor: 'rgba(168,85,247,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: '#A855F7',
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#6B6B8D', stepSize: 1 }, grid: { color: '#2a2a4a' } },
+        x: { ticks: { color: '#6B6B8D', maxTicksLimit: 10 }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Heatmap (users x days) ──
+function renderHeatmap() {
+  const container = document.getElementById('heatmapContainer');
+  if (!container) return;
+  // Show top 10 active users over last 7 days
+  const days = [];
+  for (let i = 6; i >= 0; i--) days.push(daysAgo(i));
+
+  // Find users with entries in last 7 days
+  const userActivity = {};
+  allDailyEntries.filter(e => e.entry_date >= days[0]).forEach(e => {
+    if (!userActivity[e.user_id]) userActivity[e.user_id] = {};
+    userActivity[e.user_id][e.entry_date] = e.status || 'ready';
+  });
+
+  const userIds = Object.keys(userActivity).slice(0, 12);
+  const statusColors = {
+    'ten_x_unicorn_win': '#FFB800',
+    'priority_win': '#00FF9D',
+    'stacking_wins': '#A855F7',
+    'course_corrected_win': '#06B6D4',
+    'lesson_win': '#E040FB',
+    'ready': '#3a3a6a',
+    'not_prepared': '#2a2a4a',
+    'miss': '#FF4B6E',
+  };
+
+  let html = '<table style="width:100%;font-size:11px"><thead><tr><th style="text-align:left;color:var(--text3);padding:4px 8px">Member</th>';
+  days.forEach(d => {
+    html += `<th style="text-align:center;color:var(--text3);padding:4px">${new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short'})}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  userIds.forEach(uid => {
+    const m = allMembers.find(x => x.id === uid);
+    const name = m ? (m.display_name || m.full_name || '?').split(' ')[0] : '?';
+    html += `<tr><td style="color:var(--text2);padding:4px 8px;white-space:nowrap">${m?.emoji || '👤'} ${name}</td>`;
+    days.forEach(d => {
+      const status = userActivity[uid]?.[d];
+      const color = status ? (statusColors[status] || '#3a3a6a') : '#1a1a2e';
+      html += `<td style="text-align:center;padding:4px"><div style="width:28px;height:28px;border-radius:6px;background:${color};margin:auto;opacity:${status ? 0.85 : 0.2}" title="${status || 'no entry'}"></div></td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  if (!userIds.length) html = '<p style="color:var(--text3);text-align:center;padding:20px">No activity data yet</p>';
+  container.innerHTML = html;
+}
+
+// ── Create Member ──
+function openCreateMember() {
+  document.getElementById('createEmail').value = '';
+  document.getElementById('createPassword').value = '10xUnicorn2026!';
+  document.getElementById('createName').value = '';
+  document.getElementById('createCompany').value = '';
+  document.getElementById('createTitle').value = '';
+  document.getElementById('createBio').value = '';
+  document.getElementById('createRole').value = 'member';
+  document.getElementById('createStatus').value = 'approved';
+  document.getElementById('createTier').value = 'free';
+  document.getElementById('createError').style.display = 'none';
+  document.getElementById('createModal').classList.add('visible');
+}
+
+function closeCreateModal() {
+  document.getElementById('createModal').classList.remove('visible');
+}
+
+async function createMember() {
+  const email = document.getElementById('createEmail').value.trim();
+  const password = document.getElementById('createPassword').value;
+  const name = document.getElementById('createName').value.trim();
+  const errEl = document.getElementById('createError');
+  errEl.style.display = 'none';
+
+  if (!email || !password || !name) {
+    errEl.textContent = 'Email, password, and name are required.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Password must be at least 8 characters.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  try {
+    // Step 1: Create auth user via signup
+    const signupRes = await api('/auth/v1/signup', {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        password,
+        data: { display_name: name }
+      })
+    });
+
+    if (!signupRes.id && !signupRes.user?.id) {
+      throw new Error('Signup failed — user may already exist');
+    }
+
+    const userId = signupRes.id || signupRes.user?.id;
+
+    // Step 2: Update the auto-created profile
+    const updates = {
+      display_name: name,
+      full_name: name,
+      email: email,
+      company: document.getElementById('createCompany').value || null,
+      title: document.getElementById('createTitle').value || null,
+      bio: document.getElementById('createBio').value || null,
+      role: document.getElementById('createRole').value,
+      account_status: document.getElementById('createStatus').value,
+      membership_tier: document.getElementById('createTier').value,
+      onboarding_completed: true,
+    };
+
+    if (updates.account_status === 'approved') {
+      updates.approved_at = new Date().toISOString();
+      updates.approved_by = currentUser.id;
+    }
+
+    // Small delay for trigger to create profile
+    await new Promise(r => setTimeout(r, 1500));
+    await patch('profiles', userId, updates);
+
+    closeCreateModal();
+    showToast(`Member "${name}" created successfully!`);
+    await loadAllData();
+  } catch (e) {
+    errEl.textContent = e.message || 'Failed to create member';
+    errEl.style.display = 'block';
+  }
+}
+
+// Override renderCharts to include DAU
+const _origRenderCharts = renderCharts;
+// We need to redefine renderCharts
+function renderChartsWithDAU() {
+  _origRenderCharts();
+  renderDAUChart();
+}
+
+// Enter key on password
+document.getElementById('loginPassword').addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+</script>
+</body>
+</html>

@@ -1,1743 +1,2212 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, RefreshControl, Modal, Alert,
-  KeyboardAvoidingView, Platform,
+  StyleSheet,
+  View,
+  ScrollView,
+  RefreshControl,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Switch,
+  Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
+  Dimensions,
+  Animated as RNAnimated,
+  Easing,
+  FlatList,
+  PanResponder,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { Swipeable } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { api } from '../../src/utils/api';
-import { Colors, Spacing, Radius, FontSize, DETERMINATION_EMOJIS, STATUS_LABELS, STATUS_COLORS, FIVE_CORE_ACTIONS } from '../../src/constants/theme';
-import { DeterminationSlider } from '../../src/components/DeterminationSlider';
-import { CalendarContent, getSmartDefaultDate } from '../../src/components/CalendarPicker';
+import { router } from 'expo-router';
+import { supabase } from '../../src/utils/supabase';
+import { useAuth } from '../../src/context/AuthContext';
+import CosmicBackground from '../../src/components/CosmicBackground';
+import UnicornHeader from '../../src/components/UnicornHeader';
+import {
+  dailyEntries,
+  signals,
+  contacts,
+  goals,
+  streaks,
+  pointsDb,
+} from '../../src/utils/database';
+import {
+  buildAIContext,
+  getSuggestedPrompts,
+  generateActionReport,
+} from '../../src/utils/ai-companion';
+import {
+  Colors,
+  Spacing,
+  BorderRadius,
+  Typography,
+  DETERMINATION_EMOJIS,
+  FIVE_CORE_ACTIONS,
+  STATUS_LABELS,
+  STATUS_COLORS,
+  SIGNAL_TYPE_LABELS,
+} from '../../src/constants/theme';
+import { DailyEntry, Signal, Contact, Goal, DayStatus } from '../../src/types/database';
 
-const getToday = () => new Date().toISOString().split('T')[0];
-const formatDate = (d: string) => {
-  const date = new Date(d + 'T12:00:00');
-  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-};
+const { width } = Dimensions.get('window');
 
-// Format date to YYYY-MM-DD (ISO standard)
-const toISODate = (d: Date) => d.toISOString().split('T')[0];
+// ─── 10X Unicorn Checklist items ────────────────────────────────────────────
+const UNICORN_CHECKLIST = [
+  { key: 'tenx', label: 'Top 10x Action Complete', sub: 'Set your 10x focus above' },
+  { key: 'wormhole', label: 'Wormhole Relationship Activated', sub: 'Set contact below' },
+  { key: 'future', label: '7-Min Future Self Meditation', sub: 'Connect with your highest self' },
+  { key: 'tomorrow', label: 'Tomorrow Prepared', sub: "Plan tomorrow's priorities now" },
+  { key: 'nodistraction', label: 'No Distraction / Course Corrected', sub: 'Locked in or recovered fast' },
+];
 
-const STATUS_OPTIONS = ['ready', 'priority_win', '10x_unicorn_win', 'loss', 'lesson', 'course_corrected'];
-
-export default function TodayScreen() {
-  const router = useRouter();
-  const [currentDate, setCurrentDate] = useState(getToday());
-  const [entry, setEntry] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+const TODAY_SCREEN = () => {
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [dailyEntry, setDailyEntry] = useState<DailyEntry | null>(null);
+  const [todaysSignals, setTodaysSignals] = useState<Signal[]>([]);
+  const [wormholeContacts, setWormholeContacts] = useState<Contact[]>([]);
+  const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [compoundStreak, setCompoundStreak] = useState(0);
-  const [habitTitle, setHabitTitle] = useState('');
-  const [habitTarget, setHabitTarget] = useState(0);
-  const [showStatusPicker, setShowStatusPicker] = useState(false);
-  const [profileData, setProfileData] = useState<any>(null);
-  const [showCompoundCounter, setShowCompoundCounter] = useState(false);
-  const [compoundCountInput, setCompoundCountInput] = useState('');
-  
-  // Signals state
-  const [signals, setSignals] = useState<any[]>([]);
-  const [showAddSignal, setShowAddSignal] = useState(false);
-  const [showEditSignal, setShowEditSignal] = useState<any>(null);
-  const [signalForm, setSignalForm] = useState({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', due_date: '' });
-  const [deals, setDeals] = useState<any[]>([]);
-  const [topSignal, setTopSignal] = useState<any>(null);
-  const [completedSignals, setCompletedSignals] = useState<Set<string>>(new Set());
-  const [showCalendar, setShowCalendar] = useState(false);
-  const [editCalendar, setEditCalendar] = useState(false);
-  
-  // Wormhole contacts state
-  const [wormholeContacts, setWormholeContacts] = useState<any[]>([]);
-  const [showWormholePicker, setShowWormholePicker] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [actionReport, setActionReport] = useState<string>('');
+  const [showActionReport, setShowActionReport] = useState(false);
+  const [statusPickerVisible, setStatusPickerVisible] = useState(false);
+  const [contactSearchVisible, setContactSearchVisible] = useState(false);
+  const [contactSearch, setContactSearch] = useState('');
+  const [compoundEditing, setCompoundEditing] = useState(false);
+  const [compoundInputText, setCompoundInputText] = useState('');
+  const [goalCurrentEditing, setGoalCurrentEditing] = useState(false);
+  const [goalCurrentText, setGoalCurrentText] = useState('');
+  const [goalCurrentNumber, setGoalCurrentNumber] = useState(0);
 
-  const isToday = currentDate === getToday();
+  // Form state
+  const [determination, setDetermination] = useState(5);
+  const [tenXFocus, setTenXFocus] = useState('');
+  const [tenXAction, setTenXAction] = useState('');
+  const [tenXComplete, setTenXComplete] = useState(false);
+  const [futureReflection, setFutureReflection] = useState('');
+  const [futureComplete, setFutureComplete] = useState(false);
+  const [dailyCompound, setDailyCompound] = useState(0);
+  const [compoundTarget, setCompoundTarget] = useState(5);
+  const [selectedWormholeContact, setSelectedWormholeContact] =
+    useState<Contact | null>(null);
+  const wormholePointsAwarded = useRef(false); // Only award wormhole pts once per day
+  const [focusReflection, setFocusReflection] = useState('');
+  const [distractionText, setDistractionText] = useState('');
+  const [courseCorrected, setCourseCorrected] = useState(false);
+  const [tomorrowPrepared, setTomorrowPrepared] = useState(false);
+  const [checklistCollapsed, setChecklistCollapsed] = useState(false);
 
-  // Helper to normalize date strings to YYYY-MM-DD
-  const normalizeDate = (d: string) => {
-    if (!d) return '';
-    // Already YYYY-MM-DD
-    if (d.length === 10 && d[4] === '-') return d;
-    // MM/DD/YY format
-    if (d.includes('/')) {
-      const parts = d.split('/');
-      if (parts.length === 3) {
-        const [mm, dd, yy] = parts;
-        return `20${yy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
-      }
-    }
-    // ISO datetime
-    if (d.includes('T')) return d.split('T')[0];
-    return d;
-  };
+  // Animated gradient for WIN banner
+  const winBannerAnim = useRef(new RNAnimated.Value(0)).current;
+  // Seamless flowing gradient — translateX on a 2× wide gradient strip
+  const winFlowAnim = useRef(new RNAnimated.Value(0)).current;
+  const [winBannerWidth, setWinBannerWidth] = useState(320);
+  const checklistBorderAnim = useRef(new RNAnimated.Value(0)).current;
+  const [borderProgress, setBorderProgress] = useState(0);
 
-  const loadEntry = useCallback(async () => {
+  // Points today — loaded from actual points table
+  const [pointsToday, setPointsToday] = useState(0);
+
+  const loadPointsToday = useCallback(async () => {
+    if (!user) return;
     try {
-      const [entryData, streakData, profile, signalsData, dealsData, completionsData, contactsData] = await Promise.all([
-        api.get(`/daily-entry/${currentDate}`),
-        api.get('/compound-streak'),
-        api.get('/profile'),
-        api.get('/signals'),
-        api.get('/deals'),
-        api.get(`/signal-completions?date=${currentDate}`),
-        api.get('/wormhole-contacts'),
-      ]);
-      setEntry(entryData);
-      setCompoundStreak(streakData.streak);
-      setHabitTitle(streakData.habit?.habit_title || 'Daily Habit');
-      setHabitTarget(streakData.habit?.target_number || 0);
-      setProfileData(profile);
-      setDeals(dealsData || []);
-      setWormholeContacts(contactsData || []);
-      
-      // Track completed signals
-      const completed = new Set((completionsData || []).map((c: any) => c.signal_id));
-      setCompletedSignals(completed);
-      
-      // Filter signals for today - use YYYY-MM-DD format
-      const todaySignals = (signalsData || []).filter((s: any) => {
-        if (!s.due_date) return false;
-        // Normalize signal date to YYYY-MM-DD for comparison
-        const sDate = normalizeDate(s.due_date);
-        return sDate === currentDate;
-      });
-      setSignals(todaySignals);
-      
-      // Find top 10x action signal for today
-      const top10x = (signalsData || []).find((s: any) => {
-        if (!s.is_top_10x_action || !s.due_date) return false;
-        const sDate = normalizeDate(s.due_date);
-        return sDate === currentDate;
-      });
-      setTopSignal(top10x);
-    } catch (e) {
-      console.error(e);
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('points')
+        .select('amount')
+        .eq('user_id', user.id)
+        .gte('created_at', today + 'T00:00:00')
+        .lte('created_at', today + 'T23:59:59');
+      const total = (data || []).reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+      setPointsToday(total);
+    } catch (e) { console.error('Points load error:', e); }
+  }, [user]);
+
+  // Helper to award points AND update the local counter immediately
+  const awardPoints = useCallback(async (amount: number, reason: string, refId?: string) => {
+    if (!user) return;
+    await pointsDb.award(user.id, amount, reason, refId);
+    setPointsToday(prev => prev + amount);
+  }, [user]);
+
+  // Signal/Contact stats for glowing boxes
+  const signalStats = useMemo(() => {
+    const total = todaysSignals.length;
+    const completed = todaysSignals.filter(s => s.status === 'complete').length;
+    const totalPoints = todaysSignals.reduce((sum, s) => sum + (s.score || 5), 0);
+    return { total, completed, totalPoints };
+  }, [todaysSignals]);
+
+  const contactStats = useMemo(() => {
+    const total = wormholeContacts.length;
+    const strongContacts = wormholeContacts.filter(c => (c.connection_level as any) >= 7).length;
+    return { total, strongContacts, hasWormhole: !!selectedWormholeContact };
+  }, [wormholeContacts, selectedWormholeContact]);
+
+  const dateStr = selectedDate.toISOString().split('T')[0];
+  const isToday = dateStr === new Date().toISOString().split('T')[0];
+
+  // ─── 10X Unicorn Checklist computed state ─────────────────────────────────
+  const unicornChecklist = useMemo(() => {
+    const hasCompletedSignal = todaysSignals.some((s) => s.status === 'complete');
+    return {
+      tenx: tenXComplete,
+      wormhole: !!selectedWormholeContact,
+      future: futureComplete,
+      tomorrow: tomorrowPrepared,
+      nodistraction: courseCorrected,
+    };
+  }, [tenXComplete, selectedWormholeContact, futureComplete, tomorrowPrepared, courseCorrected]);
+
+  const completedCount = Object.values(unicornChecklist).filter(Boolean).length;
+
+  // Auto-compute day status from checklist
+  const computedDayStatus = useMemo((): DayStatus => {
+    if (completedCount === 5) return 'ten_x_unicorn_win';
+    if (completedCount >= 3) return 'stacking_wins';
+    if (tenXComplete && completedCount === 1) return 'priority_win';
+    if (determination >= 5 || completedCount >= 1) return 'ready';
+    return 'not_prepared';
+  }, [completedCount, determination, tenXComplete]);
+
+  // Filtered contacts for search
+  const filteredContacts = useMemo(() => {
+    if (!contactSearch.trim()) return wormholeContacts;
+    const q = contactSearch.toLowerCase();
+    return wormholeContacts.filter(
+      (c) => (c.full_name || '').toLowerCase().includes(q) || (c.company || '').toLowerCase().includes(q)
+    );
+  }, [wormholeContacts, contactSearch]);
+
+  // Award / deduct bonus for 10x Unicorn Win (all 5 checklist items)
+  const prevCompletedRef = useRef(0);
+  useEffect(() => {
+    if (completedCount === 5 && prevCompletedRef.current < 5 && user && dailyEntry) {
+      awardPoints(25, '10x_unicorn_win_bonus', dailyEntry.id);
+      saveDailyEntry({ status: 'ten_x_unicorn_win' });
+    } else if (completedCount < 5 && prevCompletedRef.current === 5 && user && dailyEntry) {
+      // Lost the WIN — deduct the 25 bonus
+      awardPoints(-25, '10x_unicorn_win_bonus_lost', dailyEntry.id);
+    } else if (completedCount >= 3 && prevCompletedRef.current < 3 && user && dailyEntry) {
+      saveDailyEntry({ status: 'stacking_wins' });
+    }
+    prevCompletedRef.current = completedCount;
+  }, [completedCount]);
+
+  // Animate WIN banner gradient + checklist border when all 5 complete
+  useEffect(() => {
+    if (completedCount === 5) {
+      setChecklistCollapsed(true);
+      // Fade in the win banner
+      RNAnimated.timing(winBannerAnim, { toValue: 1, duration: 600, useNativeDriver: Platform.OS !== 'web' }).start();
+      // Seamless flowing gradient — translateX from 0 → -bannerWidth on a 2× wide strip
+      // First color === last color so the loop reset is invisible
+      winFlowAnim.setValue(0);
+      const flowLoop = RNAnimated.loop(
+        RNAnimated.timing(winFlowAnim, {
+          toValue: 1,
+          duration: 3000,
+          easing: Easing.linear,
+          useNativeDriver: Platform.OS !== 'web',
+        })
+      );
+      flowLoop.start();
+      // Racing border animation
+      const borderLoop = RNAnimated.loop(
+        RNAnimated.timing(checklistBorderAnim, { toValue: 1, duration: 2000, useNativeDriver: false })
+      );
+      borderLoop.start();
+      const borderListenerId = checklistBorderAnim.addListener(({ value }) => setBorderProgress(value));
+      return () => {
+        flowLoop.stop();
+        borderLoop.stop();
+        checklistBorderAnim.removeListener(borderListenerId);
+      };
+    } else {
+      winBannerAnim.setValue(0);
+      winFlowAnim.setValue(0);
+    }
+  }, [completedCount === 5]);
+
+  // Award / deduct determination bonus at level 10
+  const prevDeterminationRef = useRef(0);
+  useEffect(() => {
+    if (determination === 10 && prevDeterminationRef.current < 10 && user && dailyEntry) {
+      awardPoints(3, 'determination_level_10', dailyEntry.id);
+    } else if (determination < 10 && prevDeterminationRef.current === 10 && user && dailyEntry) {
+      awardPoints(-3, 'determination_level_10_lost', dailyEntry.id);
+    }
+    prevDeterminationRef.current = determination;
+  }, [determination]);
+
+  // Load data
+  useEffect(() => {
+    loadDailyData();
+  }, [selectedDate, user]);
+
+  const loadDailyData = async () => {
+    if (!user) return;
+    setLoading(true);
+    try {
+      const { data: entry, error } = await dailyEntries.getOrCreate(user.id, dateStr);
+      if (error || !entry) {
+        console.error('Error loading daily entry:', error);
+        setLoading(false);
+        return;
+      }
+      setDailyEntry(entry);
+      setDetermination(entry.determination_level || 5);
+      setTenXFocus(entry.ten_x_action || '');
+      const checklist0 = entry.checklist as any || {};
+      setTenXAction(checklist0.ten_x_action_text || '');
+      setTenXComplete(entry.ten_x_action_completed || false);
+      setFutureReflection(entry.future_self_journal || '');
+      setFutureComplete(entry.future_self_completed || false);
+      setDailyCompound(entry.compound_count || 0);
+      setFocusReflection(entry.focus_reflection || '');
+      // tomorrow_prepared, course_corrected, distraction_notes don't exist in DB
+      // They're now stored in the checklist jsonb field
+      const checklist = entry.checklist as any || {};
+      setTomorrowPrepared(checklist.tomorrow_prepared || false);
+      setCourseCorrected(checklist.course_corrected || false);
+      setDistractionText(checklist.distraction_notes || '');
+
+      const { data: daySignalsData } = await signals.getByDate(user.id, dateStr);
+      setTodaysSignals(daySignalsData || []);
+
+      const { data: whContactsData } = await contacts.getWormhole(user.id);
+      setWormholeContacts(whContactsData || []);
+      if (entry.wormhole_contact_id && whContactsData) {
+        const selected = whContactsData.find((c) => c.id === entry.wormhole_contact_id);
+        setSelectedWormholeContact(selected || null);
+        // If a wormhole contact was already set today, don't re-award points on re-select
+        if (selected) wormholePointsAwarded.current = true;
+      } else {
+        wormholePointsAwarded.current = false;
+      }
+
+      const { data: goal } = await goals.getActive(user.id);
+      setActiveGoal(goal || null);
+      if (goal) setGoalCurrentNumber((goal as any).current_number || 0);
+
+      const { data: profileData } = await supabase.from('profiles').select('daily_compound_target').eq('id', user.id).single();
+      setCompoundTarget(profileData?.daily_compound_target || 5);
+
+      // Load actual points earned today
+      await loadPointsToday();
+
+      if (showActionReport && entry.determination) {
+        const { data: fullProfileData } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+        const { data: goalData } = await goals.getActive(user.id);
+        const context = buildAIContext(fullProfileData || null, goalData || null, entry);
+        const report = await generateActionReport(context, todaysSignals);
+        setActionReport(report);
+      }
+    } catch (error) {
+      console.error('Error loading daily data:', error);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [currentDate]);
+  };
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadDailyData().finally(() => setRefreshing(false));
+  }, [selectedDate, user]);
+
+  // Save helpers
+  const saveDailyEntry = async (updates: Partial<DailyEntry>) => {
+    if (!user || !dailyEntry) return;
+    try {
+      const { data: updated, error } = await dailyEntries.update(dailyEntry.id, updates);
+      if (error) throw error;
+      if (updated) setDailyEntry(updated);
+    } catch (error) {
+      console.error('Error saving daily entry:', error);
+    }
+  };
+
+  const handleDateChange = (direction: 'prev' | 'next') => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
+    setSelectedDate(newDate);
+  };
+
+  const handleDeterminationChange = (value: number) => {
+    setDetermination(value);
+    saveDailyEntry({ determination_level: value });
+  };
+
+  const handleTenXFocusChange = (text: string) => { setTenXFocus(text); };
+  const handleTenXActionChange = (text: string) => { setTenXAction(text); };
+  const saveTenXAction = async () => {
+    const checklist = (dailyEntry?.checklist as any) || {};
+    checklist.ten_x_action_text = tenXAction;
+    await saveDailyEntry({ checklist });
+  };
+  const handleTenXComplete = async () => {
+    const v = !tenXComplete;
+    setTenXComplete(v);
+    await saveDailyEntry({ ten_x_action_completed: v });
+    if (user) {
+      // Award on check, deduct on uncheck — prevents duplicate points
+      awardPoints(v ? 10 : -10, '10x_action_completed', dailyEntry?.id);
+    }
+  };
+  const handleFutureReflectionChange = (text: string) => { setFutureReflection(text); };
+  const handleFutureComplete = async () => {
+    const v = !futureComplete;
+    setFutureComplete(v);
+    await saveDailyEntry({ future_self_completed: v });
+    if (user) {
+      awardPoints(v ? 3 : -3, 'future_self_completed', dailyEntry?.id);
+    }
+  };
+  const handleDailyCompoundChange = async (delta: number) => {
+    const oldVal = dailyCompound;
+    const v = Math.max(0, dailyCompound + delta);
+    setDailyCompound(v);
+    await saveDailyEntry({ compound_count: v });
+    updateGoalProgress(v);
+    if (user && compoundTarget > 0) {
+      const oldPct = (oldVal / compoundTarget) * 100;
+      const newPct = (v / compoundTarget) * 100;
+      // 1 point per 10% bracket crossed
+      const oldBrackets = Math.floor(oldPct / 10);
+      const newBrackets = Math.floor(newPct / 10);
+      const bracketDiff = newBrackets - oldBrackets;
+      if (bracketDiff !== 0) {
+        awardPoints(bracketDiff, 'daily_compound_progress', dailyEntry?.id);
+      }
+      // 10 bonus for hitting target, -10 for dropping below
+      if (v >= compoundTarget && oldVal < compoundTarget) {
+        awardPoints(10, 'daily_compound_target_hit', dailyEntry?.id);
+      } else if (oldVal >= compoundTarget && v < compoundTarget) {
+        awardPoints(-10, 'daily_compound_target_lost', dailyEntry?.id);
+      }
+    }
+  };
+  const handleCompoundManualInput = async () => {
+    const oldVal = dailyCompound;
+    const v = Math.max(0, parseInt(compoundInputText, 10) || 0);
+    setDailyCompound(v);
+    setCompoundEditing(false);
+    await saveDailyEntry({ compound_count: v });
+    updateGoalProgress(v);
+    if (user && compoundTarget > 0) {
+      const oldPct = (oldVal / compoundTarget) * 100;
+      const newPct = (v / compoundTarget) * 100;
+      const oldBrackets = Math.floor(oldPct / 10);
+      const newBrackets = Math.floor(newPct / 10);
+      const bracketDiff = newBrackets - oldBrackets;
+      if (bracketDiff !== 0) {
+        awardPoints(bracketDiff, 'daily_compound_progress', dailyEntry?.id);
+      }
+      if (v >= compoundTarget && oldVal < compoundTarget) {
+        awardPoints(10, 'daily_compound_target_hit', dailyEntry?.id);
+      } else if (oldVal >= compoundTarget && v < compoundTarget) {
+        awardPoints(-10, 'daily_compound_target_lost', dailyEntry?.id);
+      }
+    }
+  };
+  const updateGoalProgress = async (compoundVal?: number) => {
+    if (!activeGoal || !activeGoal.target_number) return;
+    // Progress = current number / target number
+    const current = goalCurrentNumber;
+    const pct = Math.min(100, Math.round((current / activeGoal.target_number) * 100));
+    await goals.update(activeGoal.id, { progress: pct });
+    setActiveGoal({ ...activeGoal, progress: pct });
+  };
+  const handleGoalCurrentChange = async (delta: number) => {
+    const v = Math.max(0, goalCurrentNumber + delta);
+    setGoalCurrentNumber(v);
+    if (activeGoal && activeGoal.target_number) {
+      const oldPct = activeGoal.progress || 0;
+      const pct = Math.min(100, Math.round((v / activeGoal.target_number) * 100));
+      await goals.update(activeGoal.id, { progress: pct, current_number: v } as any);
+      setActiveGoal({ ...activeGoal, progress: pct });
+      if (user && pct !== oldPct) {
+        const pctDiff = pct - oldPct; // positive = gain, negative = loss
+        awardPoints(pctDiff * 3, 'goal_progress', activeGoal.id);
+      }
+    }
+  };
+  const handleGoalCurrentManualInput = async () => {
+    const v = Math.max(0, parseFloat(goalCurrentText) || 0);
+    setGoalCurrentNumber(v);
+    setGoalCurrentEditing(false);
+    if (activeGoal && activeGoal.target_number) {
+      const oldPct = activeGoal.progress || 0;
+      const pct = Math.min(100, Math.round((v / activeGoal.target_number) * 100));
+      await goals.update(activeGoal.id, { progress: pct, current_number: v } as any);
+      setActiveGoal({ ...activeGoal, progress: pct });
+      // Award/deduct based on % change from manual edit
+      if (user && pct !== oldPct) {
+        const pctDiff = pct - oldPct;
+        awardPoints(pctDiff * 3, 'goal_progress', activeGoal.id);
+      }
+    }
+  };
+  const SIGNAL_POINTS: Record<string, number> = {
+    revenue_generating: 10,
+    '10x_action': 8,
+    marketing: 5,
+    relational: 5,
+    general_business: 3,
+  };
+  const handleSignalToggle = async (signal: Signal) => {
+    const newStatus = signal.status === 'complete' ? 'not_started' : 'complete';
+    const { data: updated } = await signals.update(signal.id, { status: newStatus });
+    if (updated) {
+      setTodaysSignals(todaysSignals.map((s) => (s.id === signal.id ? updated : s)));
+      // Award on complete, deduct on revert — prevents duplicate points
+      if (user) {
+        const pts = signal.score || SIGNAL_POINTS[signal.type] || 5;
+        awardPoints(
+          newStatus === 'complete' ? pts : -pts,
+          `signal_${signal.type}_completed`,
+          signal.id
+        );
+      }
+    }
+  };
+  const handleWormholeSelect = async (contact: Contact) => {
+    setSelectedWormholeContact(contact);
+    setContactSearchVisible(false);
+    setContactSearch('');
+    await saveDailyEntry({ wormhole_contact_id: contact.id });
+    // Award wormhole points only once per day — not on every re-select
+    if (user && !wormholePointsAwarded.current) {
+      awardPoints(5, 'wormhole_activated', dailyEntry?.id);
+      wormholePointsAwarded.current = true;
+    }
+  };
+  const handleFocusReflectionChange = (text: string) => { setFocusReflection(text); };
+  const handleTomorrowPrepared = async () => {
+    const v = !tomorrowPrepared;
+    setTomorrowPrepared(v);
+    const checklist = (dailyEntry?.checklist as any) || {};
+    checklist.tomorrow_prepared = v;
+    await saveDailyEntry({ checklist });
+    if (user) {
+      awardPoints(v ? 2 : -2, 'tomorrow_prepared', dailyEntry?.id);
+    }
+  };
+  const handleCourseCorrected = async () => {
+    const v = !courseCorrected;
+    setCourseCorrected(v);
+    const checklist = (dailyEntry?.checklist as any) || {};
+    checklist.course_corrected = v;
+    await saveDailyEntry({ checklist });
+    if (user) {
+      awardPoints(v ? 2 : -2, 'course_corrected', dailyEntry?.id);
+    }
+  };
+  const saveTenXFocus = async () => { await saveDailyEntry({ ten_x_action: tenXFocus }); };
+  const saveFutureReflection = async () => { await saveDailyEntry({ future_self_journal: futureReflection }); };
+  const saveFocusReflection = async () => { await saveDailyEntry({ focus_reflection: focusReflection }); };
+  const saveDistraction = async () => {
+    // Store in checklist jsonb field
+    const checklist = (dailyEntry?.checklist as any) || {};
+    checklist.distraction_notes = distractionText;
+    await saveDailyEntry({ checklist });
+  };
+
+  const handleStatusSelect = async (status: DayStatus) => {
+    setStatusPickerVisible(false);
+    await saveDailyEntry({ status });
+  };
+
+  const handleOpenActionReport = async () => {
+    if (!user) return;
+    setShowActionReport(true);
+    try {
+      const profileData = await supabase.from('profiles').select('*').eq('id', user.id).single();
+      const goalData = await goals.getActive(user.id);
+      const context = buildAIContext(profileData?.data || null, goalData?.data || null, dailyEntry);
+        const report = await generateActionReport(context, todaysSignals);
+      setActionReport(report);
+    } catch (error) {
+      console.error('Error generating action report:', error);
+    }
+  };
+
+  // ─── Signal edit/manage from Today screen ─────────────────────────────────
+  const [editSignalVisible, setEditSignalVisible] = useState(false);
+  const [editSignalData, setEditSignalData] = useState<Partial<Signal>>({});
+  const [addSignalVisible, setAddSignalVisible] = useState(false);
+  const [allActiveSignals, setAllActiveSignals] = useState<Signal[]>([]);
+  const [changeDateSignal, setChangeDateSignal] = useState<Signal | null>(null);
+  const [changeDateValue, setChangeDateValue] = useState('');
+
+  const openEditSignal = (signal: Signal) => {
+    setEditSignalData({ ...signal });
+    setEditSignalVisible(true);
+  };
+
+  const saveEditSignal = async () => {
+    if (!editSignalData.id) return;
+    try {
+      const { data: updated } = await signals.update(editSignalData.id, {
+        title: editSignalData.title,
+        details: editSignalData.details,
+        type: editSignalData.type,
+        score: editSignalData.score,
+        due_date: editSignalData.due_date,
+      });
+      if (updated) {
+        setTodaysSignals(todaysSignals.map((s) => (s.id === updated.id ? updated : s)));
+      }
+      setEditSignalVisible(false);
+    } catch (error) {
+      console.error('Error updating signal:', error);
+      Alert.alert('Error', 'Failed to update signal');
+    }
+  };
+
+  const deleteSignal = async (signal: Signal) => {
+    Alert.alert('Delete Signal', `Remove "${signal.title}"?`, [
+      { text: 'Cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await signals.delete(signal.id);
+            setTodaysSignals(todaysSignals.filter((s) => s.id !== signal.id));
+          } catch (error) {
+            console.error('Error deleting signal:', error);
+          }
+        },
+      },
+    ]);
+  };
+
+  const openAddSignalToday = async () => {
+    if (!user) return;
+    try {
+      const { data: allSignals } = await signals.list(user.id, { status: 'in_progress' });
+      const notStarted = await signals.list(user.id, { status: 'not_started' });
+      const combined = [...(allSignals || []), ...(notStarted?.data || [])];
+      // Filter out signals already assigned to today
+      const todayIds = new Set(todaysSignals.map((s) => s.id));
+      setAllActiveSignals(combined.filter((s) => !todayIds.has(s.id)));
+      setAddSignalVisible(true);
+    } catch (error) {
+      console.error('Error loading signals:', error);
+    }
+  };
+
+  const addSignalToToday = async (signal: Signal) => {
+    try {
+      const { data: updated } = await signals.update(signal.id, { due_date: dateStr });
+      if (updated) {
+        setTodaysSignals([...todaysSignals, updated]);
+        setAllActiveSignals(allActiveSignals.filter((s) => s.id !== signal.id));
+      }
+    } catch (error) {
+      console.error('Error adding signal to today:', error);
+    }
+  };
+
+  const openChangeDate = (signal: Signal) => {
+    setChangeDateSignal(signal);
+    setChangeDateValue(signal.due_date || dateStr);
+  };
+
+  const saveChangeDate = async () => {
+    if (!changeDateSignal) return;
+    try {
+      const { data: updated } = await signals.update(changeDateSignal.id, { due_date: changeDateValue });
+      if (updated) {
+        // If moved to a different day, remove from today's list
+        if (changeDateValue !== dateStr) {
+          setTodaysSignals(todaysSignals.filter((s) => s.id !== changeDateSignal.id));
+        } else {
+          setTodaysSignals(todaysSignals.map((s) => (s.id === updated.id ? updated : s)));
+        }
+      }
+      setChangeDateSignal(null);
+    } catch (error) {
+      console.error('Error changing date:', error);
+    }
+  };
+
+  // Draggable determination slider
+  const sliderRef = useRef<View>(null);
+  const sliderWidth = useRef(width - 72);
+  const sliderAbsLeft = useRef(0);
+  // Stable ref to avoid stale closures inside PanResponder
+  const handleDeterminationChangeRef = useRef<(v: number) => void>(() => {});
   useEffect(() => {
-    setLoading(true);
-    loadEntry();
-  }, [currentDate]);
+    handleDeterminationChangeRef.current = handleDeterminationChange;
+  });
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderTerminationRequest: () => false,
+      onPanResponderGrant: (e) => {
+        const touchPageX = e.nativeEvent.pageX;
+        // measure() gives the true absolute position — fixes drop-to-1 caused by
+        // locationX being wrong when touch lands on the overflowing thumb element
+        sliderRef.current?.measure((_fx, _fy, w, _h, pageX) => {
+          sliderAbsLeft.current = pageX;
+          sliderWidth.current = w || sliderWidth.current;
+          const x = touchPageX - pageX;
+          const pct = Math.max(0, Math.min(1, x / sliderWidth.current));
+          const val = Math.max(1, Math.min(10, Math.round(pct * 9) + 1));
+          handleDeterminationChangeRef.current(val);
+        });
+      },
+      onPanResponderMove: (e) => {
+        const x = e.nativeEvent.pageX - sliderAbsLeft.current;
+        const pct = Math.max(0, Math.min(1, x / sliderWidth.current));
+        const val = Math.max(1, Math.min(10, Math.round(pct * 9) + 1));
+        handleDeterminationChangeRef.current(val);
+      },
+    })
+  ).current;
 
-  const updateEntry = async (updates: any) => {
-    if (!entry) return;
-    setSaving(true);
-    try {
-      const updated = await api.put(`/daily-entry/${currentDate}`, updates);
-      setEntry(updated);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setSaving(false);
-    }
+  // Battery-style gradient: level 1 = solid red (dead), level 10 = full green (charged)
+  // Each level adds one more color stop, showing only the range up to current level
+  const SLIDER_LEVEL_COLORS = [
+    '#FF0000', // 1 — pure red (dead battery)
+    '#FF1A00', // 2
+    '#FF3300', // 3 — red-orange
+    '#FF6600', // 4 — orange
+    '#FF9900', // 5 — amber, no green
+    '#FFCC00', // 6 — yellow
+    '#CCDD00', // 7 — yellow-green (more yellow)
+    '#88CC00', // 8 — yellow-green
+    '#44DD44', // 9 — green with yellow tint
+    '#00FF88', // 10 — pure neon green (full charge)
+  ];
+  const getSliderColors = (): [string, string, ...string[]] => {
+    const stops = SLIDER_LEVEL_COLORS.slice(0, determination);
+    if (stops.length === 1) return [stops[0], stops[0]];
+    return stops as [string, string, ...string[]];
   };
 
-  // Create Top 10x Action as a special signal
-  const createTop10xSignal = async (actionText: string) => {
-    try {
-      const today = toISODate(new Date());
-      const signal = await api.post('/signals', {
-        name: actionText,
-        description: 'Top 10x Action',
-        impact_rating: 10,
-        due_date: today,
-        is_top_10x_action: true,
-        is_public: true,
-      });
-      setTopSignal(signal);
-      loadEntry();
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
+  const getDayStatusColor = (status?: string) => STATUS_COLORS[status || ''] || Colors.text.tertiary;
+
+  const formatDate = (date: Date) => {
+    if (isToday) return 'TODAY';
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
   };
 
-  // Complete a signal
-  const completeSignal = async (signalId: string) => {
-    try {
-      await api.post(`/signals/${signalId}/complete`, { notes: '' });
-      loadEntry();
-    } catch (e: any) {
-      Alert.alert('Error', typeof e === 'string' ? e : e?.message || e?.detail || 'Failed to complete signal');
-    }
+  const DAY_STATUS_OPTIONS: { value: DayStatus; label: string }[] = [
+    { value: 'not_prepared', label: 'Not Prepared' },
+    { value: 'ready', label: 'Ready' },
+    { value: 'stacking_wins', label: 'Stacking Wins' },
+    { value: 'priority_win', label: '⭐ Priority Win' },
+    { value: 'ten_x_unicorn_win', label: '🦄 10x Unicorn Win' },
+    { value: 'course_corrected_win', label: '🔄 Course Corrected Win' },
+    { value: 'lesson_win', label: '📖 Lesson Win' },
+    { value: 'miss', label: '❌ Miss' },
+  ];
+
+  const statusColor = getDayStatusColor(dailyEntry?.status);
+  const determinationMessages: Record<number, string> = {
+    1: "Every champion starts somewhere. You showed up.",
+    2: "Slow progress is still progress. Keep going.",
+    3: "Building momentum. One step at a time.",
+    4: "You're warming up. The engine is starting.",
+    5: "Halfway there. Push through the middle.",
+    6: "Above average. You're in the game.",
+    7: "Strong energy today. Keep this going.",
+    8: "On fire. Nothing can stop you.",
+    9: "Diamond level focus. Rare air.",
+    10: "UNICORN MODE. The universe is aligning for you!",
   };
 
-  // Uncomplete a signal (mark as not done)
-  const uncompleteSignal = async (signalId: string) => {
-    try {
-      await api.post(`/signals/${signalId}/uncomplete`, {});
-      setCompletedSignals(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(signalId);
-        return newSet;
-      });
-      loadEntry();
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
-  };
-
-  // Update an existing signal
-  const updateSignal = async (signalId: string, updates: any) => {
-    try {
-      await api.put(`/signals/${signalId}`, updates);
-      setShowEditSignal(null);
-      loadEntry();
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
-  };
-
-  // Add a new signal
-  const addSignal = async () => {
-    if (!signalForm.name?.trim()) return;
-    setSaving(true);
-    try {
-      await api.post('/signals', {
-        name: signalForm.name,
-        description: signalForm.description || '',
-        impact_rating: signalForm.impact_rating,
-        due_date: signalForm.due_date || getSmartDefaultDate(),
-        deal_id: signalForm.deal_id || null,
-        notes: signalForm.notes || '',
-        is_public: true,
-        is_top_10x_action: false,
-      });
-      setShowAddSignal(false);
-      setSignalForm({ name: '', description: '', impact_rating: 5, deal_id: '', notes: '', due_date: '' });
-      loadEntry();
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const toggleFiveItem = (key: string) => {
-    const current = entry?.five_item_statuses || {};
-    const newStatuses = { ...current, [key]: !current[key] };
-    const updates: any = { five_item_statuses: newStatuses };
-    
-    // Sync top_action with top_priority
-    if (key === 'top_action') {
-      updates.top_priority_completed = !current[key];
-    }
-    
-    // Auto-update final_status based on completed items
-    const allDone = FIVE_CORE_ACTIONS.every(a => newStatuses[a.key]);
-    const topDone = newStatuses['top_action'];
-    
-    if (allDone) {
-      // All 5 items completed = 10x Unicorn Win
-      updates.final_status = '10x_unicorn_win';
-    } else if (topDone) {
-      // Just top action completed = Priority Win
-      updates.final_status = 'priority_win';
-    } else if (entry?.final_status === '10x_unicorn_win' || entry?.final_status === 'priority_win') {
-      // If unchecking items, reset to ready only if it was auto-set
-      updates.final_status = 'ready';
-    }
-    
-    updateEntry(updates);
-  };
-
-  const navigateDate = (dir: number) => {
-    const d = new Date(currentDate + 'T12:00:00');
-    d.setDate(d.getDate() + dir);
-    setCurrentDate(d.toISOString().split('T')[0]);
-  };
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.brand.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  const determination = entry?.determination_level ?? 5;
-  const fiveStatuses = entry?.five_item_statuses || {};
-  const allFiveDone = FIVE_CORE_ACTIONS.every(a => fiveStatuses[a.key]);
-  const topActionDone = fiveStatuses['top_action'];
-  const finalStatus = entry?.final_status || 'ready';
+  // ═════════════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ═════════════════════════════════════════════════════════════════════════════
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <CosmicBackground>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <UnicornHeader>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: Colors.text.primary }}>Daily</Text>
+      </UnicornHeader>
       <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.content}
+        style={styles.scrollView}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); loadEntry(); }} tintColor={Colors.brand.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.brand.primary} />}
       >
-        {/* Date Navigation */}
+        {/* ── Date Navigation ─────────────────────────────────────────── */}
         <View style={styles.dateNav}>
-          <TouchableOpacity testID="date-prev-btn" onPress={() => navigateDate(-1)} style={styles.dateBtn}>
-            <Ionicons name="chevron-back" size={20} color={Colors.text.secondary} />
-            <Text style={styles.dateBtnText}>Yesterday</Text>
+          <TouchableOpacity onPress={() => handleDateChange('prev')} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <View style={styles.dateNavBtn}>
+              <Ionicons name="chevron-back" size={18} color={Colors.text.secondary} />
+              <Text style={styles.dateNavLabel}>Yesterday</Text>
+            </View>
           </TouchableOpacity>
-          <View style={styles.dateCenter}>
-            <Text style={styles.dateLabel}>{isToday ? 'TODAY' : formatDate(currentDate)}</Text>
-            {!isToday && (
-              <TouchableOpacity testID="date-today-btn" onPress={() => setCurrentDate(getToday())}>
-                <Text style={styles.todayLink}>Go to Today</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          <TouchableOpacity testID="date-next-btn" onPress={() => navigateDate(1)} style={styles.dateBtn}>
-            <Text style={styles.dateBtnText}>Tomorrow</Text>
-            <Ionicons name="chevron-forward" size={20} color={Colors.text.secondary} />
+          <Text style={styles.dateTitle}>{formatDate(selectedDate)}</Text>
+          <TouchableOpacity onPress={() => handleDateChange('next')} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+            <View style={styles.dateNavBtn}>
+              <Text style={styles.dateNavLabel}>Tomorrow</Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.text.secondary} />
+            </View>
           </TouchableOpacity>
         </View>
 
-        {/* Status Banner */}
-        <LinearGradient
-          colors={[
-            finalStatus === '10x_unicorn_win' || finalStatus === 'unicorn_win' ? 'rgba(168,85,247,0.2)' : 
-            finalStatus === 'priority_win' ? 'rgba(34,197,94,0.2)' : 
-            'rgba(45,45,80,0.3)',
-            'transparent'
-          ]}
-          style={styles.statusGradient}
-        >
-          <View style={[styles.statusBanner, { borderColor: STATUS_COLORS[finalStatus] || Colors.border.default }]}>
-            <Text style={[styles.statusText, { color: STATUS_COLORS[finalStatus] }]}>
-              {STATUS_LABELS[finalStatus] || 'Ready'}
-            </Text>
-            {allFiveDone && <Text style={styles.unicornEmoji}>🦄</Text>}
-            <TouchableOpacity
-              testID="status-override-btn"
-              onPress={() => setShowStatusPicker(!showStatusPicker)}
-              style={styles.overrideBtn}
+        {/* ── 10xUnicorn WIN! Banner OR Day Status Banner ────────────── */}
+        {completedCount === 5 ? (
+          <RNAnimated.View
+            style={[styles.winBanner, { opacity: winBannerAnim, overflow: 'hidden' }]}
+            onLayout={(e) => setWinBannerWidth(e.nativeEvent.layout.width)}
+          >
+            {/* 2× wide gradient strip slides left — first=last color for seamless loop */}
+            <RNAnimated.View
+              style={[
+                StyleSheet.absoluteFillObject,
+                {
+                  transform: [{
+                    translateX: winFlowAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, -winBannerWidth],
+                    }),
+                  }],
+                },
+              ]}
             >
-              <Ionicons name="create-outline" size={16} color={Colors.text.tertiary} />
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
+              <LinearGradient
+                colors={['#A855F7', '#E040FB', '#FFB800', '#00FF88', '#00BFFF', '#A855F7', '#E040FB', '#FFB800', '#00FF88', '#00BFFF', '#A855F7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{ width: winBannerWidth * 2, height: '100%' }}
+              />
+            </RNAnimated.View>
+            <Text style={[styles.winBannerText, { zIndex: 2 }]}>🦄 10xUnicorn WIN! 🏆</Text>
+          </RNAnimated.View>
+        ) : dailyEntry ? (
+          <TouchableOpacity onPress={() => setStatusPickerVisible(true)} activeOpacity={0.8}>
+            <View style={[styles.statusBanner, { borderColor: statusColor + '40' }]}>
+              <Text style={[styles.statusText, { color: statusColor }]}>
+                {(STATUS_LABELS[dailyEntry.status] || 'NOT PREPARED').toUpperCase()}
+              </Text>
+              <Ionicons name="create-outline" size={18} color={Colors.text.tertiary} />
+            </View>
+          </TouchableOpacity>
+        ) : null}
 
-        {showStatusPicker && (
-          <View style={styles.statusPicker}>
-            {STATUS_OPTIONS.map(s => (
+        {/* ── Glowing Stat Boxes ──────────────────────────────────────── */}
+        <View style={styles.glowStatsRow}>
+          <LinearGradient
+            colors={['#A855F720', '#A855F708']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.glowStatBox}
+          >
+            <Text style={styles.glowStatValue}>{signalStats.completed}/{signalStats.total}</Text>
+            <Text style={styles.glowStatLabel}>Signals Done</Text>
+          </LinearGradient>
+          <LinearGradient
+            colors={['#06B6D420', '#06B6D408']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.glowStatBox}
+          >
+            <Text style={styles.glowStatValue}>{pointsToday}</Text>
+            <Text style={styles.glowStatLabel}>Points Today</Text>
+          </LinearGradient>
+          <LinearGradient
+            colors={['#00E67620', '#00E67608']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.glowStatBox}
+          >
+            <Text style={styles.glowStatValue}>{contactStats.total}</Text>
+            <Text style={styles.glowStatLabel}>Contacts</Text>
+          </LinearGradient>
+        </View>
+
+        {/* ── Determination Level ─────────────────────────────────────── */}
+        <View style={styles.heroCard}>
+          <View style={styles.determinationHeader}>
+            <Text style={styles.heroLabel}>DETERMINATION LEVEL</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.determinationEmoji}>{DETERMINATION_EMOJIS[determination] || '🔥'}</Text>
+              <Text style={[styles.determinationNumber, { color: Colors.brand.primary }]}>{determination}</Text>
+            </View>
+          </View>
+
+          {/* Gradient slider track — draggable */}
+          <View
+            ref={sliderRef}
+            style={styles.sliderOuter}
+            {...panResponder.panHandlers}
+            onLayout={(e) => { sliderWidth.current = e.nativeEvent.layout.width; }}
+          >
+            {/* Full-spectrum dim background track */}
+            <LinearGradient
+              colors={['#FF4B4B', '#FF6B35', '#FFB800', '#BFFF00', '#00E676', '#00FF88']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.sliderTrackBg]}
+            />
+            {/* Bright filled portion */}
+            <LinearGradient
+              colors={['#FF4B4B', '#FF6B35', '#FFB800', '#BFFF00', '#00E676', '#00FF88']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.sliderGradient, { width: `${(determination / 10) * 100}%` }]}
+            />
+            <View style={[
+              styles.sliderThumb,
+              { left: `${Math.max(0, Math.min(97, (determination / 10) * 100 - 3))}%` },
+              determination === 10 && styles.sliderThumbRainbow,
+            ]}>
+              <Text style={{ fontSize: 20 }}>{DETERMINATION_EMOJIS[determination]}</Text>
+            </View>
+          </View>
+
+          <View style={styles.sliderLabels}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14 }}>🤕</Text>
+              <Text style={styles.sliderEndLabel}> Low</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 14 }}>🦄</Text>
+              <Text style={styles.sliderEndLabel}> Level 10</Text>
+            </View>
+          </View>
+
+          {/* Number buttons */}
+          <View style={styles.dotRow}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
               <TouchableOpacity
-                key={s}
-                testID={`status-option-${s}`}
-                style={[styles.statusOption, entry?.manual_override_status === s && styles.statusOptionActive]}
-                onPress={() => {
-                  updateEntry({ manual_override_status: s });
-                  setShowStatusPicker(false);
-                }}
+                key={num}
+                onPress={() => handleDeterminationChange(num)}
+                style={[styles.dotButton, determination === num && styles.dotButtonActive]}
               >
-                <View style={[styles.statusDot, { backgroundColor: STATUS_COLORS[s] }]} />
-                <Text style={styles.statusOptionText}>{STATUS_LABELS[s]}</Text>
+                <Text style={[styles.dotText, determination === num && styles.dotTextActive]}>{num}</Text>
               </TouchableOpacity>
             ))}
-            {entry?.manual_override_status && (
-              <TouchableOpacity
-                testID="status-clear-override"
-                style={styles.statusOption}
-                onPress={() => {
-                  updateEntry({ manual_override_status: null });
-                  setShowStatusPicker(false);
-                }}
-              >
-                <Text style={[styles.statusOptionText, { color: Colors.text.tertiary }]}>Clear Override</Text>
-              </TouchableOpacity>
-            )}
           </View>
-        )}
 
-        {/* Determination Slider - Always visible */}
-        <View style={styles.card}>
-          <DeterminationSlider 
-            testID="determination-slider"
-            value={determination}
-            onChange={(val) => updateEntry({ determination_level: val })}
-          />
-        </View>
-
-        {/* Intention */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Who are you being today?</Text>
-          <View style={styles.intentionRow}>
-            <Text style={styles.intentionPrefix}>I am</Text>
-            <TextInput
-              testID="intention-input"
-              style={styles.intentionInput}
-              value={entry?.intention || ''}
-              onChangeText={t => setEntry({ ...entry, intention: t })}
-              onBlur={() => updateEntry({ intention: entry?.intention })}
-              placeholder="confident and focused..."
-              placeholderTextColor={Colors.text.tertiary}
-            />
+          {/* Motivational message */}
+          <View style={styles.motivationBar}>
+            <Text style={styles.motivationText}>{determinationMessages[determination]}</Text>
           </View>
         </View>
 
-        {/* 10x Focus with Glowing Complete Button */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>
-              <Text style={styles.redText}>10x</Text> Focus
-            </Text>
-            {(topSignal?.completed_at || entry?.top_priority_completed) ? (
-              <View style={styles.completedFireBadge}>
-                <Text style={styles.fireEmoji}>🔥</Text>
-                <Text style={styles.completedText}>DONE</Text>
-              </View>
-            ) : topSignal ? (
-              <View style={styles.pointsBadge}>
-                <Text style={styles.pointsBadgeText}>+10 PTS</Text>
-              </View>
-            ) : null}
-          </View>
-          <TextInput
-            testID="focus-input"
-            style={styles.focusInput}
-            value={entry?.ten_x_focus || ''}
-            onChangeText={t => setEntry({ ...entry, ten_x_focus: t })}
-            onBlur={() => updateEntry({ ten_x_focus: entry?.ten_x_focus })}
-            placeholder="The mission of today"
-            placeholderTextColor={Colors.text.tertiary}
-            multiline
-          />
-          <View style={styles.divider} />
-          <Text style={styles.actionLabel}>Top 10x Action <Text style={styles.pointsHint}>(10 points)</Text></Text>
-          <View style={styles.actionRow}>
-            {/* Massive Glowing Complete Button */}
-            <TouchableOpacity
-              testID="top-priority-check"
-              style={[
-                styles.glowingCheckbox, 
-                (topSignal?.completed_at || entry?.top_priority_completed) && styles.glowingCheckboxCompleted
-              ]}
-              onPress={async () => {
-                if (topSignal) {
-                  if (!topSignal.completed_at && !completedSignals.has(topSignal.id)) {
-                    await completeSignal(topSignal.id);
-                    setCompletedSignals(prev => new Set([...prev, topSignal.id]));
-                    const newVal = true;
-                    updateEntry({ 
-                      top_priority_completed: newVal,
-                      five_item_statuses: { ...fiveStatuses, top_action: newVal }
-                    });
-                  } else {
-                    const newVal = !entry?.top_priority_completed;
-                    updateEntry({ 
-                      top_priority_completed: newVal,
-                      five_item_statuses: { ...fiveStatuses, top_action: newVal }
-                    });
-                  }
-                } else if (entry?.top_10x_action_text?.trim()) {
-                  await createTop10xSignal(entry.top_10x_action_text);
-                  const newVal = true;
-                  updateEntry({ 
-                    top_priority_completed: newVal,
-                    five_item_statuses: { ...fiveStatuses, top_action: newVal }
-                  });
-                } else {
-                  const newVal = !entry?.top_priority_completed;
-                  updateEntry({ 
-                    top_priority_completed: newVal,
-                    five_item_statuses: { ...fiveStatuses, top_action: newVal }
-                  });
-                }
-              }}
-            >
-              {(topSignal?.completed_at || entry?.top_priority_completed || completedSignals.has(topSignal?.id)) ? (
-                <Text style={styles.glowingFireEmoji}>🔥</Text>
-              ) : (
-                <Ionicons name="checkmark" size={28} color={Colors.text.tertiary} />
-              )}
-            </TouchableOpacity>
-            <TextInput
-              testID="top-action-input"
-              style={styles.actionInput}
-              value={topSignal?.name || entry?.top_10x_action_text || ''}
-              onChangeText={t => setEntry({ ...entry, top_10x_action_text: t })}
-              onBlur={() => {
-                if (!topSignal) {
-                  updateEntry({ top_10x_action_text: entry?.top_10x_action_text });
-                }
-              }}
-              placeholder="Clear executable task..."
-              placeholderTextColor={Colors.text.tertiary}
-              editable={!topSignal}
-            />
-            {/* Edit Signal Button */}
-            {topSignal && (
-              <TouchableOpacity
-                testID="edit-top-signal-btn"
-                style={styles.editSignalBtn}
-                onPress={() => setShowEditSignal(topSignal)}
-              >
-                <Ionicons name="pencil" size={18} color={Colors.brand.primary} />
-              </TouchableOpacity>
-            )}
-            {!topSignal && entry?.top_10x_action_text?.trim() && (
-              <TouchableOpacity
-                testID="set-top-signal-btn"
-                style={styles.setSignalBtn}
-                onPress={() => createTop10xSignal(entry.top_10x_action_text)}
-              >
-                <Text style={styles.setSignalBtnText}>Set</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Five Core Actions */}
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Text style={styles.checkEmoji}>✅</Text>
-              <Text style={styles.cardTitle}>10X UNICORN CHECKLIST</Text>
-            </View>
-            {allFiveDone && (
-              <View style={[styles.winBadge, { backgroundColor: 'rgba(168,85,247,0.2)' }]}>
-                <Text style={[styles.winBadgeText, { color: Colors.brand.primary }]}>🦄 UNICORN</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.checklistHint}>
-            All 5 = <Text style={{ color: Colors.brand.primary }}>🦄 10x Unicorn Win</Text>  •  Just #1 = <Text style={{ color: Colors.status.warning }}>⭐ Priority Win</Text>
-          </Text>
-          {allFiveDone && (
+        {/* ── Who Are You Being Today? ────────────────────────────────── */}
+        <View style={[styles.heroCard, { marginTop: Spacing.lg, paddingVertical: Spacing.xl, borderColor: Colors.brand.primary + '40' }]}>
+          <Text style={{ fontSize: 14, color: Colors.text.tertiary, letterSpacing: 2, fontWeight: '600', textAlign: 'center', marginBottom: 12 }}>WHO ARE YOU BEING TODAY?</Text>
+          <View style={styles.iAmRow}>
             <LinearGradient
-              colors={['rgba(168,85,247,0.15)', 'transparent']}
-              style={styles.unicornBanner}
+              colors={[Colors.brand.primary, '#E040FB']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.iAmBadge}
             >
-              <Text style={styles.unicornBannerText}>🦄 10x UNICORN WIN!</Text>
+              <Text style={styles.iAmPrefixBold}>I AM</Text>
             </LinearGradient>
-          )}
-          {FIVE_CORE_ACTIONS.map((a, index) => (
-            <TouchableOpacity
-              key={a.key}
-              testID={`action-${a.key}`}
-              style={styles.actionItem}
-              onPress={() => toggleFiveItem(a.key)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.checkbox, fiveStatuses[a.key] && styles.checkboxChecked]}>
-                {fiveStatuses[a.key] && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
-              </View>
-              <View style={styles.actionTextWrap}>
-                <Text style={[styles.actionItemText, fiveStatuses[a.key] && styles.actionDone]}>
-                  {index + 1}. {a.label}
-                </Text>
-                {a.description && (
-                  <Text style={styles.actionDesc}>{a.description}</Text>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
+            <TextInput
+              style={styles.iAmInput}
+              placeholder="Aligned, focused, committed..."
+              placeholderTextColor={Colors.text.muted}
+              value={focusReflection}
+              onChangeText={handleFocusReflectionChange}
+              onBlur={saveFocusReflection}
+            />
+          </View>
         </View>
 
-        {/* Wormhole Section */}
-        <View style={styles.card}>
+        {/* ── 10x Focus ───────────────────────────────────────────────── */}
+        <View style={styles.heroCard}>
           <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Ionicons name="planet" size={22} color={Colors.brand.accent} />
-              <Text style={styles.cardTitle}>Wormhole</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+              <Text style={[styles.heroLabel, { color: Colors.brand.primary }]}>10x</Text>
+              <Text style={styles.cardTitle}>Focus</Text>
             </View>
-            <TouchableOpacity 
-              testID="wormhole-contacts-btn"
-              style={styles.smallBtn}
-              onPress={() => router.push('/(tabs)/wormhole')}
-            >
-              <Text style={styles.smallBtnText}>Contacts</Text>
-              <Ionicons name="arrow-forward" size={14} color={Colors.brand.accent} />
-            </TouchableOpacity>
           </View>
-          
-          {/* Focused Wormhole Contact Picker */}
-          <Text style={styles.cardSub}>Today's focused relationship</Text>
-          <TouchableOpacity
-            testID="wormhole-contact-picker"
-            style={styles.wormholePickerBtn}
-            onPress={() => setShowWormholePicker(true)}
-          >
-            {entry?.wormhole_contact_id ? (
-              <View style={styles.wormholeSelected}>
-                <View style={styles.wormholeAvatar}>
-                  <Text style={styles.wormholeAvatarText}>
-                    {wormholeContacts.find((c: any) => c.id === entry.wormhole_contact_id)?.name?.[0]?.toUpperCase() || '?'}
-                  </Text>
-                </View>
-                <Text style={styles.wormholeSelectedName}>
-                  {wormholeContacts.find((c: any) => c.id === entry.wormhole_contact_id)?.name || 'Selected Contact'}
-                </Text>
-                <TouchableOpacity
-                  testID="clear-wormhole-contact"
-                  onPress={() => updateEntry({ wormhole_contact_id: null })}
-                >
-                  <Ionicons name="close-circle" size={20} color={Colors.text.tertiary} />
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View style={styles.wormholePlaceholder}>
-                <Ionicons name="person-add" size={18} color={Colors.text.tertiary} />
-                <Text style={styles.wormholePlaceholderText}>Select a contact to focus on today</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <Text style={[styles.cardSub, { marginTop: 12 }]}>What did you do to leverage this relationship?</Text>
           <TextInput
-            testID="wormhole-action-input"
-            style={styles.cardInput}
-            value={entry?.wormhole_action_text || ''}
-            onChangeText={t => setEntry({ ...entry, wormhole_action_text: t })}
-            onBlur={() => updateEntry({ wormhole_action_text: entry?.wormhole_action_text })}
-            placeholder="Describe your wormhole action..."
-            placeholderTextColor={Colors.text.tertiary}
+            style={styles.focusInput}
+            placeholder="What's your biggest priority today?"
+            placeholderTextColor={Colors.text.muted}
+            value={tenXFocus}
+            onChangeText={handleTenXFocusChange}
+            onBlur={saveTenXFocus}
             multiline
           />
         </View>
 
-        {/* Wormhole Contact Picker Modal */}
-        <Modal visible={showWormholePicker} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modal, { maxHeight: '60%' }]}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Contact</Text>
-                <TouchableOpacity onPress={() => setShowWormholePicker(false)}>
-                  <Ionicons name="close" size={24} color={Colors.text.primary} />
-                </TouchableOpacity>
+        {/* ── 10x Action (separate from Focus) ───────────────────────── */}
+        <View style={styles.heroCard}>
+          <View style={styles.cardHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+              <Text style={[styles.heroLabel, { color: '#E040FB' }]}>10x</Text>
+              <Text style={styles.cardTitle}>Action</Text>
+            </View>
+            <Text style={styles.actionPoints}>(10 points)</Text>
+          </View>
+          <TextInput
+            style={styles.focusInput}
+            placeholder="What would your biggest, bolder self do… how can you make it a level 10?"
+            placeholderTextColor={Colors.text.muted}
+            value={tenXAction}
+            onChangeText={handleTenXActionChange}
+            onBlur={saveTenXAction}
+            multiline
+          />
+          <TouchableOpacity style={styles.actionItem} onPress={handleTenXComplete}>
+            <View style={[styles.actionCheck, tenXComplete && styles.actionCheckActive]}>
+              {tenXComplete && <Ionicons name="checkmark" size={18} color="white" />}
+            </View>
+            <Text style={[styles.actionText, tenXComplete && styles.actionTextDone]}>
+              {tenXAction || 'Describe your 10x action above'}
+            </Text>
+            <TouchableOpacity style={styles.setBtn} onPress={handleTenXComplete}>
+              <Text style={styles.setBtnText}>{tenXComplete ? 'Done ✓' : 'Complete'}</Text>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Future Self Reflection ──────────────────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Future Self Reflection</Text>
+            <TouchableOpacity onPress={handleFutureComplete}>
+              <View style={[styles.miniCheck, futureComplete && styles.miniCheckActive]}>
+                {futureComplete && <Ionicons name="checkmark" size={14} color="white" />}
               </View>
-              <ScrollView>
-                {wormholeContacts.length === 0 ? (
-                  <Text style={styles.emptySignalsText}>No wormhole contacts yet. Add some from the Contacts screen.</Text>
-                ) : (
-                  wormholeContacts.map((contact: any) => (
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.cardSub}>Journal as your future self — 7 min meditation</Text>
+          <TextInput
+            style={styles.textArea}
+            placeholder="Write as your future self..."
+            placeholderTextColor={Colors.text.muted}
+            value={futureReflection}
+            onChangeText={handleFutureReflectionChange}
+            onBlur={saveFutureReflection}
+            multiline
+          />
+        </View>
+
+        {/* ── 10X UNICORN CHECKLIST ───────────────────────────────────── */}
+        <View style={[styles.heroCard, {
+          borderColor: completedCount === 5
+            ? `hsl(${120 + borderProgress * 40}, 80%, 55%)`
+            : Colors.brand.primary + '20',
+          borderWidth: completedCount === 5 ? 2.5 : 1,
+          shadowColor: completedCount === 5 ? '#00E676' : 'transparent',
+          shadowOpacity: completedCount === 5 ? 0.3 + borderProgress * 0.3 : 0,
+          shadowRadius: completedCount === 5 ? 8 + borderProgress * 8 : 0,
+          shadowOffset: { width: 0, height: 0 },
+        }]}>
+          <TouchableOpacity
+            style={styles.checklistHeader}
+            onPress={() => setChecklistCollapsed(!checklistCollapsed)}
+            activeOpacity={0.7}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontSize: 20, marginRight: 8 }}>{completedCount === 5 ? '✅' : '📋'}</Text>
+              <Text style={styles.checklistTitle}>
+                {completedCount === 5 && checklistCollapsed ? '10X UNICORN CHECKLIST COMPLETE' : '10X UNICORN CHECKLIST'}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 14, fontWeight: '700', color: completedCount === 5 ? '#00E676' : Colors.brand.primary }}>
+              {completedCount}/5 {checklistCollapsed ? '▼' : '▲'}
+            </Text>
+          </TouchableOpacity>
+          {!checklistCollapsed && (
+            <>
+              <Text style={styles.checklistRule}>
+                All 5 = 🦄 <Text style={{ color: Colors.brand.primary }}>10x Unicorn Win</Text>
+                {'  •  '}Just #1 = ⭐ <Text style={{ color: Colors.status.warning }}>Priority Win</Text>
+              </Text>
+              {UNICORN_CHECKLIST.map((item, i) => {
+                const checked = unicornChecklist[item.key as keyof typeof unicornChecklist];
+                return (
+                  <View key={item.key}>
                     <TouchableOpacity
-                      key={contact.id}
-                      testID={`wormhole-pick-${contact.id}`}
                       style={[
-                        styles.wormholePickItem,
-                        entry?.wormhole_contact_id === contact.id && styles.wormholePickItemActive,
+                        styles.checklistRow,
+                        checked && styles.checklistRowDone,
                       ]}
                       onPress={() => {
-                        updateEntry({ wormhole_contact_id: contact.id });
-                        setShowWormholePicker(false);
+                        if (item.key === 'tenx') handleTenXComplete();
+                        else if (item.key === 'wormhole') setContactSearchVisible(true);
+                        else if (item.key === 'future') handleFutureComplete();
+                        else if (item.key === 'tomorrow') handleTomorrowPrepared();
+                        else if (item.key === 'nodistraction') handleCourseCorrected();
                       }}
                     >
-                      <View style={styles.wormholeAvatar}>
-                        <Text style={styles.wormholeAvatarText}>{contact.name?.[0]?.toUpperCase()}</Text>
+                      <View style={[styles.checklistCheck, checked && styles.checklistCheckDone]}>
+                        {checked && <Ionicons name="checkmark" size={16} color="white" />}
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.wormholePickName}>{contact.name}</Text>
-                        {contact.company && <Text style={styles.wormholePickCompany}>{contact.company}</Text>}
+                        <Text style={[styles.checklistLabel, checked && styles.checklistLabelDone]}>
+                          {i + 1}. {item.label}
+                        </Text>
+                        {!checked && <Text style={styles.checklistSub}>{item.sub}</Text>}
                       </View>
-                      {entry?.wormhole_contact_id === contact.id && (
-                        <Ionicons name="checkmark-circle" size={22} color={Colors.brand.primary} />
-                      )}
                     </TouchableOpacity>
-                  ))
-                )}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
+                    {i < UNICORN_CHECKLIST.length - 1 && <View style={styles.separator} />}
+                  </View>
+                );
+              })}
+            </>
+          )}
+        </View>
 
-        {/* Compound Habit */}
+        {/* ── Wormhole ────────────────────────────────────────────────── */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="planet" size={20} color={Colors.brand.primary} style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Wormhole</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/wormhole')}>
+              <Text style={styles.linkText}>Contacts →</Text>
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.cardSub}>Today's focused relationship</Text>
+          <TouchableOpacity style={styles.contactPicker} onPress={() => setContactSearchVisible(true)}>
+            <Ionicons name="person-add" size={18} color={Colors.text.tertiary} />
+            <Text style={styles.contactPickerText}>
+              {selectedWormholeContact ? selectedWormholeContact.full_name : 'Select a contact to focus on today'}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.cardSub}>What did you do to leverage this relationship?</Text>
+          <TextInput
+            style={styles.textAreaSmall}
+            placeholder="Describe your wormhole action..."
+            placeholderTextColor={Colors.text.muted}
+            value={focusReflection}
+            onChangeText={handleFocusReflectionChange}
+            onBlur={saveFocusReflection}
+            multiline
+          />
+        </View>
+
+        {/* ── Daily Compound ──────────────────────────────────────────── */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardTitle}>Daily Compound</Text>
-              <Text style={styles.habitName}>{habitTitle}</Text>
+              <Text style={styles.cardSub}>{activeGoal?.title || 'Your daily habit'}</Text>
             </View>
             <View style={styles.streakBadge}>
-              <Text style={styles.streakText}>{compoundStreak}</Text>
-              <Text style={styles.streakLabel}>streak</Text>
+              <Text style={styles.streakNumber}>{dailyCompound}</Text>
+              <Text style={styles.streakLabel}>/ {compoundTarget}</Text>
             </View>
           </View>
-          
-          {/* Quick counter with up/down buttons */}
-          <View style={styles.compoundCounter}>
-            <TouchableOpacity
-              testID="compound-decrease"
-              style={styles.counterCaretBtn}
-              onPress={() => {
-                const newCount = Math.max(0, (entry?.compound_count || 0) - 1);
-                updateEntry({ compound_done: newCount > 0, compound_count: newCount });
-              }}
-            >
-              <Ionicons name="chevron-down" size={24} color={Colors.text.secondary} />
+          <View style={styles.compoundRow}>
+            <TouchableOpacity style={styles.compoundBtn} onPress={() => handleDailyCompoundChange(-1)}>
+              <Ionicons name="chevron-down" size={22} color={Colors.brand.primary} />
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              testID="compound-count-display"
-              style={styles.counterDisplay}
-              onPress={() => {
-                setCompoundCountInput((entry?.compound_count || 0).toString());
-                setShowCompoundCounter(true);
-              }}
-            >
-              <Text style={styles.counterValue}>{entry?.compound_count || 0}</Text>
-              <Text style={styles.counterLabel}>
-                {habitTarget > 0 ? `/ ${habitTarget}` : 'times'}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              testID="compound-increase"
-              style={styles.counterCaretBtn}
-              onPress={() => {
-                const newCount = (entry?.compound_count || 0) + 1;
-                updateEntry({ compound_done: true, compound_count: newCount });
-              }}
-            >
-              <Ionicons name="chevron-up" size={24} color={Colors.brand.primary} />
+            {compoundEditing ? (
+              <TextInput
+                style={styles.compoundEditInput}
+                value={compoundInputText}
+                onChangeText={setCompoundInputText}
+                keyboardType="number-pad"
+                autoFocus
+                onBlur={handleCompoundManualInput}
+                onSubmitEditing={handleCompoundManualInput}
+                selectTextOnFocus
+              />
+            ) : (
+              <TouchableOpacity onPress={() => { setCompoundInputText(String(dailyCompound)); setCompoundEditing(true); }}>
+                <Text style={styles.compoundNum}>{dailyCompound}</Text>
+              </TouchableOpacity>
+            )}
+            <Text style={styles.compoundUnit}>times</Text>
+            <TouchableOpacity style={styles.compoundBtn} onPress={() => handleDailyCompoundChange(1)}>
+              <Ionicons name="chevron-up" size={22} color={Colors.brand.primary} />
             </TouchableOpacity>
           </View>
-          
-          {habitTarget > 0 && (
-            <View style={styles.progressBarWrap}>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${Math.min(100, ((entry?.compound_count || 0) / habitTarget) * 100)}%` }]} />
+
+          {/* Daily Target Progress Bar */}
+          <View style={{ marginTop: Spacing.md }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+              <Text style={{ fontSize: 13, color: Colors.text.secondary }}>Daily Target</Text>
+              <Text style={{ fontSize: 13, color: '#06B6D4', fontWeight: '700' }}>{dailyCompound}/{compoundTarget}</Text>
+            </View>
+            <View style={{ height: 10, borderRadius: 5, backgroundColor: Colors.background.primary, overflow: 'hidden' }}>
+              <LinearGradient
+                colors={['#06B6D4', '#A855F7']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={{
+                  height: '100%',
+                  width: `${Math.min(100, (dailyCompound / Math.max(1, compoundTarget)) * 100)}%`,
+                  borderRadius: 5,
+                }}
+              />
+            </View>
+          </View>
+
+          {/* 10x Goal Progress — current number vs target with up/down + deadline */}
+          {activeGoal?.target_number && (
+            <View style={{ marginTop: Spacing.lg }}>
+              <Text style={{ fontSize: 13, color: Colors.text.secondary, fontWeight: '600', marginBottom: 8 }}>10x Goal Progress</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 10 }}>
+                <TouchableOpacity style={styles.compoundBtn} onPress={() => handleGoalCurrentChange(-1)}>
+                  <Ionicons name="chevron-down" size={20} color={Colors.brand.primary} />
+                </TouchableOpacity>
+                {goalCurrentEditing ? (
+                  <TextInput
+                    style={styles.compoundEditInput}
+                    value={goalCurrentText}
+                    onChangeText={setGoalCurrentText}
+                    keyboardType="number-pad"
+                    autoFocus
+                    onBlur={handleGoalCurrentManualInput}
+                    onSubmitEditing={handleGoalCurrentManualInput}
+                    selectTextOnFocus
+                  />
+                ) : (
+                  <TouchableOpacity onPress={() => { setGoalCurrentText(String(goalCurrentNumber)); setGoalCurrentEditing(true); }}>
+                    <Text style={{ fontSize: 28, fontWeight: '800', color: Colors.text.primary }}>
+                      {(activeGoal as any).goal_type === 'dollar' ? '$' : ''}{goalCurrentNumber.toLocaleString()}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                <Text style={{ fontSize: 16, color: Colors.text.tertiary, fontWeight: '600' }}>
+                  / {(activeGoal as any).goal_type === 'dollar' ? '$' : ''}{Number(activeGoal.target_number).toLocaleString()}
+                </Text>
+                <TouchableOpacity style={styles.compoundBtn} onPress={() => handleGoalCurrentChange(1)}>
+                  <Ionicons name="chevron-up" size={20} color={Colors.brand.primary} />
+                </TouchableOpacity>
               </View>
-              <Text style={styles.progressPercent}>
-                {Math.round(((entry?.compound_count || 0) / habitTarget) * 100)}%
-              </Text>
+              {/* Progress bar */}
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                <Text style={{ fontSize: 12, color: Colors.text.tertiary }}>
+                  {activeGoal.target_date ? `Deadline: ${new Date(activeGoal.target_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : 'No deadline set'}
+                </Text>
+                <Text style={{ fontSize: 13, fontWeight: '700', color: (() => {
+                  const pct = (activeGoal.progress || 0);
+                  if (pct >= 75) return '#00E676';
+                  if (pct >= 40) return '#FFB800';
+                  return '#FF4B6E';
+                })() }}>{activeGoal.progress || 0}%</Text>
+              </View>
+              <View style={{ height: 10, borderRadius: 5, backgroundColor: Colors.background.primary, overflow: 'hidden' }}>
+                <LinearGradient
+                  colors={(() => {
+                    const pct = activeGoal.progress || 0;
+                    if (pct >= 75) return ['#00FF9D', '#06B6D4'] as [string, string];
+                    if (pct >= 40) return ['#FFB800', '#06B6D4'] as [string, string];
+                    return ['#FF4B6E', '#FFB800'] as [string, string];
+                  })()}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={{
+                    height: '100%',
+                    width: `${Math.min(100, activeGoal.progress || 0)}%`,
+                    borderRadius: 5,
+                  }}
+                />
+              </View>
+              {/* On-track indicator */}
+              {activeGoal.target_date && (() => {
+                const now = new Date();
+                const start = new Date(activeGoal.created_at || now);
+                const end = new Date(activeGoal.target_date);
+                const totalDays = Math.max(1, (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                const elapsed = Math.max(0, (now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                const expectedPct = Math.min(100, Math.round((elapsed / totalDays) * 100));
+                const actual = activeGoal.progress || 0;
+                const ahead = actual >= expectedPct;
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6 }}>
+                    <Ionicons name={ahead ? 'trending-up' : 'trending-down'} size={16} color={ahead ? '#00E676' : '#FF4B6E'} />
+                    <Text style={{ fontSize: 12, color: ahead ? '#00E676' : '#FF4B6E', fontWeight: '600', marginLeft: 4 }}>
+                      {ahead ? 'On track' : 'Behind pace'} — expected {expectedPct}% by now
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
           )}
-          
-          <TextInput
-            testID="compound-notes-input"
-            style={[styles.cardInput, { marginTop: 12 }]}
-            value={entry?.compound_notes || ''}
-            onChangeText={t => setEntry({ ...entry, compound_notes: t })}
-            onBlur={() => updateEntry({ compound_notes: entry?.compound_notes })}
-            placeholder="Notes (optional)"
-            placeholderTextColor={Colors.text.tertiary}
-          />
         </View>
 
-        {/* Distraction Reflection */}
+        {/* ── Distraction Reflection ──────────────────────────────────── */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Distraction Reflection</Text>
           <Text style={styles.cardSub}>Where did you get distracted?</Text>
           <TextInput
-            testID="distraction-input"
-            style={[styles.cardInput, { minHeight: 60 }]}
-            value={entry?.distraction_notes || ''}
-            onChangeText={t => setEntry({ ...entry, distraction_notes: t })}
-            onBlur={() => updateEntry({ distraction_notes: entry?.distraction_notes })}
+            style={styles.textAreaSmall}
             placeholder="What pulled your focus..."
-            placeholderTextColor={Colors.text.tertiary}
+            placeholderTextColor={Colors.text.muted}
+            value={distractionText}
+            onChangeText={setDistractionText}
+            onBlur={saveDistraction}
             multiline
           />
-          <TouchableOpacity
-            testID="course-correct-toggle"
-            style={styles.toggleRow}
-            onPress={() => updateEntry({ immediate_course_correction: !entry?.immediate_course_correction })}
-          >
-            <View style={[styles.toggle, entry?.immediate_course_correction && styles.toggleOn]}>
-              <View style={[styles.toggleKnob, entry?.immediate_course_correction && styles.toggleKnobOn]} />
-            </View>
-            <Text style={styles.toggleText}>Did you course-correct immediately?</Text>
-          </TouchableOpacity>
+          <View style={styles.switchRow}>
+            <Switch
+              value={courseCorrected}
+              onValueChange={handleCourseCorrected}
+              trackColor={{ false: Colors.border.default, true: Colors.brand.primary + '60' }}
+              thumbColor={courseCorrected ? Colors.brand.primary : Colors.text.tertiary}
+            />
+            <Text style={styles.switchLabel}>Did you course-correct immediately?</Text>
+          </View>
         </View>
 
-        {/* AI Course Correction Button */}
-        <TouchableOpacity
-          testID="ai-correction-btn"
-          style={styles.aiBtn}
-          onPress={() => router.push({ pathname: '/ai-chat', params: { date: currentDate } })}
-          activeOpacity={0.8}
-        >
+        {/* ── AI Course Correction ────────────────────────────────────── */}
+        <TouchableOpacity onPress={() => router.push('/ai-chat')} activeOpacity={0.8}>
           <LinearGradient
-            colors={[Colors.brand.primary, Colors.brand.secondary]}
+            colors={[Colors.brand.primary + '15', Colors.brand.secondary + '10']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.aiBtnGradient}
+            style={styles.aiCard}
           >
-            <Ionicons name="sparkles" size={24} color={Colors.text.primary} />
+            <LinearGradient
+              colors={[Colors.brand.primary, Colors.brand.secondary]}
+              style={styles.aiIcon}
+            >
+              <Ionicons name="sparkles" size={22} color="white" />
+            </LinearGradient>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.aiTitle}>AI Course Correction</Text>
+              <Text style={styles.aiSub}>Get back on track with your AI coach</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.text.tertiary} />
           </LinearGradient>
-          <View style={styles.aiBtnTextWrap}>
-            <Text style={styles.aiBtnTitle}>AI Course Correction</Text>
-            <Text style={styles.aiBtnSub}>Get back on track with your AI coach</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.text.secondary} />
         </TouchableOpacity>
 
-        {/* Today's Signals Section */}
+        {/* ── Today's Signals ─────────────────────────────────────────── */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <View style={styles.cardTitleRow}>
-              <Ionicons name="flash" size={22} color={Colors.brand.accent} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="flash" size={18} color={Colors.brand.primary} style={{ marginRight: 6 }} />
               <Text style={styles.cardTitle}>Today's Signals</Text>
             </View>
-            <TouchableOpacity
-              testID="add-signal-btn"
-              style={styles.addSignalBtn}
-              onPress={() => setShowAddSignal(true)}
-            >
-              <Ionicons name="add" size={20} color={Colors.brand.primary} />
-              <Text style={styles.addSignalText}>Add</Text>
+            <TouchableOpacity onPress={openAddSignalToday} style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="add" size={16} color={Colors.brand.primary} />
+              <Text style={styles.linkText}> Add</Text>
             </TouchableOpacity>
           </View>
-          
-          {signals.length === 0 ? (
-            <View style={styles.emptySignals}>
-              <Text style={styles.emptySignalsText}>No signals for today</Text>
-              <Text style={styles.emptySignalsSub}>Add measurable actions to track your progress</Text>
+          {todaysSignals.length > 0 ? (
+            <View style={{ gap: 6 }}>
+              {todaysSignals.map((signal) => (
+                <Swipeable
+                  key={signal.id}
+                  renderLeftActions={() => (
+                    <TouchableOpacity
+                      style={styles.swipeEditAction}
+                      onPress={() => openEditSignal(signal)}
+                    >
+                      <Ionicons name="create" size={18} color="white" />
+                      <Text style={styles.swipeActionText}>Edit</Text>
+                    </TouchableOpacity>
+                  )}
+                  renderRightActions={() => (
+                    <TouchableOpacity
+                      style={styles.swipeDeleteAction}
+                      onPress={() => deleteSignal(signal)}
+                    >
+                      <Ionicons name="trash" size={18} color="white" />
+                      <Text style={styles.swipeActionText}>Delete</Text>
+                    </TouchableOpacity>
+                  )}
+                  overshootLeft={false}
+                  overshootRight={false}
+                >
+                  <TouchableOpacity
+                    style={styles.signalRow}
+                    onPress={() => handleSignalToggle(signal)}
+                    onLongPress={() => openChangeDate(signal)}
+                    delayLongPress={500}
+                  >
+                    <View style={[styles.miniCheck, signal.status === 'complete' && styles.miniCheckActive]}>
+                      {signal.status === 'complete' && <Ionicons name="checkmark" size={14} color="white" />}
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 10 }}>
+                      <Text style={[styles.signalTitle, signal.status === 'complete' && styles.signalDone]}>
+                        {signal.title || SIGNAL_TYPE_LABELS[signal.type] || 'Signal'}
+                      </Text>
+                      {signal.details ? <Text style={styles.signalSub}>{signal.details}</Text> : null}
+                    </View>
+                    <Text style={styles.signalPoints}>+{signal.score || 5}</Text>
+                  </TouchableOpacity>
+                </Swipeable>
+              ))}
+              <Text style={{ fontSize: 10, color: Colors.text.muted, textAlign: 'center', marginTop: 4 }}>
+                Swipe left to delete · right to edit · hold to reschedule
+              </Text>
             </View>
           ) : (
-            signals.filter(s => !s.is_top_10x_action).map(signal => (
-              <TouchableOpacity
-                key={signal.id}
-                testID={`signal-${signal.id}`}
-                style={styles.signalItem}
-                onPress={() => !signal.completed_at && completeSignal(signal.id)}
-                activeOpacity={0.7}
-              >
-                <View style={[styles.checkbox, signal.completed_at && styles.checkboxChecked]}>
-                  {signal.completed_at && <Ionicons name="checkmark" size={16} color={Colors.text.primary} />}
-                </View>
-                <View style={styles.signalInfo}>
-                  <Text style={[styles.signalName, signal.completed_at && styles.actionDone]}>
-                    {signal.name}
-                  </Text>
-                  {signal.deal_name && (
-                    <Text style={styles.signalDeal}>🤝 {signal.deal_name}</Text>
-                  )}
-                </View>
-                <View style={styles.signalPoints}>
-                  <Text style={styles.signalPointsText}>+{signal.impact_rating}</Text>
-                </View>
+            <View style={styles.emptySignals}>
+              <Text style={styles.emptyTitle}>No signals for today</Text>
+              <Text style={styles.emptySub}>Add measurable actions to track your progress</Text>
+              <TouchableOpacity onPress={openAddSignalToday} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                <Ionicons name="add-circle" size={16} color={Colors.brand.primary} />
+                <Text style={[styles.linkText, { marginLeft: 4 }]}>Add Signal to Today</Text>
               </TouchableOpacity>
-            ))
+            </View>
           )}
-          
-          <TouchableOpacity
-            testID="view-all-signals-btn"
-            style={styles.viewAllBtn}
-            onPress={() => router.push('/(tabs)/signals')}
-          >
-            <Text style={styles.viewAllText}>View All Signals</Text>
-            <Ionicons name="arrow-forward" size={16} color={Colors.brand.accent} />
-          </TouchableOpacity>
         </View>
 
-        {saving && (
-          <View style={styles.savingIndicator}>
-            <ActivityIndicator size="small" color={Colors.brand.primary} />
-            <Text style={styles.savingText}>Saving...</Text>
-          </View>
-        )}
-
-        <View style={{ height: 40 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Add Signal Modal */}
-      <Modal visible={showAddSignal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Signal</Text>
-              <TouchableOpacity onPress={() => setShowAddSignal(false)}>
-                <Ionicons name="close" size={24} color={Colors.text.primary} />
+      {/* ── Status Picker Modal ───────────────────────────────────────── */}
+      <Modal visible={statusPickerVisible} transparent animationType="fade" onRequestClose={() => setStatusPickerVisible(false)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setStatusPickerVisible(false)}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Day Status</Text>
+            {DAY_STATUS_OPTIONS.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={[styles.modalRow, dailyEntry?.status === option.value && styles.modalRowActive]}
+                onPress={() => handleStatusSelect(option.value)}
+              >
+                <View style={[styles.modalDot, { backgroundColor: STATUS_COLORS[option.value] || Colors.text.tertiary }]} />
+                <Text style={[styles.modalRowText, dailyEntry?.status === option.value && { color: Colors.text.primary, fontWeight: '600' }]}>
+                  {option.label}
+                </Text>
+                {dailyEntry?.status === option.value && <Ionicons name="checkmark" size={18} color={Colors.brand.primary} />}
               </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.inputLabel}>Signal Name *</Text>
-            <TextInput
-              testID="signal-name-input"
-              style={styles.modalInput}
-              value={signalForm.name}
-              onChangeText={t => setSignalForm({...signalForm, name: t})}
-              placeholder="What will you accomplish?"
-              placeholderTextColor={Colors.text.tertiary}
-            />
-
-            <Text style={styles.inputLabel}>Due Date</Text>
-            <TouchableOpacity
-              testID="signal-due-date-btn"
-              style={styles.datePickerBtn}
-              onPress={() => {
-                if (!signalForm.due_date) setSignalForm({...signalForm, due_date: getSmartDefaultDate()});
-                setShowCalendar(true);
-              }}
-            >
-              <Ionicons name="calendar" size={18} color={Colors.brand.accent} />
-              <Text style={styles.datePickerText}>
-                {signalForm.due_date 
-                  ? new Date(signalForm.due_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                  : 'Select date (defaults smart)'}
-              </Text>
-              <Ionicons name="chevron-down" size={16} color={Colors.text.tertiary} />
-            </TouchableOpacity>
-            
-            <Text style={styles.inputLabel}>Description</Text>
-            <TextInput
-              testID="signal-desc-input"
-              style={[styles.modalInput, { minHeight: 60 }]}
-              value={signalForm.description}
-              onChangeText={t => setSignalForm({...signalForm, description: t})}
-              placeholder="Optional details..."
-              placeholderTextColor={Colors.text.tertiary}
-              multiline
-            />
-            
-            <Text style={styles.inputLabel}>Impact Rating (1-10): {signalForm.impact_rating}</Text>
-            <View style={styles.ratingRow}>
-              {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                <TouchableOpacity
-                  key={n}
-                  testID={`rating-${n}`}
-                  style={[styles.ratingBtn, signalForm.impact_rating === n && styles.ratingBtnActive]}
-                  onPress={() => setSignalForm({...signalForm, impact_rating: n})}
-                >
-                  <Text style={[styles.ratingText, signalForm.impact_rating === n && styles.ratingTextActive]}>{n}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            {deals.length > 0 && (
-              <>
-                <Text style={styles.inputLabel}>Link to Deal (optional)</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.dealRow}>
-                    <TouchableOpacity
-                      style={[styles.dealChip, !signalForm.deal_id && styles.dealChipActive]}
-                      onPress={() => setSignalForm({...signalForm, deal_id: ''})}
-                    >
-                      <Text style={[styles.dealChipText, !signalForm.deal_id && styles.dealChipTextActive]}>None</Text>
-                    </TouchableOpacity>
-                    {deals.map(d => (
-                      <TouchableOpacity
-                        key={d.id}
-                        style={[styles.dealChip, signalForm.deal_id === d.id && styles.dealChipActive]}
-                        onPress={() => setSignalForm({...signalForm, deal_id: d.id})}
-                      >
-                        <Text style={[styles.dealChipText, signalForm.deal_id === d.id && styles.dealChipTextActive]}>{d.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-              </>
-            )}
-            
-            <TouchableOpacity
-              testID="save-signal-btn"
-              style={[styles.saveSignalBtn, !signalForm.name?.trim() && styles.saveSignalBtnDisabled]}
-              onPress={addSignal}
-              disabled={!signalForm.name?.trim()}
-            >
-              <Text style={styles.saveSignalBtnText}>Add Signal</Text>
-            </TouchableOpacity>
-
-            {/* Inline Calendar for Add Signal */}
-            {showCalendar && (
-              <View style={styles.calendarOverlay}>
-                <CalendarContent
-                  onClose={() => setShowCalendar(false)}
-                  onSelect={(date) => setSignalForm({...signalForm, due_date: date})}
-                  selectedDate={signalForm.due_date || getSmartDefaultDate()}
-                />
-              </View>
-            )}
+            ))}
           </View>
-        </View>
+        </TouchableOpacity>
       </Modal>
 
-      {/* Compound Habit Counter Modal */}
-      <Modal visible={showCompoundCounter} animationType="fade" transparent>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-          style={styles.modalOverlay}
+      {/* ── Contact Search Modal ──────────────────────────────────────── */}
+      <Modal visible={contactSearchVisible} transparent animationType="slide" onRequestClose={() => setContactSearchVisible(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.overlay}
         >
-          <View style={styles.compoundModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>How many times?</Text>
-              <TouchableOpacity onPress={() => setShowCompoundCounter(false)}>
-                <Ionicons name="close" size={24} color={Colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.compoundModalSubtext}>
-              How many times did you do "{habitTitle}" today?
-            </Text>
-            
-            <View style={styles.counterRow}>
-              <TouchableOpacity
-                testID="counter-minus"
-                style={styles.counterBtn}
-                onPress={() => setCompoundCountInput(Math.max(1, parseInt(compoundCountInput || '1') - 1).toString())}
-              >
-                <Ionicons name="remove" size={28} color={Colors.text.primary} />
-              </TouchableOpacity>
-              
-              <TextInput
-                testID="compound-count-input"
-                style={styles.counterInput}
-                value={compoundCountInput}
-                onChangeText={setCompoundCountInput}
-                keyboardType="numeric"
-                textAlign="center"
-              />
-              
-              <TouchableOpacity
-                testID="counter-plus"
-                style={styles.counterBtn}
-                onPress={() => setCompoundCountInput((parseInt(compoundCountInput || '0') + 1).toString())}
-              >
-                <Ionicons name="add" size={28} color={Colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-            
-            {habitTarget > 0 && (
-              <View style={styles.progressSection}>
-                <View style={styles.progressBar}>
-                  <View style={[styles.progressFill, { width: `${Math.min(100, (parseInt(compoundCountInput || '0') / habitTarget) * 100)}%` }]} />
-                </View>
-                <Text style={styles.progressText}>
-                  {compoundCountInput || 0} / {habitTarget} ({Math.round((parseInt(compoundCountInput || '0') / habitTarget) * 100)}%)
-                </Text>
-              </View>
-            )}
-            
-            <TouchableOpacity
-              testID="save-compound-btn"
-              style={styles.saveBtn}
-              onPress={() => {
-                const count = parseInt(compoundCountInput || '1');
-                updateEntry({ compound_done: true, compound_count: count });
-                setShowCompoundCounter(false);
-              }}
-            >
-              <Text style={styles.saveBtnText}>Save</Text>
+          <View style={[styles.modalSheet, { maxHeight: '85%' }]}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Select Contact</Text>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search contacts..."
+              placeholderTextColor={Colors.text.muted}
+              value={contactSearch}
+              onChangeText={setContactSearch}
+              autoFocus
+              returnKeyType="search"
+            />
+            <FlatList
+              data={filteredContacts}
+              keyExtractor={(c) => c.id}
+              keyboardShouldPersistTaps="handled"
+              style={{ maxHeight: 400 }}
+              renderItem={({ item: c }) => (
+                <TouchableOpacity key={c.id} style={styles.contactRow} onPress={() => handleWormholeSelect(c)}>
+                  <View style={styles.contactAvatar}>
+                    <Text style={styles.contactInitial}>{(c.full_name || '?')[0].toUpperCase()}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.contactName}>{c.full_name}</Text>
+                    {c.company && <Text style={styles.contactCompany}>{c.company}</Text>}
+                  </View>
+                  {selectedWormholeContact?.id === c.id && <Ionicons name="checkmark-circle" size={20} color={Colors.brand.primary} />}
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <Text style={styles.emptySub}>No contacts found</Text>
+              }
+            />
+            <TouchableOpacity style={styles.cancelBtn} onPress={() => { setContactSearchVisible(false); setContactSearch(''); }}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Edit Signal Modal */}
-      <Modal visible={!!showEditSignal} animationType="slide" transparent>
-        <KeyboardAvoidingView 
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
-          style={styles.modalOverlay}
-        >
-          <ScrollView 
-            contentContainerStyle={styles.modalScrollContent}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.modal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Signal</Text>
-                <TouchableOpacity onPress={() => setShowEditSignal(null)}>
-                  <Ionicons name="close" size={24} color={Colors.text.primary} />
-                </TouchableOpacity>
-              </View>
-              
-              <Text style={styles.inputLabel}>Signal Name *</Text>
-              <TextInput
-                testID="edit-signal-name-input"
-                style={styles.modalInput}
-                value={showEditSignal?.name || ''}
-                onChangeText={t => setShowEditSignal({ ...showEditSignal, name: t })}
-                placeholder="What will you accomplish?"
-                placeholderTextColor={Colors.text.tertiary}
-              />
-
-              <Text style={styles.inputLabel}>Due Date</Text>
-              <TouchableOpacity
-                testID="edit-signal-due-date-btn"
-                style={styles.datePickerBtn}
-                onPress={() => setEditCalendar(true)}
-              >
-                <Ionicons name="calendar" size={18} color={Colors.brand.accent} />
-                <Text style={styles.datePickerText}>
-                  {showEditSignal?.due_date 
-                    ? new Date(normalizeDate(showEditSignal.due_date) + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-                    : 'No date set'}
-                </Text>
-                <Ionicons name="chevron-down" size={16} color={Colors.text.tertiary} />
+      {/* ── Edit Signal Modal ────────────────────────────────────────── */}
+      <Modal visible={editSignalVisible} transparent animationType="slide" onRequestClose={() => setEditSignalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.overlay}>
+          <View style={[styles.modalSheet, { maxHeight: '80%' }]}>
+            <View style={styles.modalHandle} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={styles.modalTitle}>Edit Signal</Text>
+              <TouchableOpacity onPress={() => setEditSignalVisible(false)}>
+                <Ionicons name="close" size={22} color={Colors.text.tertiary} />
               </TouchableOpacity>
-              
-              <Text style={styles.inputLabel}>Description</Text>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text style={styles.editLabel}>Title</Text>
               <TextInput
-                testID="edit-signal-desc-input"
-                style={[styles.modalInput, { minHeight: 60 }]}
-                value={showEditSignal?.description || ''}
-                onChangeText={t => setShowEditSignal({ ...showEditSignal, description: t })}
-                placeholder="Optional details..."
-                placeholderTextColor={Colors.text.tertiary}
-                multiline
+                style={styles.editInput}
+                value={editSignalData.title || ''}
+                onChangeText={(t) => setEditSignalData({ ...editSignalData, title: t })}
+                placeholder="Signal title"
+                placeholderTextColor={Colors.text.muted}
               />
-              
-              <Text style={styles.inputLabel}>Notes</Text>
-              <TextInput
-                testID="edit-signal-notes-input"
-                style={[styles.modalInput, { minHeight: 80 }]}
-                value={showEditSignal?.notes || ''}
-                onChangeText={t => setShowEditSignal({ ...showEditSignal, notes: t })}
-                placeholder="Additional notes..."
-                placeholderTextColor={Colors.text.tertiary}
-                multiline
-              />
-              
-              <Text style={styles.inputLabel}>Impact Rating (1-10): {showEditSignal?.impact_rating || 5}</Text>
-              <View style={styles.ratingRow}>
-                {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              <Text style={styles.editLabel}>Type</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {Object.entries(SIGNAL_TYPE_LABELS).map(([key, label]) => (
                   <TouchableOpacity
-                    key={n}
-                    testID={`edit-rating-${n}`}
-                    style={[styles.ratingBtn, showEditSignal?.impact_rating === n && styles.ratingBtnActive]}
-                    onPress={() => setShowEditSignal({ ...showEditSignal, impact_rating: n })}
+                    key={key}
+                    style={[styles.editChip, editSignalData.type === key && styles.editChipActive]}
+                    onPress={() => setEditSignalData({ ...editSignalData, type: key as any })}
                   >
-                    <Text style={[styles.ratingText, showEditSignal?.impact_rating === n && styles.ratingTextActive]}>{n}</Text>
+                    <Text style={[styles.editChipText, editSignalData.type === key && { color: 'white' }]}>{label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              
-              {/* Completion Status Toggle */}
-              {showEditSignal?.completed_at && (
-                <View style={styles.completionSection}>
-                  <Text style={styles.completedBadge}>Completed</Text>
+              <Text style={styles.editLabel}>Score: {editSignalData.score || 5}/10</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                   <TouchableOpacity
-                    testID="uncomplete-signal-btn"
-                    style={styles.uncompleteBtn}
-                    onPress={async () => {
-                      if (showEditSignal?.id) {
-                        await uncompleteSignal(showEditSignal.id);
-                        if (showEditSignal.is_top_10x_action) {
-                          updateEntry({ 
-                            top_priority_completed: false,
-                            five_item_statuses: { ...entry?.five_item_statuses, top_action: false }
-                          });
-                        }
-                        setShowEditSignal(null);
-                      }
-                    }}
+                    key={n}
+                    style={[styles.editScoreBtn, editSignalData.score === n && styles.editScoreBtnActive]}
+                    onPress={() => setEditSignalData({ ...editSignalData, score: n })}
                   >
-                    <Ionicons name="flame" size={20} color="#F97316" />
-                    <Text style={styles.uncompleteBtnText}>Mark as Incomplete</Text>
+                    <Text style={[styles.editScoreText, editSignalData.score === n && { color: 'white' }]}>{n}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.editLabel}>Due Date</Text>
+              <TextInput
+                style={styles.editInput}
+                value={editSignalData.due_date || ''}
+                onChangeText={(t) => setEditSignalData({ ...editSignalData, due_date: t })}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={Colors.text.muted}
+              />
+              <Text style={styles.editLabel}>Details</Text>
+              <TextInput
+                style={[styles.editInput, { minHeight: 60, textAlignVertical: 'top' }]}
+                value={editSignalData.details || ''}
+                onChangeText={(t) => setEditSignalData({ ...editSignalData, details: t })}
+                placeholder="Optional details..."
+                placeholderTextColor={Colors.text.muted}
+                multiline
+              />
+              <TouchableOpacity style={styles.editSaveBtn} onPress={saveEditSignal}>
+                <Text style={styles.editSaveBtnText}>Save Changes</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Add Signal to Today Modal ────────────────────────────────── */}
+      <Modal visible={addSignalVisible} transparent animationType="slide" onRequestClose={() => setAddSignalVisible(false)}>
+        <View style={styles.overlay}>
+          <View style={[styles.modalSheet, { maxHeight: '70%' }]}>
+            <View style={styles.modalHandle} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={styles.modalTitle}>Add Signal to Today</Text>
+              <TouchableOpacity onPress={() => setAddSignalVisible(false)}>
+                <Ionicons name="close" size={22} color={Colors.text.tertiary} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {allActiveSignals.length > 0 ? (
+                allActiveSignals.map((signal) => (
+                  <View key={signal.id} style={styles.addSignalRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.text.primary }}>{signal.title}</Text>
+                      <Text style={{ fontSize: 11, color: Colors.text.tertiary, marginTop: 2 }}>
+                        {SIGNAL_TYPE_LABELS[signal.type]} · {signal.score || 5}pts · Due: {signal.due_date || 'none'}
+                      </Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity onPress={() => openEditSignal(signal)} style={styles.addSignalEditBtn}>
+                        <Ionicons name="create-outline" size={16} color={Colors.brand.primary} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => addSignalToToday(signal)} style={styles.addSignalBtn}>
+                        <Ionicons name="add" size={16} color="white" />
+                        <Text style={{ fontSize: 12, fontWeight: '600', color: 'white', marginLeft: 4 }}>Add</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))
+              ) : (
+                <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+                  <Text style={{ fontSize: 14, color: Colors.text.secondary }}>No active signals to add</Text>
+                  <TouchableOpacity onPress={() => { setAddSignalVisible(false); router.push('/(tabs)/crm'); }} style={{ marginTop: 12 }}>
+                    <Text style={{ fontSize: 13, fontWeight: '600', color: Colors.brand.primary }}>Create New Signal in CRM</Text>
                   </TouchableOpacity>
                 </View>
               )}
-              
-              <TouchableOpacity
-                testID="save-edit-signal-btn"
-                style={[styles.saveSignalBtn, !showEditSignal?.name?.trim() && styles.saveSignalBtnDisabled]}
-                onPress={() => {
-                  if (showEditSignal?.id && showEditSignal?.name?.trim()) {
-                    updateSignal(showEditSignal.id, {
-                      name: showEditSignal.name,
-                      description: showEditSignal.description,
-                      notes: showEditSignal.notes,
-                      impact_rating: showEditSignal.impact_rating,
-                      due_date: showEditSignal.due_date,
-                    });
-                  }
-                }}
-                disabled={!showEditSignal?.name?.trim()}
-              >
-                <Text style={styles.saveSignalBtnText}>Save Changes</Text>
-              </TouchableOpacity>
-
-              {/* Inline Calendar for Edit Signal */}
-              {editCalendar && (
-                <View style={styles.calendarOverlay}>
-                  <CalendarContent
-                    onClose={() => setEditCalendar(false)}
-                    onSelect={(date) => setShowEditSignal({ ...showEditSignal, due_date: date })}
-                    selectedDate={showEditSignal?.due_date ? normalizeDate(showEditSignal.due_date) : getSmartDefaultDate()}
-                  />
-                </View>
-              )}
-
-              <View style={{ height: 50 }} />
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            </ScrollView>
+          </View>
+        </View>
       </Modal>
-    </SafeAreaView>
+
+      {/* ── Change Date Modal (long press) ────────────────────────────── */}
+      <Modal visible={!!changeDateSignal} transparent animationType="fade" onRequestClose={() => setChangeDateSignal(null)}>
+        <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={() => setChangeDateSignal(null)}>
+          <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Reschedule Signal</Text>
+            <Text style={{ fontSize: 13, color: Colors.text.secondary, marginBottom: 12 }}>{changeDateSignal?.title}</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              <TouchableOpacity
+                style={[styles.editChip, changeDateValue === dateStr && styles.editChipActive]}
+                onPress={() => setChangeDateValue(dateStr)}
+              >
+                <Text style={[styles.editChipText, changeDateValue === dateStr && { color: 'white' }]}>Today</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.editChip}
+                onPress={() => {
+                  const t = new Date(); t.setDate(t.getDate() + 1);
+                  setChangeDateValue(t.toISOString().split('T')[0]);
+                }}
+              >
+                <Text style={styles.editChipText}>Tomorrow</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.editChip}
+                onPress={() => {
+                  const t = new Date(); t.setDate(t.getDate() + 7);
+                  setChangeDateValue(t.toISOString().split('T')[0]);
+                }}
+              >
+                <Text style={styles.editChipText}>Next Week</Text>
+              </TouchableOpacity>
+            </View>
+            <TextInput
+              style={styles.editInput}
+              value={changeDateValue}
+              onChangeText={setChangeDateValue}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={Colors.text.muted}
+            />
+            <TouchableOpacity style={styles.editSaveBtn} onPress={saveChangeDate}>
+              <Text style={styles.editSaveBtnText}>Save Date</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* AI FAB */}
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/ai-chat')}>
+        <LinearGradient colors={[Colors.brand.primary, Colors.brand.secondary]} style={styles.fabGradient}>
+          <Ionicons name="sparkles" size={26} color="white" />
+        </LinearGradient>
+      </TouchableOpacity>
+    </KeyboardAvoidingView>
+    </CosmicBackground>
   );
-}
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// STYLES
+// ═════════════════════════════════════════════════════════════════════════════
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg.default },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scroll: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingTop: 8 },
-  
-  // Date Navigation
-  dateNav: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 16, 
-    paddingVertical: 8 
-  },
-  dateBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, padding: 8 },
-  dateBtnText: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  dateCenter: { alignItems: 'center' },
-  dateLabel: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '800', letterSpacing: 2 },
-  todayLink: { color: Colors.brand.primary, fontSize: FontSize.xs, marginTop: 4 },
-  
-  // Status
-  statusGradient: { borderRadius: Radius.lg, marginBottom: 16 },
-  statusBanner: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    padding: 16, borderRadius: Radius.lg, borderWidth: 2,
-    backgroundColor: Colors.bg.card, gap: 8,
-  },
-  statusText: { fontSize: FontSize.xl, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 2 },
-  unicornEmoji: { fontSize: 24 },
-  overrideBtn: { position: 'absolute', right: 16 },
-  statusPicker: {
-    backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 8,
-    marginBottom: 16, borderWidth: 1, borderColor: Colors.border.default,
-  },
-  statusOption: {
-    flexDirection: 'row', alignItems: 'center', padding: 14, borderRadius: Radius.md, gap: 10,
-  },
-  statusOptionActive: { backgroundColor: 'rgba(168,85,247,0.1)' },
-  statusDot: { width: 10, height: 10, borderRadius: 5 },
-  statusOptionText: { color: Colors.text.primary, fontSize: FontSize.base },
-  
-  // Cards
-  card: {
-    backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 20,
-    marginBottom: 16, borderWidth: 1, borderColor: Colors.border.default,
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  cardTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.text.primary, marginBottom: 8 },
-  redText: { color: Colors.brand.red },
-  cardSub: { fontSize: FontSize.sm, color: Colors.text.secondary, marginBottom: 12 },
-  cardInput: {
-    backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14,
-    color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default,
-  },
-  
-  // Win Badges
-  winBadge: { 
-    backgroundColor: 'rgba(34,197,94,0.15)', 
-    paddingHorizontal: 10, 
-    paddingVertical: 4, 
-    borderRadius: Radius.sm 
-  },
-  winBadgeText: { color: Colors.status.success, fontSize: FontSize.xs, fontWeight: '700' },
-  
-  // Focus Section
-  focusInput: {
-    backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14,
-    color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '700', minHeight: 60,
-    borderWidth: 1, borderColor: Colors.border.default,
-  },
-  divider: { height: 1, backgroundColor: Colors.border.default, marginVertical: 16 },
-  actionLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 8 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  actionInput: { flex: 1, color: Colors.text.primary, fontSize: FontSize.base },
-  
-  // Checkboxes
-  checkbox: {
-    width: 26, height: 26, borderRadius: 8, borderWidth: 2,
-    borderColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center',
-  },
-  checkboxChecked: { backgroundColor: Colors.brand.primary },
-  
-  // Action Items
-  actionItem: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
-    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
-  },
-  actionTextWrap: { flex: 1 },
-  actionItemText: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
-  actionDesc: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2 },
-  actionDone: { textDecorationLine: 'line-through', color: Colors.text.tertiary },
-  
-  // Checklist styles
-  checkEmoji: { fontSize: 18 },
-  checklistHint: { 
-    color: Colors.text.secondary, 
-    fontSize: FontSize.xs, 
-    marginBottom: 12,
-    lineHeight: 18,
-  },
-  
-  // Unicorn Banner
-  unicornBanner: {
-    borderRadius: Radius.md, padding: 12,
-    marginBottom: 12, alignItems: 'center',
-  },
-  unicornBannerText: { color: Colors.brand.primary, fontWeight: '900', fontSize: FontSize.lg, letterSpacing: 2 },
-  
-  // Small Button
-  smallBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  smallBtnText: { color: Colors.brand.accent, fontSize: FontSize.sm },
-  
-  // Habit/Streak
-  habitName: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  streakBadge: { 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(168,85,247,0.1)', 
-    borderRadius: Radius.md, 
-    padding: 10,
-    minWidth: 60,
-  },
-  streakText: { color: Colors.brand.primary, fontSize: FontSize.xxl, fontWeight: '900' },
-  streakLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs },
-  compoundRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  compoundText: { color: Colors.text.primary, fontSize: FontSize.base },
-  
-  // Toggle
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 16 },
-  toggle: {
-    width: 48, height: 28, borderRadius: 14, backgroundColor: Colors.bg.input,
-    justifyContent: 'center', paddingHorizontal: 3,
-  },
-  toggleOn: { backgroundColor: Colors.brand.primary },
-  toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.text.tertiary },
-  toggleKnobOn: { backgroundColor: Colors.text.primary, alignSelf: 'flex-end' },
-  toggleText: { color: Colors.text.secondary, fontSize: FontSize.sm, flex: 1 },
-  
-  // AI Button
-  aiBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16,
-    marginBottom: 16, borderWidth: 1, borderColor: Colors.brand.primary,
-  },
-  aiBtnGradient: {
-    width: 48, height: 48, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  aiBtnTextWrap: { flex: 1 },
-  aiBtnTitle: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  aiBtnSub: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 2 },
-  
-  // Saving Indicator
-  savingIndicator: {
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, padding: 8,
-  },
-  savingText: { color: Colors.text.tertiary, fontSize: FontSize.sm },
-  
-  // New styles for signals
-  pointsHint: { color: Colors.brand.accent, fontSize: FontSize.xs, fontWeight: '400' },
-  setSignalBtn: { 
-    backgroundColor: Colors.brand.primary, 
-    paddingHorizontal: 14, 
-    paddingVertical: 6, 
-    borderRadius: Radius.sm 
-  },
-  setSignalBtnText: { color: Colors.text.primary, fontSize: FontSize.sm, fontWeight: '600' },
-  
-  // Signals Section
-  addSignalBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addSignalText: { color: Colors.brand.primary, fontSize: FontSize.sm, fontWeight: '600' },
-  emptySignals: { paddingVertical: 20, alignItems: 'center' },
-  emptySignalsText: { color: Colors.text.secondary, fontSize: FontSize.base },
-  emptySignalsSub: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4 },
-  signalItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
-  },
-  signalInfo: { flex: 1 },
-  signalName: { color: Colors.text.primary, fontSize: FontSize.base },
-  signalDeal: { color: Colors.brand.accent, fontSize: FontSize.xs, marginTop: 2 },
-  signalPoints: { 
-    backgroundColor: 'rgba(168,85,247,0.15)', 
-    paddingHorizontal: 8, 
-    paddingVertical: 4, 
-    borderRadius: Radius.sm 
-  },
-  signalPointsText: { color: Colors.brand.primary, fontSize: FontSize.sm, fontWeight: '700' },
-  viewAllBtn: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, paddingTop: 16 },
-  viewAllText: { color: Colors.brand.accent, fontSize: FontSize.sm },
-  
-  // Modal
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.7)', 
-    justifyContent: 'flex-end' 
-  },
-  modal: { 
-    backgroundColor: Colors.bg.card, 
-    borderTopLeftRadius: Radius.xl, 
-    borderTopRightRadius: Radius.xl, 
-    padding: 24, 
-    maxHeight: '80%' 
-  },
-  modalHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 16 
-  },
-  modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
-  inputLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 6, marginTop: 12 },
-  modalInput: {
-    backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14,
-    color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default,
-  },
-  ratingRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
-  ratingBtn: {
-    width: 32, height: 32, borderRadius: 16,
-    backgroundColor: Colors.bg.input, justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.border.default,
-  },
-  ratingBtnActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
-  ratingText: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  ratingTextActive: { color: Colors.text.primary, fontWeight: '700' },
-  dealRow: { flexDirection: 'row', gap: 8, paddingVertical: 4 },
-  dealChip: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: Radius.sm,
-    backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default,
-  },
-  dealChipActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
-  dealChipText: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  dealChipTextActive: { color: Colors.text.primary },
-  saveSignalBtn: {
-    backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16,
-    alignItems: 'center', marginTop: 24,
-  },
-  saveSignalBtnDisabled: { opacity: 0.5 },
-  saveSignalBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-  
-  // NEW: Intention row styles
-  intentionRow: {
+  container: { flex: 1, backgroundColor: 'transparent' },
+  scrollView: { flex: 1 },
+
+  // ── Date Nav ──
+  dateNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default + '60',
   },
-  intentionPrefix: {
-    color: Colors.text.secondary,
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-  },
-  intentionInput: {
-    flex: 1,
-    backgroundColor: Colors.bg.input,
-    borderRadius: Radius.md,
-    padding: 14,
-    color: Colors.text.primary,
-    fontSize: FontSize.base,
+  dateNavBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  dateNavLabel: { ...Typography.small, color: Colors.text.tertiary },
+  dateTitle: { ...Typography.h3, color: Colors.text.primary, letterSpacing: 2, fontWeight: '800' },
+
+  // ── Status Banner ──
+  statusBanner: {
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.border.default,
+    backgroundColor: Colors.background.elevated,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  
-  // NEW: Glowing complete button
-  glowingCheckbox: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: Colors.bg.input,
+  statusText: { fontSize: 15, fontWeight: '800', letterSpacing: 3, flex: 1, textAlign: 'center' },
+
+  // ── Hero Card (elevated tier) ──
+  heroCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 20,
+    backgroundColor: Colors.background.elevated,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.border.default + '60',
+  },
+
+  // ── Standard Card ──
+  card: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 18,
+    backgroundColor: Colors.background.elevated,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border.default + '40',
+  },
+
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  cardTitle: { ...Typography.h4, color: Colors.text.primary },
+  cardSub: { ...Typography.small, color: Colors.text.tertiary, marginBottom: 10 },
+  heroLabel: { ...Typography.smallBold, color: Colors.text.tertiary, letterSpacing: 1.5 },
+
+  // ── Determination ──
+  determinationHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  determinationEmoji: { fontSize: 28, marginRight: 6 },
+  determinationNumber: { fontSize: 28, fontWeight: '800' },
+
+  sliderOuter: { height: 14, backgroundColor: 'transparent', borderRadius: 7, overflow: 'visible', marginBottom: 8, paddingVertical: 0 },
+  sliderTrackBg: { position: 'absolute', left: 0, right: 0, height: '100%', borderRadius: 7, opacity: 0.25 },
+  sliderGradient: { height: '100%', borderRadius: 7 },
+  sliderThumb: {
+    position: 'absolute',
+    top: -12,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: Colors.background.elevated,
     borderWidth: 2,
     borderColor: Colors.brand.primary,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: Colors.brand.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
   },
-  glowingCheckboxCompleted: {
-    backgroundColor: 'rgba(249,115,22,0.2)',
-    borderColor: '#F97316',
+  sliderThumbRainbow: {
+    borderColor: '#00FF88',
+    shadowColor: '#00FF88',
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 12,
   },
-  glowingFireEmoji: {
-    fontSize: 28,
+  sliderLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  sliderEndLabel: { ...Typography.small, color: Colors.text.tertiary },
+
+  dotRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14 },
+  dotButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: Colors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  
-  // NEW: Fire badge for completed
-  completedFireBadge: {
+  dotButtonActive: { backgroundColor: Colors.brand.primary },
+  dotText: { ...Typography.smallBold, color: Colors.text.tertiary },
+  dotTextActive: { color: 'white' },
+
+  motivationBar: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.brand.primary,
+    backgroundColor: Colors.brand.primary + '10',
+  },
+  motivationText: { ...Typography.caption, color: Colors.text.secondary, fontStyle: 'italic' },
+
+  // ── I Am ──
+  iAmRow: { flexDirection: 'row', alignItems: 'center' },
+  iAmBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginRight: 12,
+  },
+  iAmPrefixBold: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: 'white',
+    letterSpacing: 2,
+  },
+  iAmInput: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    ...Typography.body,
+    color: Colors.text.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // ── 10x Focus ──
+  focusInput: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#F0F0FF',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    marginBottom: 14,
+  },
+  actionRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  actionLabel: { ...Typography.captionBold },
+  actionPoints: { ...Typography.small, color: Colors.text.tertiary, marginLeft: 6 },
+  actionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(249,115,22,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: Radius.sm,
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    padding: 12,
   },
-  fireEmoji: {
+  actionCheck: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: Colors.brand.primary + '50',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  actionCheckActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  actionText: { flex: 1, ...Typography.body, color: Colors.text.primary },
+  actionTextDone: { textDecorationLine: 'line-through', color: Colors.text.tertiary },
+  setBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: Colors.brand.primary },
+  setBtnText: { ...Typography.smallBold, color: Colors.brand.primary },
+
+  // ── Text Areas ──
+  textArea: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
+    fontWeight: '500',
+    color: '#E8E8FF',
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
-  completedText: {
-    color: '#F97316',
-    fontSize: FontSize.xs,
-    fontWeight: '700',
+  textAreaSmall: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#E8E8FF',
+    minHeight: 50,
+    textAlignVertical: 'top',
   },
-  pointsBadge: {
-    backgroundColor: 'rgba(168,85,247,0.15)',
-    paddingHorizontal: 10,
+
+  // ── Checkboxes ──
+  miniCheck: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: Colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  miniCheckActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+
+  // ── 10X Unicorn Checklist ──
+  checklistHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  checklistTitle: { ...Typography.h4, color: Colors.text.primary, fontWeight: '800', letterSpacing: 1 },
+  checklistRule: { ...Typography.small, color: Colors.text.secondary, marginBottom: 16 },
+  checklistRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14 },
+  checklistCheck: {
+    width: 26,
+    height: 26,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: Colors.brand.primary + '40',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  checklistCheckDone: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
+  checklistLabel: { ...Typography.bodyBold, color: Colors.text.primary },
+  checklistLabelDone: { textDecorationLine: 'line-through', color: Colors.text.tertiary },
+  checklistSub: { ...Typography.small, color: Colors.text.tertiary, marginTop: 2 },
+  separator: { height: 1, backgroundColor: Colors.border.default + '40', marginLeft: 40 },
+
+  // ── Wormhole ──
+  contactPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 12,
+    gap: 10,
+  },
+  contactPickerText: { ...Typography.body, color: Colors.text.secondary, flex: 1 },
+  linkText: { ...Typography.captionBold, color: Colors.brand.primary },
+
+  // ── Compound ──
+  streakBadge: {
+    backgroundColor: Colors.brand.primary + '15',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  streakNumber: { ...Typography.h3, color: Colors.brand.primary },
+  streakLabel: { ...Typography.small, color: Colors.text.tertiary },
+  compoundRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginVertical: 16, gap: 16 },
+  compoundBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.background.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  compoundNum: { ...Typography.h2, color: Colors.text.primary },
+  compoundEditInput: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.text.primary,
+    textAlign: 'center',
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.brand.primary,
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: Radius.sm,
+    minWidth: 80,
   },
-  pointsBadgeText: {
-    color: Colors.brand.primary,
-    fontSize: FontSize.xs,
-    fontWeight: '700',
+  compoundUnit: { ...Typography.small, color: Colors.text.tertiary },
+
+  // ── Switch Row ──
+  switchRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 10 },
+  switchLabel: { ...Typography.caption, color: Colors.text.secondary, flex: 1 },
+
+  // ── AI Card ──
+  aiCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.brand.primary + '30',
   },
-  
-  // NEW: Edit signal button
-  editSignalBtn: {
+  aiIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  aiTitle: { ...Typography.bodyBold, color: Colors.text.primary },
+  aiSub: { ...Typography.small, color: Colors.text.tertiary, marginTop: 2 },
+
+  // ── Signals ──
+  signalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+  },
+  signalTitle: { ...Typography.captionBold, color: Colors.text.primary },
+  signalDone: { textDecorationLine: 'line-through', color: Colors.text.tertiary },
+  signalSub: { ...Typography.small, color: Colors.text.tertiary, marginTop: 2 },
+  signalPoints: { ...Typography.captionBold, color: Colors.brand.primary },
+  emptySignals: { alignItems: 'center', paddingVertical: 20 },
+  emptyTitle: { ...Typography.body, color: Colors.text.secondary },
+  emptySub: { ...Typography.small, color: Colors.text.tertiary, textAlign: 'center', marginTop: 4 },
+
+  // ── Modals ──
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
+  modalSheet: {
+    backgroundColor: Colors.background.elevated,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: Colors.border.default, alignSelf: 'center', marginBottom: 16 },
+  modalTitle: { ...Typography.h4, color: Colors.text.primary, textAlign: 'center', marginBottom: 16 },
+  modalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  modalRowActive: { backgroundColor: Colors.brand.primary + '15' },
+  modalDot: { width: 10, height: 10, borderRadius: 5, marginRight: 12 },
+  modalRowText: { ...Typography.body, color: Colors.text.secondary, flex: 1 },
+
+  // ── Contact Search Modal ──
+  searchInput: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#E8E8FF',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  contactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default + '40',
+  },
+  contactAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.bg.input,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border.default,
-  },
-  
-  // Compound habit styles
-  compoundTextWrap: { flex: 1 },
-  compoundCountBadge: { 
-    color: Colors.brand.primary, 
-    fontSize: FontSize.xs, 
-    marginTop: 2 
-  },
-  addMoreBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
     backgroundColor: Colors.brand.primary + '20',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.brand.primary,
+    marginRight: 12,
   },
-  
-  // Compound counter with up/down buttons
-  compoundCounter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-    paddingVertical: 16,
-  },
-  counterCaretBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.bg.input,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.border.default,
-  },
-  counterDisplay: {
-    alignItems: 'center',
-    minWidth: 80,
-  },
-  counterValue: {
-    fontSize: 42,
-    fontWeight: '900',
-    color: Colors.text.primary,
-  },
-  counterLabel: {
-    fontSize: FontSize.sm,
-    color: Colors.text.tertiary,
-    marginTop: -4,
-  },
-  progressBarWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  progressBarBg: {
-    flex: 1,
-    height: 6,
-    backgroundColor: Colors.bg.input,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
+  contactInitial: { ...Typography.bodyBold, color: Colors.brand.primary },
+  contactName: { ...Typography.body, color: Colors.text.primary },
+  contactCompany: { ...Typography.small, color: Colors.text.tertiary },
+  cancelBtn: { marginTop: 12, paddingVertical: 14, alignItems: 'center', borderRadius: 10, backgroundColor: Colors.background.primary },
+  cancelBtnText: { ...Typography.bodyBold, color: Colors.text.secondary },
+
+  // ── Swipe Actions ──
+  swipeEditAction: {
     backgroundColor: Colors.brand.primary,
-    borderRadius: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 70,
+    borderRadius: 10,
+    marginRight: 4,
+    gap: 2,
   },
-  progressPercent: {
-    color: Colors.text.tertiary,
-    fontSize: FontSize.sm,
-    minWidth: 40,
-    textAlign: 'right',
+  swipeDeleteAction: {
+    backgroundColor: Colors.status.error,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 70,
+    borderRadius: 10,
+    marginLeft: 4,
+    gap: 2,
   },
-  
-  // Compound counter modal
-  compoundModal: {
-    backgroundColor: Colors.bg.card,
-    borderRadius: Radius.xl,
-    padding: 24,
-    margin: 20,
-    maxWidth: 400,
-    width: '90%',
-    alignSelf: 'center',
+  swipeActionText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: 'white',
   },
-  compoundModalSubtext: {
+
+  // ── Edit Signal Modal ──
+  editLabel: {
+    fontSize: 13,
+    fontWeight: '600',
     color: Colors.text.secondary,
-    fontSize: FontSize.sm,
-    marginBottom: 24,
-    textAlign: 'center',
+    marginBottom: 6,
+    marginTop: 10,
   },
-  counterRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-    marginBottom: 24,
-  },
-  counterBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.bg.input,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.border.default,
-  },
-  counterInput: {
-    width: 100,
-    height: 70,
-    fontSize: 36,
-    fontWeight: '900',
+  editInput: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
     color: Colors.text.primary,
-    backgroundColor: Colors.bg.input,
-    borderRadius: Radius.lg,
-    textAlign: 'center',
-    borderWidth: 2,
-    borderColor: Colors.brand.primary,
-  },
-  progressSection: { marginBottom: 24 },
-  progressBar: {
-    height: 8,
-    backgroundColor: Colors.bg.input,
-    borderRadius: 4,
-    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: Colors.border.default,
     marginBottom: 8,
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: Colors.brand.primary,
-    borderRadius: 4,
-  },
-  progressText: {
-    color: Colors.text.secondary,
-    fontSize: FontSize.sm,
-    textAlign: 'center',
-  },
-  saveBtn: {
-    backgroundColor: Colors.brand.primary,
-    borderRadius: Radius.md,
-    padding: 16,
-    alignItems: 'center',
-  },
-  saveBtnText: {
-    color: Colors.text.primary,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-  },
-  
-  // Edit Signal Modal styles
-  modalScrollContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
-  },
-  completionSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border.default,
-  },
-  completedBadge: {
-    color: Colors.status.success,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    backgroundColor: 'rgba(34,197,94,0.15)',
-    paddingHorizontal: 12,
+  editChip: {
+    paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: Radius.sm,
-  },
-  uncompleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(249,115,22,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: '#F97316',
-  },
-  uncompleteBtnText: {
-    color: '#F97316',
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-  },
-  // Wormhole Picker
-  wormholePickerBtn: {
-    marginTop: 8,
-    borderRadius: Radius.md,
+    borderRadius: 8,
+    backgroundColor: Colors.background.primary,
     borderWidth: 1,
     borderColor: Colors.border.default,
-    backgroundColor: Colors.bg.input,
-    overflow: 'hidden',
   },
-  wormholeSelected: {
+  editChipActive: {
+    backgroundColor: Colors.brand.primary,
+    borderColor: Colors.brand.primary,
+  },
+  editChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  editScoreBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: Colors.background.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editScoreBtnActive: {
+    backgroundColor: Colors.brand.primary,
+    borderColor: Colors.brand.primary,
+  },
+  editScoreText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.text.primary,
+  },
+  editSaveBtn: {
+    backgroundColor: Colors.brand.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+    shadowColor: Colors.brand.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  editSaveBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: 'white',
+  },
+
+  // ── Add Signal to Today Modal ──
+  addSignalRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default + '40',
+  },
+  addSignalEditBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.brand.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addSignalBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Colors.brand.primary,
+  },
+
+  // ── WIN Banner ──
+  winBanner: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 16,
+    overflow: 'hidden',
+    height: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#FFB800',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.5,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  winBannerGradient: {
+    paddingVertical: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  winBannerText: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: 'white',
+    letterSpacing: 2,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.35)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
+  },
+  miniWinBanner: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  miniWinText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#00E676',
+    letterSpacing: 1,
+  },
+
+  // ── Glow Stat Boxes ──
+  glowStatsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    marginTop: 16,
     gap: 10,
   },
-  wormholeAvatar: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: Colors.brand.primary,
-    justifyContent: 'center', alignItems: 'center',
+  glowStatBox: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border.default + '40',
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  wormholeAvatarText: {
-    color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '700',
+  glowStatValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: Colors.text.primary,
   },
-  wormholeSelectedName: {
-    flex: 1, color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600',
+  glowStatLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.text.tertiary,
+    marginTop: 4,
+    letterSpacing: 0.5,
   },
-  wormholePlaceholder: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14,
+
+  // ── Checklist Done States ──
+  checklistRowDone: {
+    backgroundColor: '#00E67612',
+    borderRadius: 10,
+    marginHorizontal: -4,
+    paddingHorizontal: 4,
   },
-  wormholePlaceholderText: {
-    color: Colors.text.tertiary, fontSize: FontSize.base,
+
+  // ── FAB ──
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: Colors.brand.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  wormholePickItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    padding: 14, borderBottomWidth: 1, borderBottomColor: Colors.border.default,
-  },
-  wormholePickItemActive: {
-    backgroundColor: 'rgba(168,85,247,0.1)',
-  },
-  wormholePickName: {
-    color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600',
-  },
-  wormholePickCompany: {
-    color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2,
-  },
-  // Date Picker
-  datePickerBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: Colors.bg.input, borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.border.default,
-    paddingHorizontal: 14, paddingVertical: 12, marginTop: 4, marginBottom: 4,
-  },
-  datePickerText: {
-    flex: 1, color: Colors.text.primary, fontSize: FontSize.base,
-  },
-  calendarOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center', alignItems: 'center',
-    padding: 16, zIndex: 100,
-  },
+  fabGradient: { width: 52, height: 52, borderRadius: 16, justifyContent: 'center', alignItems: 'center' },
 });
+
+export default TODAY_SCREEN;

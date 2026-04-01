@@ -1,797 +1,1410 @@
+/**
+ * Profile Tab — (tabs)/profile.tsx
+ * User profile with avatar, edit modal, 10x goal, daily compound target, notification settings
+ * ~500 lines
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  ScrollView, ActivityIndicator, Alert, Modal, KeyboardAvoidingView, Platform,
-  Image,
+  View, ScrollView, StyleSheet, Text, Image, TouchableOpacity,
+  Alert, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView,
+  Platform, Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as ImagePicker from 'expo-image-picker';
+// expo-image-picker is native-only — conditionally import
+let ImagePicker: any = null;
+if (Platform.OS !== 'web') {
+  ImagePicker = require('expo-image-picker');
+}
 import { useAuth } from '../../src/context/AuthContext';
-import { api } from '../../src/utils/api';
-import { Colors, Spacing, Radius, FontSize } from '../../src/constants/theme';
-
-const SERVICES = [
-  'capital', 'marketing', 'social_media', 'community_management', 'operations',
-  'tech_development', 'podcast_booking', 'speaking', 'sponsorships', 'events',
-  'communities', 'financial_services', 'coaching', 'design', 'sales', 'legal', 'hr'
-];
-
-const PROFILE_EMOJIS = ['🔥', '💎', '🦄', '🚀', '⭐', '🌟', '💪', '🎯', '👑', '🦅', '🐉', '🌙', '☀️', '🌊', '🏆', '💰'];
+import { profiles, goals } from '../../src/utils/database';
+import { supabase } from '../../src/utils/supabase';
+import { Colors, Spacing, BorderRadius, Typography } from '../../src/constants/theme';
+import { Profile, Goal } from '../../src/types/database';
+import CosmicBackground from '../../src/components/CosmicBackground';
+import UnicornHeader from '../../src/components/UnicornHeader';
 
 export default function ProfileScreen() {
+  const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
-  const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
-  const [memberProfile, setMemberProfile] = useState<any>(null);
-  const [goal, setGoal] = useState<any>(null);
-  const [habit, setHabit] = useState<any>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [goal, setGoal] = useState<Goal | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [editForm, setEditForm] = useState<any>({});
-  const [saving, setSaving] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
-  const [notificationSettings, setNotificationSettings] = useState<any>({});
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showEditGoal, setShowEditGoal] = useState(false);
-  const [goalForm, setGoalForm] = useState<any>({});
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
 
-  useEffect(() => { loadProfile(); loadNotificationSettings(); }, []);
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    displayName: '',
+    company: '',
+    title: '',
+    phone: '',
+    bio: '',
+    website: '',
+    twitter: '',
+    linkedin: '',
+    instagram: '',
+    services: '',
+    industries: '',
+  });
+
+  // Notification settings
+  const [notifications, setNotifications] = useState({
+    dailyReminder: true,
+    achievements: true,
+    messages: true,
+    wormholeUpdates: true,
+  });
+
+  // Compound target editor
+  const [compoundTarget, setCompoundTarget] = useState('1');
+  const [compoundModalVisible, setCompoundModalVisible] = useState(false);
+
+  // Goal editor
+  const [goalModalVisible, setGoalModalVisible] = useState(false);
+  const [goalForm, setGoalForm] = useState({
+    title: '',
+    description: '',
+    targetNumber: '',
+    targetDate: '',
+    goalType: 'number' as 'dollar' | 'number',
+    currentNumber: '',
+  });
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
 
   const loadProfile = async () => {
+    if (!user) return;
+    setLoading(true);
     try {
-      const [data, memberData] = await Promise.all([
-        api.get('/profile'),
-        api.get('/member/profile'),
-      ]);
-      setProfile(data.profile);
-      setGoal(data.goal);
-      setHabit(data.habit);
-      setMemberProfile(memberData);
-    } catch (e) {
-      console.error(e);
+      const { data: profileData, error: profileErr } = await profiles.get(user.id);
+      if (profileErr) {
+        console.error('Profile error:', profileErr);
+        return;
+      }
+      setProfile(profileData);
+      setEditForm({
+        displayName: profileData?.display_name || '',
+        company: profileData?.company || '',
+        title: profileData?.title || '',
+        phone: profileData?.phone || '',
+        bio: profileData?.bio || '',
+        website: profileData?.website || '',
+        twitter: profileData?.twitter_url || '',
+        linkedin: profileData?.linkedin_url || '',
+        instagram: profileData?.instagram_url || '',
+        services: profileData?.services_offered?.join(', ') || '',
+        industries: profileData?.industries?.join(', ') || '',
+      });
+      setCompoundTarget(String(profileData?.daily_compound_target || 1));
+
+      // Load active goal
+      const { data: goalData } = await goals.getActive(user.id);
+      setGoal(goalData || null);
+    } catch (err) {
+      console.error('Load profile error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadNotificationSettings = async () => {
-    try {
-      const settings = await api.get('/notifications/settings');
-      setNotificationSettings(settings);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const saveNotificationSettings = async () => {
-    try {
-      await api.put('/notifications/settings', notificationSettings);
-      setShowNotificationSettings(false);
-      Alert.alert('Success', 'Notification settings saved');
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
-    }
-  };
-
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert('Permission Required', 'Please allow access to your photos');
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'Image upload coming soon for web');
       return;
     }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-      base64: true,
-    });
-
-    if (!result.canceled && result.assets[0].base64) {
-      setUploadingPhoto(true);
-      try {
-        const base64Uri = `data:image/jpeg;base64,${result.assets[0].base64}`;
-        await api.put('/profiles/photo', { base64: base64Uri });
-        await loadProfile();
-        Alert.alert('Success', 'Profile photo updated');
-      } catch (e: any) {
-        Alert.alert('Error', e.message);
-      } finally {
-        setUploadingPhoto(false);
+      if (!result.canceled && result.assets[0]) {
+        await uploadAvatar(result.assets[0].uri);
       }
+    } catch (err) {
+      console.error('Image picker error:', err);
+      Alert.alert('Error', 'Failed to pick image');
     }
   };
 
-  const openEditProfile = () => {
-    setEditForm({
-      first_name: profile?.first_name || profile?.display_name?.split(' ')[0] || '',
-      profile_emoji: profile?.profile_emoji || '🔥',
-      display_name: profile?.display_name || '',
-      company_name: memberProfile?.company_name || '',
-      website: memberProfile?.website || '',
-      email: memberProfile?.email || '',
-      phone: memberProfile?.phone || '',
-      booking_link: memberProfile?.booking_link || '',
-      linkedin: memberProfile?.linkedin || '',
-      twitter: memberProfile?.twitter || '',
-      instagram: memberProfile?.instagram || '',
-      bio: memberProfile?.bio || '',
-      working_on: memberProfile?.working_on || '',
-      services_offered: memberProfile?.services_offered || [],
-      target_customer: memberProfile?.target_customer || '',
-      good_connection_for: memberProfile?.good_connection_for || '',
-      warm_connection: memberProfile?.warm_connection || '',
-      golden_connection: memberProfile?.golden_connection || '',
-      show_status_ring: memberProfile?.show_status_ring ?? true,
-      // Goal and Habit
-      goal_title: goal?.title || '',
-      goal_deadline: goal?.deadline || goal?.end_date || '',
-      goal_target: goal?.target_number?.toString() || '',
-      habit_title: habit?.habit_title || '',
-      habit_target: habit?.target_number?.toString() || '',
-    });
-    setShowEditProfile(true);
+  const uploadAvatar = async (uri: string) => {
+    if (!user || !profile) return;
+
+    try {
+      setLoading(true);
+      const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const filePath = `${user.id}/avatar-${Date.now()}.${ext}`;
+
+      // React Native compatible: read as arraybuffer
+      const response = await fetch(uri);
+      const arrayBuffer = await response.arrayBuffer();
+
+      const { error: uploadErr } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, arrayBuffer, {
+          upsert: true,
+          contentType: `image/${ext === 'png' ? 'png' : 'jpeg'}`,
+        });
+
+      if (uploadErr) {
+        console.error('Storage upload error:', uploadErr);
+        throw uploadErr;
+      }
+
+      const { data: publicUrl } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const avatarUrl = publicUrl.publicUrl;
+
+      const { error: updateErr } = await profiles.update(user.id, {
+        avatar_url: avatarUrl,
+      });
+
+      if (updateErr) {
+        console.error('Profile update error:', updateErr);
+        throw updateErr;
+      }
+
+      setProfile({ ...profile, avatar_url: avatarUrl });
+      Alert.alert('Success', 'Avatar updated');
+    } catch (err: any) {
+      console.error('Upload avatar error:', err);
+      Alert.alert('Error', err?.message || 'Failed to upload avatar');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const saveProfile = async () => {
-    setSaving(true);
+    if (!user) return;
+
     try {
-      // Update basic profile with first_name and emoji
-      await api.put('/profile', { 
-        display_name: editForm.display_name,
-        first_name: editForm.first_name,
-        profile_emoji: editForm.profile_emoji,
+      setLoading(true);
+      const { error } = await profiles.update(user.id, {
+        display_name: editForm.displayName,
+        full_name: editForm.displayName,
+        company: editForm.company || null,
+        title: editForm.title || null,
+        phone: editForm.phone || null,
+        bio: editForm.bio || null,
+        website: editForm.website || null,
+        twitter_url: editForm.twitter || null,
+        linkedin_url: editForm.linkedin || null,
+        instagram_url: editForm.instagram || null,
+        services_offered: editForm.services
+          ? editForm.services.split(',').map(s => s.trim())
+          : null,
+        industries: editForm.industries
+          ? editForm.industries.split(',').map(i => i.trim())
+          : null,
       });
-      
-      // Update member profile
-      const { display_name, first_name, profile_emoji, goal_title, goal_deadline, goal_target, habit_title, habit_target, ...memberFields } = editForm;
-      await api.put('/member/profile', memberFields);
-      
-      // Update goal if changed
-      if (editForm.goal_title) {
-        await api.put('/goal', {
-          title: editForm.goal_title,
-          deadline: editForm.goal_deadline,
-          target_number: editForm.goal_target ? parseFloat(editForm.goal_target) : null,
-        });
-      }
-      
-      // Update compound habit if changed
-      if (editForm.habit_title) {
-        await api.put('/compound-habit', {
-          habit_title: editForm.habit_title,
-          target_number: editForm.habit_target ? parseInt(editForm.habit_target) : null,
-        });
-      }
-      
-      await loadProfile();
-      setShowEditProfile(false);
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
+
+      if (error) throw error;
+
+      setProfile({
+        ...profile!,
+        display_name: editForm.displayName,
+        company: editForm.company || null,
+        title: editForm.title || null,
+        phone: editForm.phone || null,
+        bio: editForm.bio || null,
+        website: editForm.website || null,
+        twitter_url: editForm.twitter || null,
+        linkedin_url: editForm.linkedin || null,
+        instagram_url: editForm.instagram || null,
+      });
+
+      setEditModalVisible(false);
+      Alert.alert('Success', 'Profile updated');
+    } catch (err) {
+      console.error('Save profile error:', err);
+      Alert.alert('Error', 'Failed to save profile');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  const toggleService = (service: string) => {
-    const current = editForm.services_offered || [];
-    if (current.includes(service)) {
-      setEditForm({ ...editForm, services_offered: current.filter((s: string) => s !== service) });
-    } else {
-      setEditForm({ ...editForm, services_offered: [...current, service] });
+  const saveCompoundTarget = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      const { error } = await profiles.update(user.id, {
+        daily_compound_target: parseInt(compoundTarget, 10) || 1,
+      });
+
+      if (error) throw error;
+
+      setProfile({
+        ...profile!,
+        daily_compound_target: parseInt(compoundTarget, 10) || 1,
+      });
+
+      setCompoundModalVisible(false);
+      Alert.alert('Success', 'Daily compound target updated');
+    } catch (err) {
+      console.error('Save compound target error:', err);
+      Alert.alert('Error', 'Failed to update target');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure?', [
-      { text: 'Cancel' },
-      { text: 'Logout', style: 'destructive', onPress: async () => {
-        await logout();
-        router.replace('/(auth)/login');
-      }}
-    ]);
-  };
-
-  const handleDeleteAccount = () => {
-    Alert.alert('Delete Account', 'This will permanently delete your account and all data. Are you sure?', [
-      { text: 'Cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          await api.delete('/auth/account');
-          await logout();
-          router.replace('/(auth)/login');
-        } catch (e: any) {
-          Alert.alert('Error', e.message);
-        }
-      }}
-    ]);
-  };
-
-  const openEditGoal = () => {
-    // Get current value from progress_history or directly from goal
-    const currentValue = goal?.current_value || 
-      (goal?.progress_history?.length ? goal.progress_history[goal.progress_history.length - 1].value : 0);
-    
-    setGoalForm({
-      title: goal?.title || '',
-      description: goal?.description || '',
-      deadline: goal?.deadline ? new Date(goal.deadline).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' }) : '',
-      target_number: goal?.target_number?.toString() || '',
-      current_value: currentValue?.toString() || '0',
-    });
-    setShowEditGoal(true);
+  // Goal editing
+  const openGoalEditor = () => {
+    if (goal) {
+      setGoalForm({
+        title: goal.title || '',
+        description: goal.description || '',
+        targetNumber: String((goal as any).target_number || ''),
+        targetDate: goal.target_date || '',
+        goalType: (goal as any).goal_type || 'number',
+        currentNumber: String((goal as any).current_number || ''),
+      });
+    }
+    setGoalModalVisible(true);
   };
 
   const saveGoal = async () => {
-    setSaving(true);
+    if (!user) return;
     try {
-      const goalData: any = {
+      setLoading(true);
+      const updates: any = {
         title: goalForm.title,
         description: goalForm.description,
-        target_number: goalForm.target_number ? parseInt(goalForm.target_number) : null,
+        target_number: parseFloat(goalForm.targetNumber) || 0,
+        target_date: goalForm.targetDate || null,
+        goal_type: goalForm.goalType,
+        current_number: parseFloat(goalForm.currentNumber) || 0,
       };
-      if (goalForm.deadline) {
-        const [m, d, y] = goalForm.deadline.split('/');
-        const year = parseInt(y) < 50 ? 2000 + parseInt(y) : 1900 + parseInt(y);
-        goalData.deadline = new Date(year, parseInt(m) - 1, parseInt(d)).toISOString();
+      // Calculate progress
+      if (updates.target_number > 0) {
+        updates.progress = Math.min(100, Math.round((updates.current_number / updates.target_number) * 100));
       }
-      
-      // Update goal details
-      await api.put('/goal', goalData);
-      
-      // Update current progress separately via the progress endpoint
-      const currentValue = goalForm.current_value ? parseInt(goalForm.current_value) : 0;
-      if (currentValue > 0) {
-        await api.post('/goals/progress', { current_value: currentValue, notes: 'Updated from Profile' });
+
+      if (goal) {
+        const { error } = await goals.update(goal.id, updates);
+        if (error) throw error;
+        setGoal({ ...goal, ...updates });
+      } else {
+        const { data: newGoal, error } = await goals.create(user.id, {
+          title: updates.title,
+          description: updates.description,
+          target_date: updates.target_date,
+          target_number: updates.target_number,
+        });
+        if (error) throw error;
+        if (newGoal) {
+          // Update with goal_type
+          await goals.update(newGoal.id, { goal_type: updates.goal_type, current_number: updates.current_number } as any);
+          setGoal({ ...newGoal, ...updates });
+        }
       }
-      
-      await loadProfile();
-      setShowEditGoal(false);
+      setGoalModalVisible(false);
       Alert.alert('Success', 'Goal updated');
-    } catch (e: any) {
-      Alert.alert('Error', e.message);
+    } catch (err) {
+      console.error('Save goal error:', err);
+      Alert.alert('Error', 'Failed to update goal');
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
-  if (loading) {
+  // Background cover image
+  const pickCoverImage = async () => {
+    if (Platform.OS === 'web') {
+      Alert.alert('Not Available', 'Image upload coming soon for web');
+      return;
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.7,
+        allowsEditing: true,
+        aspect: [16, 9],
+      });
+      if (!result.canceled && result.assets[0] && user) {
+        const asset = result.assets[0];
+        const ext = asset.uri.split('.').pop();
+        const filePath = `${user.id}/cover.${ext}`;
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, blob, { upsert: true });
+        if (uploadError) throw uploadError;
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+        const coverUrl = urlData.publicUrl + '?t=' + Date.now();
+        await profiles.update(user.id, { cover_image_url: coverUrl } as any);
+        setProfile({ ...profile!, cover_image_url: coverUrl } as any);
+      }
+    } catch (err) {
+      console.error('Cover image error:', err);
+      Alert.alert('Error', 'Failed to upload cover image');
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert('Sign Out', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Sign Out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await logout();
+          } catch (err) {
+            Alert.alert('Error', 'Failed to sign out');
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'This action cannot be undone. All your data will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              // Call delete function (implement on backend)
+              const { error } = await supabase.functions.invoke('delete-account', {
+                body: { userId: user?.id },
+              });
+              if (error) throw error;
+              await logout();
+            } catch (err) {
+              console.error('Delete account error:', err);
+              Alert.alert('Error', 'Failed to delete account');
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (loading && !profile) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}><ActivityIndicator size="large" color={Colors.brand.primary} /></View>
-      </SafeAreaView>
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={Colors.brand.primary} />
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.pageTitle}>Profile</Text>
-
-        {/* Header Card */}
-        <LinearGradient colors={[Colors.brand.primary + '20', 'transparent']} style={styles.headerCard}>
-          <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={uploadingPhoto}>
-            {memberProfile?.profile_photo_url ? (
-              <Image source={{ uri: `${process.env.EXPO_PUBLIC_BACKEND_URL}${memberProfile.profile_photo_url}` }} style={styles.profilePhoto} />
-            ) : (
-              <View style={styles.bigAvatar}>
-                <Text style={styles.bigAvatarText}>
-                  {(profile?.display_name || user?.email || '?')[0]?.toUpperCase()}
-                </Text>
-              </View>
-            )}
-            {uploadingPhoto ? (
-              <View style={styles.photoOverlay}>
-                <ActivityIndicator color={Colors.text.primary} />
-              </View>
-            ) : (
-              <View style={styles.cameraIcon}>
-                <Ionicons name="camera" size={16} color={Colors.text.primary} />
-              </View>
-            )}
-          </TouchableOpacity>
-          <Text style={styles.displayName}>{profile?.display_name || 'Set your name'}</Text>
-          {memberProfile?.company_name && <Text style={styles.companyName}>{memberProfile.company_name}</Text>}
-          <Text style={styles.email}>{user?.email}</Text>
-          
-          <View style={styles.profileActions}>
-            <TouchableOpacity testID="edit-profile-btn" style={styles.editProfileBtn} onPress={openEditProfile}>
-              <Ionicons name="create-outline" size={16} color={Colors.text.primary} />
-              <Text style={styles.editProfileText}>Edit Profile</Text>
-            </TouchableOpacity>
-            <TouchableOpacity testID="notification-settings-btn" style={styles.notificationBtn} onPress={() => setShowNotificationSettings(true)}>
-              <Ionicons name="notifications-outline" size={16} color={Colors.text.primary} />
-              <Text style={styles.editProfileText}>Notifications</Text>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-
-        {/* Quick Info */}
-        {memberProfile?.working_on && (
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Currently Working On</Text>
-            <Text style={styles.cardValue}>{memberProfile.working_on}</Text>
-          </View>
+    <CosmicBackground>
+    <View style={styles.container}>
+      <UnicornHeader>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: Colors.text.primary }}>Profile</Text>
+      </UnicornHeader>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+      {/* Avatar Section with Cover Image */}
+      <View style={styles.coverContainer}>
+        {(profile as any)?.cover_image_url ? (
+          <Image source={{ uri: (profile as any).cover_image_url }} style={styles.coverImage} />
+        ) : (
+          <LinearGradient
+            colors={Colors.gradient.primary}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.coverImage}
+          />
         )}
-
-        {/* 10x Goal with Edit and Progress */}
-        <View style={styles.card}>
-          <View style={styles.goalCardHeader}>
-            <View style={styles.goalIconWrap}>
-              <Ionicons name="rocket" size={20} color={Colors.brand.primary} />
-            </View>
-            <TouchableOpacity testID="edit-goal-btn" style={styles.editGoalBtn} onPress={openEditGoal}>
-              <Ionicons name="create-outline" size={16} color={Colors.brand.accent} />
-              <Text style={styles.editGoalBtnText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-          <Text style={styles.cardLabel}>10x Goal</Text>
-          <Text style={styles.cardValue}>{goal?.title || 'Not set'}</Text>
-          {goal?.description && <Text style={styles.cardDesc}>{goal.description}</Text>}
-          
-          {/* Goal Progress Display */}
-          {goal?.target_number && (
-            <View style={styles.goalProgressContainer}>
-              <View style={styles.goalProgressHeader}>
-                <Text style={styles.goalProgressLabel}>Progress</Text>
-                <Text style={styles.goalProgressNumbers}>
-                  {goal.current_value || 0} / {goal.target_number}
-                </Text>
-              </View>
-              <View style={styles.goalProgressBarBg}>
-                <View style={[
-                  styles.goalProgressBarFill,
-                  { width: `${Math.min(100, ((goal.current_value || 0) / goal.target_number) * 100)}%` }
-                ]} />
-              </View>
-              {goal.deadline && (
-                <View style={styles.goalDeadlineRow}>
-                  <Ionicons name="calendar-outline" size={14} color={Colors.text.tertiary} />
-                  <Text style={styles.goalDeadlineText}>
-                    Due: {new Date(goal.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
-                  </Text>
-                </View>
-              )}
+        <TouchableOpacity style={styles.coverEditBtn} onPress={pickCoverImage} activeOpacity={0.7}>
+          <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>Edit Cover</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.avatarContainer}>
+        <TouchableOpacity onPress={pickImage} activeOpacity={0.7}>
+          {profile?.avatar_url ? (
+            <Image
+              source={{ uri: profile.avatar_url }}
+              style={styles.avatar}
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarEmoji}>{profile?.emoji || '🦄'}</Text>
             </View>
           )}
-        </View>
-
-        {/* Compound Habit */}
-        <View style={styles.card}>
-          <View style={styles.cardIcon}>
-            <Ionicons name="repeat" size={20} color={Colors.brand.accent} />
+          <View style={styles.editBadge}>
+            <Text style={styles.editBadgeText}>+</Text>
           </View>
-          <Text style={styles.cardLabel}>Daily Compound Habit</Text>
-          <Text style={styles.cardValue}>{habit?.habit_title || 'Not set'}</Text>
-        </View>
+        </TouchableOpacity>
 
-        {/* Contact & Social */}
-        {(memberProfile?.website || memberProfile?.booking_link || memberProfile?.linkedin) && (
-          <View style={styles.card}>
-            <Text style={styles.sectionLabel}>Contact & Social</Text>
-            {memberProfile?.website && (
-              <View style={styles.infoRow}>
-                <Ionicons name="globe-outline" size={16} color={Colors.brand.accent} />
-                <Text style={styles.infoText}>{memberProfile.website}</Text>
-              </View>
-            )}
-            {memberProfile?.booking_link && (
-              <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={16} color={Colors.brand.accent} />
-                <Text style={styles.infoText}>{memberProfile.booking_link}</Text>
-              </View>
-            )}
-            {memberProfile?.linkedin && (
-              <View style={styles.infoRow}>
-                <Ionicons name="logo-linkedin" size={16} color={Colors.brand.accent} />
-                <Text style={styles.infoText}>{memberProfile.linkedin}</Text>
-              </View>
-            )}
-            {memberProfile?.twitter && (
-              <View style={styles.infoRow}>
-                <Ionicons name="logo-twitter" size={16} color={Colors.brand.accent} />
-                <Text style={styles.infoText}>{memberProfile.twitter}</Text>
-              </View>
-            )}
-          </View>
+        <Text style={styles.displayName}>
+          {profile?.display_name || 'Unicorn'}
+        </Text>
+        {profile?.title && (
+          <Text style={styles.title}>{profile.title}</Text>
         )}
+        {profile?.company && (
+          <Text style={styles.company}>{profile.company}</Text>
+        )}
+      </View>
 
-        {/* Services Offered */}
-        {memberProfile?.services_offered?.length > 0 && (
-          <View style={styles.card}>
-            <Text style={styles.sectionLabel}>Services Offered</Text>
-            <View style={styles.chipRow}>
-              {memberProfile.services_offered.map((s: string) => (
-                <View key={s} style={styles.chip}>
-                  <Text style={styles.chipText}>{s.replace('_', ' ')}</Text>
-                </View>
-              ))}
+      {/* Goal Section */}
+      <View style={styles.section}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
+          <Text style={styles.sectionTitle}>10x Goal</Text>
+          <TouchableOpacity onPress={openGoalEditor} style={{ paddingHorizontal: 12, paddingVertical: 6, backgroundColor: Colors.brand.primary + '20', borderRadius: 8 }}>
+            <Text style={{ color: Colors.brand.primary, fontSize: 13, fontWeight: '700' }}>{goal ? 'Edit' : '+ Set Goal'}</Text>
+          </TouchableOpacity>
+        </View>
+        {goal ? (
+          <TouchableOpacity style={styles.goalCard} onPress={openGoalEditor} activeOpacity={0.7}>
+            <Text style={styles.goalTitle}>{goal.title}</Text>
+            {goal.description && (
+              <Text style={styles.goalDescription}>{goal.description}</Text>
+            )}
+            <View style={styles.progressContainer}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { width: `${Math.min(((goal as any).current_number / ((goal as any).target_number || 100)) * 100, 100)}%` },
+                ]}
+              />
             </View>
-          </View>
-        )}
-
-        {/* Connection Info */}
-        {(memberProfile?.good_connection_for || memberProfile?.golden_connection) && (
-          <View style={styles.card}>
-            <Text style={styles.sectionLabel}>Connection Profile</Text>
-            {memberProfile?.good_connection_for && (
-              <>
-                <Text style={styles.connectionLabel}>Good Connection For:</Text>
-                <Text style={styles.connectionText}>{memberProfile.good_connection_for}</Text>
-              </>
+            <Text style={styles.progressText}>
+              {(goal as any).goal_type === 'dollar' ? '$' : ''}{((goal as any).current_number || 0).toLocaleString()} / {(goal as any).goal_type === 'dollar' ? '$' : ''}{((goal as any).target_number || 0).toLocaleString()}
+            </Text>
+            {goal.target_date && (
+              <Text style={[styles.progressText, { marginTop: 4 }]}>Deadline: {new Date(goal.target_date).toLocaleDateString()}</Text>
             )}
-            {memberProfile?.golden_connection && (
-              <>
-                <Text style={styles.connectionLabel}>Golden Connection:</Text>
-                <Text style={styles.connectionText}>{memberProfile.golden_connection}</Text>
-              </>
-            )}
-          </View>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.goalCard} onPress={openGoalEditor}>
+            <Text style={[styles.goalDescription, { textAlign: 'center' }]}>Tap to set your 10x goal</Text>
+          </TouchableOpacity>
         )}
+      </View>
 
-        {/* Timezone */}
-        <View style={styles.card}>
-          <Text style={styles.cardLabel}>Timezone</Text>
-          <Text style={styles.cardValue}>{profile?.timezone_str || 'UTC'}</Text>
+      {/* Daily Compound Target */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Daily Compound Habit</Text>
+        <TouchableOpacity
+          style={styles.compoundCard}
+          onPress={() => setCompoundModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <View>
+            <Text style={styles.compoundLabel}>Daily Target</Text>
+            <Text style={styles.compoundValue}>
+              {profile?.daily_compound_target || 1} rep{(profile?.daily_compound_target || 1) !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <Text style={styles.arrowText}>›</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Bio Section */}
+      {profile?.bio && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.bioText}>{profile.bio}</Text>
         </View>
+      )}
 
-        {/* Actions */}
-        <TouchableOpacity testID="logout-btn" style={styles.logoutBtn} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color={Colors.text.primary} />
-          <Text style={styles.logoutText}>Logout</Text>
+      {/* Contact Info */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Contact</Text>
+        {profile?.email && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue}>{profile.email}</Text>
+          </View>
+        )}
+        {profile?.phone && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Phone</Text>
+            <Text style={styles.infoValue}>{profile.phone}</Text>
+          </View>
+        )}
+        {profile?.website && (
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Website</Text>
+            <Text style={styles.infoValue}>{profile.website}</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Social Links */}
+      {(profile?.twitter_url || profile?.linkedin_url || profile?.instagram_url) && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Social</Text>
+          {profile?.linkedin_url && (
+            <Text style={styles.socialLink}>LinkedIn: {profile.linkedin_url}</Text>
+          )}
+          {profile?.twitter_url && (
+            <Text style={styles.socialLink}>Twitter: {profile.twitter_url}</Text>
+          )}
+          {profile?.instagram_url && (
+            <Text style={styles.socialLink}>Instagram: {profile.instagram_url}</Text>
+          )}
+        </View>
+      )}
+
+      {/* Action Buttons */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.primaryButton}
+          onPress={() => setEditModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.primaryButtonText}>Edit Profile</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity testID="delete-account-btn" style={styles.deleteBtn} onPress={handleDeleteAccount}>
-          <Ionicons name="trash-outline" size={20} color={Colors.status.error} />
-          <Text style={styles.deleteBtnText}>Delete Account</Text>
+        <TouchableOpacity
+          style={styles.secondaryButton}
+          onPress={() => setSettingsModalVisible(true)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.secondaryButtonText}>Notification Settings</Text>
         </TouchableOpacity>
 
-        <View style={{ height: 100 }} />
-      </ScrollView>
+        <TouchableOpacity
+          style={[styles.dangerButton]}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.dangerButtonText}>Sign Out</Text>
+        </TouchableOpacity>
 
-      {/* Edit Profile Modal */}
-      <Modal visible={showEditProfile} animationType="slide" transparent>
+        <TouchableOpacity
+          style={[styles.dangerButton, { marginBottom: Spacing.xxxl }]}
+          onPress={handleDeleteAccount}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.dangerButtonText}>Delete Account</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Edit Modal */}
+      <Modal
+        visible={editModalVisible}
+        animationType="slide"
+        transparent={false}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.container}
+        >
+          <ScrollView
+            style={[styles.modal, { paddingTop: insets.top }]}
+            contentContainerStyle={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setEditModalVisible(false)}>
+                <Text style={styles.modalCloseText}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Edit Profile</Text>
+              <TouchableOpacity onPress={saveProfile} disabled={loading}>
+                <Text style={[styles.modalSaveText, loading && styles.disabled]}>
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Display Name *</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="Your name"
+                value={editForm.displayName}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, displayName: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Company</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="Company name"
+                value={editForm.company}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, company: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Title</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="Job title"
+                value={editForm.title}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, title: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Phone</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="+1 (555) 123-4567"
+                value={editForm.phone}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, phone: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Bio</Text>
+              <TextInput
+                style={[styles.textInput, styles.multilineInput]}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="Tell us about yourself"
+                value={editForm.bio}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, bio: text })
+                }
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Website</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="https://example.com"
+                value={editForm.website}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, website: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>LinkedIn URL</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="https://linkedin.com/in/..."
+                value={editForm.linkedin}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, linkedin: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Twitter URL</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="https://twitter.com/..."
+                value={editForm.twitter}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, twitter: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Instagram URL</Text>
+              <TextInput
+                style={styles.textInput}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="https://instagram.com/..."
+                value={editForm.instagram}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, instagram: text })
+                }
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Services Offered (comma-separated)</Text>
+              <TextInput
+                style={[styles.textInput, styles.multilineInput]}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="Consulting, Coaching, Development"
+                value={editForm.services}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, services: text })
+                }
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>Industries (comma-separated)</Text>
+              <TextInput
+                style={[styles.textInput, styles.multilineInput]}
+                placeholderTextColor={Colors.text.tertiary}
+                placeholder="Tech, Finance, E-commerce"
+                value={editForm.industries}
+                onChangeText={(text) =>
+                  setEditForm({ ...editForm, industries: text })
+                }
+                multiline
+                numberOfLines={2}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Goal Edit Modal */}
+      <Modal visible={goalModalVisible} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
-            <View style={styles.modal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit Profile</Text>
-                <TouchableOpacity onPress={() => setShowEditProfile(false)}>
-                  <Ionicons name="close" size={24} color={Colors.text.primary} />
+          <View style={[styles.compoundModal, { width: '90%', maxHeight: '80%' }]}>
+            <Text style={styles.compoundModalTitle}>10x Goal</Text>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+              <Text style={styles.goalFormLabel}>Goal Title *</Text>
+              <TextInput
+                style={styles.goalFormInput}
+                placeholder="e.g., $100K Revenue, 1000 Members..."
+                placeholderTextColor={Colors.text.tertiary}
+                value={goalForm.title}
+                onChangeText={(t) => setGoalForm({ ...goalForm, title: t })}
+              />
+              <Text style={styles.goalFormLabel}>Description</Text>
+              <TextInput
+                style={[styles.goalFormInput, { minHeight: 60, textAlignVertical: 'top' }]}
+                placeholder="What does achieving this look like?"
+                placeholderTextColor={Colors.text.tertiary}
+                value={goalForm.description}
+                onChangeText={(t) => setGoalForm({ ...goalForm, description: t })}
+                multiline
+              />
+              <Text style={styles.goalFormLabel}>Goal Type</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                <TouchableOpacity
+                  style={[styles.goalTypeBtn, goalForm.goalType === 'dollar' && styles.goalTypeBtnActive]}
+                  onPress={() => setGoalForm({ ...goalForm, goalType: 'dollar' })}
+                >
+                  <Text style={[styles.goalTypeBtnText, goalForm.goalType === 'dollar' && styles.goalTypeBtnTextActive]}>$ Dollar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.goalTypeBtn, goalForm.goalType === 'number' && styles.goalTypeBtnActive]}
+                  onPress={() => setGoalForm({ ...goalForm, goalType: 'number' })}
+                >
+                  <Text style={[styles.goalTypeBtnText, goalForm.goalType === 'number' && styles.goalTypeBtnTextActive]}># Number</Text>
                 </TouchableOpacity>
               </View>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                {/* Basic Info */}
-                <Text style={styles.formSection}>Basic Info</Text>
-                <TextInput style={styles.input} value={editForm.display_name} onChangeText={t => setEditForm({...editForm, display_name: t})} placeholder="Display Name" placeholderTextColor={Colors.text.tertiary} />
-                <TextInput style={styles.input} value={editForm.company_name} onChangeText={t => setEditForm({...editForm, company_name: t})} placeholder="Company Name" placeholderTextColor={Colors.text.tertiary} />
-                <TextInput style={[styles.input, { minHeight: 80 }]} value={editForm.bio} onChangeText={t => setEditForm({...editForm, bio: t})} placeholder="Bio - Tell us about yourself" placeholderTextColor={Colors.text.tertiary} multiline />
-                <TextInput style={styles.input} value={editForm.working_on} onChangeText={t => setEditForm({...editForm, working_on: t})} placeholder="What are you currently working on?" placeholderTextColor={Colors.text.tertiary} />
+              <Text style={styles.goalFormLabel}>Target {goalForm.goalType === 'dollar' ? '($)' : '(#)'}</Text>
+              <TextInput
+                style={styles.goalFormInput}
+                placeholder={goalForm.goalType === 'dollar' ? '100000' : '1000'}
+                placeholderTextColor={Colors.text.tertiary}
+                value={goalForm.targetNumber}
+                onChangeText={(t) => setGoalForm({ ...goalForm, targetNumber: t })}
+                keyboardType="numeric"
+              />
+              <Text style={styles.goalFormLabel}>Current Progress</Text>
+              <TextInput
+                style={styles.goalFormInput}
+                placeholder="0"
+                placeholderTextColor={Colors.text.tertiary}
+                value={goalForm.currentNumber}
+                onChangeText={(t) => setGoalForm({ ...goalForm, currentNumber: t })}
+                keyboardType="numeric"
+              />
+              <Text style={styles.goalFormLabel}>Target Date (YYYY-MM-DD)</Text>
+              <TextInput
+                style={styles.goalFormInput}
+                placeholder="2026-12-31"
+                placeholderTextColor={Colors.text.tertiary}
+                value={goalForm.targetDate}
+                onChangeText={(t) => setGoalForm({ ...goalForm, targetDate: t })}
+              />
+            </ScrollView>
+            <TouchableOpacity style={styles.compoundSaveButton} onPress={saveGoal} disabled={loading || !goalForm.title.trim()}>
+              <Text style={styles.compoundSaveButtonText}>Save Goal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.compoundCancelButton} onPress={() => setGoalModalVisible(false)}>
+              <Text style={styles.compoundCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
-                {/* Contact */}
-                <Text style={styles.formSection}>Contact Info</Text>
-                <TextInput style={styles.input} value={editForm.website} onChangeText={t => setEditForm({...editForm, website: t})} placeholder="Website" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
-                <TextInput style={styles.input} value={editForm.email} onChangeText={t => setEditForm({...editForm, email: t})} placeholder="Contact Email" placeholderTextColor={Colors.text.tertiary} keyboardType="email-address" autoCapitalize="none" />
-                <TextInput style={styles.input} value={editForm.phone} onChangeText={t => setEditForm({...editForm, phone: t})} placeholder="Phone" placeholderTextColor={Colors.text.tertiary} keyboardType="phone-pad" />
-                <TextInput style={styles.input} value={editForm.booking_link} onChangeText={t => setEditForm({...editForm, booking_link: t})} placeholder="Booking Link (Calendly, etc.)" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
+      {/* Compound Target Modal */}
+      <Modal
+        visible={compoundModalVisible}
+        animationType="fade"
+        transparent
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.compoundModal}>
+            <Text style={styles.compoundModalTitle}>Daily Compound Target</Text>
+            <Text style={styles.compoundModalSubtitle}>
+              How many reps per day?
+            </Text>
 
-                {/* Social */}
-                <Text style={styles.formSection}>Social Media</Text>
-                <View style={styles.socialRow}>
-                  <Ionicons name="logo-linkedin" size={18} color={Colors.brand.accent} />
-                  <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} value={editForm.linkedin} onChangeText={t => setEditForm({...editForm, linkedin: t})} placeholder="LinkedIn URL" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
-                </View>
-                <View style={styles.socialRow}>
-                  <Ionicons name="logo-twitter" size={18} color={Colors.brand.accent} />
-                  <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} value={editForm.twitter} onChangeText={t => setEditForm({...editForm, twitter: t})} placeholder="Twitter handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
-                </View>
-                <View style={styles.socialRow}>
-                  <Ionicons name="logo-instagram" size={18} color={Colors.brand.accent} />
-                  <TextInput style={[styles.input, { flex: 1, marginBottom: 0 }]} value={editForm.instagram} onChangeText={t => setEditForm({...editForm, instagram: t})} placeholder="Instagram handle" placeholderTextColor={Colors.text.tertiary} autoCapitalize="none" />
-                </View>
+            <TextInput
+              style={styles.compoundInput}
+              placeholderTextColor={Colors.text.tertiary}
+              placeholder="1"
+              value={compoundTarget}
+              onChangeText={setCompoundTarget}
+              keyboardType="number-pad"
+            />
 
-                {/* Services */}
-                <Text style={styles.formSection}>Services Offered</Text>
-                <View style={styles.chipSelectRow}>
-                  {SERVICES.map(s => {
-                    const selected = (editForm.services_offered || []).includes(s);
-                    return (
-                      <TouchableOpacity key={s} style={[styles.chipSelect, selected && styles.chipSelectActive]} onPress={() => toggleService(s)}>
-                        <Text style={[styles.chipSelectText, selected && styles.chipSelectTextActive]}>{s.replace('_', ' ')}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+            <TouchableOpacity
+              style={styles.compoundSaveButton}
+              onPress={saveCompoundTarget}
+              disabled={loading}
+            >
+              <Text style={styles.compoundSaveButtonText}>Save</Text>
+            </TouchableOpacity>
 
-                {/* Target Customer */}
-                <Text style={styles.formSection}>Business Info</Text>
-                <TextInput style={[styles.input, { minHeight: 60 }]} value={editForm.target_customer} onChangeText={t => setEditForm({...editForm, target_customer: t})} placeholder="Who is your target customer?" placeholderTextColor={Colors.text.tertiary} multiline />
-
-                {/* Connection Profile */}
-                <Text style={styles.formSection}>Connection Profile</Text>
-                <TextInput style={[styles.input, { minHeight: 60 }]} value={editForm.good_connection_for} onChangeText={t => setEditForm({...editForm, good_connection_for: t})} placeholder="Who are you a good connection for?" placeholderTextColor={Colors.text.tertiary} multiline />
-                <TextInput style={[styles.input, { minHeight: 60 }]} value={editForm.warm_connection} onChangeText={t => setEditForm({...editForm, warm_connection: t})} placeholder="Who is a warm connection for you?" placeholderTextColor={Colors.text.tertiary} multiline />
-                <TextInput style={[styles.input, { minHeight: 60 }]} value={editForm.golden_connection} onChangeText={t => setEditForm({...editForm, golden_connection: t})} placeholder="Who is your golden/ideal connection?" placeholderTextColor={Colors.text.tertiary} multiline />
-
-                <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={saveProfile} disabled={saving}>
-                  {saving ? <ActivityIndicator color={Colors.text.primary} /> : <Text style={styles.saveBtnText}>Save Profile</Text>}
-                </TouchableOpacity>
-                <View style={{ height: 40 }} />
-              </ScrollView>
-            </View>
-          </KeyboardAvoidingView>
+            <TouchableOpacity
+              style={styles.compoundCancelButton}
+              onPress={() => setCompoundModalVisible(false)}
+            >
+              <Text style={styles.compoundCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
 
       {/* Notification Settings Modal */}
-      <Modal visible={showNotificationSettings} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Notifications</Text>
-              <TouchableOpacity onPress={() => setShowNotificationSettings(false)}>
-                <Ionicons name="close" size={24} color={Colors.text.primary} />
-              </TouchableOpacity>
-            </View>
-            
-            <Text style={styles.formSection}>Daily Check-in</Text>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Daily Check-in Reminder</Text>
-                <Text style={styles.settingDesc}>Get reminded to complete your daily check-in</Text>
-              </View>
-              <TouchableOpacity 
-                style={[styles.toggle, notificationSettings.daily_checkin_enabled && styles.toggleOn]} 
-                onPress={() => setNotificationSettings({...notificationSettings, daily_checkin_enabled: !notificationSettings.daily_checkin_enabled})}
-              >
-                <View style={[styles.toggleKnob, notificationSettings.daily_checkin_enabled && styles.toggleKnobOn]} />
-              </TouchableOpacity>
-            </View>
-
-            {notificationSettings.daily_checkin_enabled && (
-              <View style={styles.timeRow}>
-                <Text style={styles.timeLabel}>Reminder Time</Text>
-                <TextInput
-                  style={styles.timeInput}
-                  value={notificationSettings.daily_checkin_time || '09:00'}
-                  onChangeText={t => setNotificationSettings({...notificationSettings, daily_checkin_time: t})}
-                  placeholder="09:00"
-                  placeholderTextColor={Colors.text.tertiary}
-                />
-              </View>
-            )}
-
-            <Text style={styles.formSection}>Deal Reminders</Text>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Deal Close Date Reminders</Text>
-                <Text style={styles.settingDesc}>Get smart notifications about upcoming deal deadlines</Text>
-              </View>
-              <TouchableOpacity 
-                style={[styles.toggle, notificationSettings.deal_reminders_enabled && styles.toggleOn]} 
-                onPress={() => setNotificationSettings({...notificationSettings, deal_reminders_enabled: !notificationSettings.deal_reminders_enabled})}
-              >
-                <View style={[styles.toggleKnob, notificationSettings.deal_reminders_enabled && styles.toggleKnobOn]} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.formSection}>Community</Text>
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Community Notifications</Text>
-                <Text style={styles.settingDesc}>Get notified about community activity</Text>
-              </View>
-              <TouchableOpacity 
-                style={[styles.toggle, notificationSettings.community_notifications_enabled && styles.toggleOn]} 
-                onPress={() => setNotificationSettings({...notificationSettings, community_notifications_enabled: !notificationSettings.community_notifications_enabled})}
-              >
-                <View style={[styles.toggleKnob, notificationSettings.community_notifications_enabled && styles.toggleKnobOn]} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.settingRow}>
-              <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Message Notifications</Text>
-                <Text style={styles.settingDesc}>Get notified about new messages</Text>
-              </View>
-              <TouchableOpacity 
-                style={[styles.toggle, notificationSettings.message_notifications_enabled && styles.toggleOn]} 
-                onPress={() => setNotificationSettings({...notificationSettings, message_notifications_enabled: !notificationSettings.message_notifications_enabled})}
-              >
-                <View style={[styles.toggleKnob, notificationSettings.message_notifications_enabled && styles.toggleKnobOn]} />
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.saveBtn} onPress={saveNotificationSettings}>
-              <Text style={styles.saveBtnText}>Save Settings</Text>
+      <Modal
+        visible={settingsModalVisible}
+        animationType="slide"
+        transparent={false}
+      >
+        <ScrollView style={styles.modal} contentContainerStyle={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setSettingsModalVisible(false)}>
+              <Text style={styles.modalCloseText}>Done</Text>
             </TouchableOpacity>
-
-            <View style={{ height: 40 }} />
+            <Text style={styles.modalTitle}>Notifications</Text>
+            <View style={{ width: 50 }} />
           </View>
-        </View>
-      </Modal>
 
-      {/* Edit Goal Modal */}
-      <Modal visible={showEditGoal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalWrap}>
-            <View style={styles.modal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Edit 10x Goal</Text>
-                <TouchableOpacity onPress={() => setShowEditGoal(false)}>
-                  <Ionicons name="close" size={24} color={Colors.text.primary} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-                <Text style={styles.formSection}>Goal Title</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={goalForm.title} 
-                  onChangeText={t => setGoalForm({...goalForm, title: t})} 
-                  placeholder="Your 10x goal" 
-                  placeholderTextColor={Colors.text.tertiary} 
-                />
-
-                <Text style={styles.formSection}>Description</Text>
-                <TextInput 
-                  style={[styles.input, { minHeight: 80 }]} 
-                  value={goalForm.description} 
-                  onChangeText={t => setGoalForm({...goalForm, description: t})} 
-                  placeholder="Describe your goal in detail..." 
-                  placeholderTextColor={Colors.text.tertiary} 
-                  multiline 
-                />
-
-                <Text style={styles.formSection}>Deadline (MM/DD/YY)</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={goalForm.deadline} 
-                  onChangeText={t => setGoalForm({...goalForm, deadline: t})} 
-                  placeholder="03/31/26" 
-                  placeholderTextColor={Colors.text.tertiary} 
-                />
-
-                <View style={styles.goalNumberRow}>
-                  <View style={styles.goalNumberField}>
-                    <Text style={styles.formSection}>Target Number</Text>
-                    <TextInput 
-                      style={styles.input} 
-                      value={goalForm.target_number} 
-                      onChangeText={t => setGoalForm({...goalForm, target_number: t})} 
-                      placeholder="e.g., 100" 
-                      placeholderTextColor={Colors.text.tertiary}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                  <View style={styles.goalNumberField}>
-                    <Text style={styles.formSection}>Current Progress</Text>
-                    <TextInput 
-                      style={styles.input} 
-                      value={goalForm.current_value} 
-                      onChangeText={t => setGoalForm({...goalForm, current_value: t})} 
-                      placeholder="0" 
-                      placeholderTextColor={Colors.text.tertiary}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                </View>
-
-                <TouchableOpacity style={[styles.saveBtn, saving && styles.saveBtnDisabled]} onPress={saveGoal} disabled={saving}>
-                  {saving ? <ActivityIndicator color={Colors.text.primary} /> : <Text style={styles.saveBtnText}>Save Goal</Text>}
-                </TouchableOpacity>
-                <View style={{ height: 40 }} />
-              </ScrollView>
+          <View style={styles.settingRow}>
+            <View>
+              <Text style={styles.settingLabel}>Daily Reminder</Text>
+              <Text style={styles.settingDescription}>Get reminded about your 10x action</Text>
             </View>
-          </KeyboardAvoidingView>
-        </View>
+            <TouchableOpacity
+              style={[styles.toggle, notifications.dailyReminder && styles.toggleActive]}
+              onPress={() =>
+                setNotifications({
+                  ...notifications,
+                  dailyReminder: !notifications.dailyReminder,
+                })
+              }
+            >
+              <View
+                style={[
+                  styles.toggleDot,
+                  notifications.dailyReminder && styles.toggleDotActive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.settingRow}>
+            <View>
+              <Text style={styles.settingLabel}>Achievements</Text>
+              <Text style={styles.settingDescription}>Celebrate your wins</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.toggle, notifications.achievements && styles.toggleActive]}
+              onPress={() =>
+                setNotifications({
+                  ...notifications,
+                  achievements: !notifications.achievements,
+                })
+              }
+            >
+              <View
+                style={[
+                  styles.toggleDot,
+                  notifications.achievements && styles.toggleDotActive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.settingRow}>
+            <View>
+              <Text style={styles.settingLabel}>Messages</Text>
+              <Text style={styles.settingDescription}>New direct messages</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.toggle, notifications.messages && styles.toggleActive]}
+              onPress={() =>
+                setNotifications({
+                  ...notifications,
+                  messages: !notifications.messages,
+                })
+              }
+            >
+              <View
+                style={[
+                  styles.toggleDot,
+                  notifications.messages && styles.toggleDotActive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.settingRow}>
+            <View>
+              <Text style={styles.settingLabel}>Wormhole Updates</Text>
+              <Text style={styles.settingDescription}>Key relationship reminders</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.toggle, notifications.wormholeUpdates && styles.toggleActive]}
+              onPress={() =>
+                setNotifications({
+                  ...notifications,
+                  wormholeUpdates: !notifications.wormholeUpdates,
+                })
+              }
+            >
+              <View
+                style={[
+                  styles.toggleDot,
+                  notifications.wormholeUpdates && styles.toggleDotActive,
+                ]}
+              />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </Modal>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
+    </CosmicBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg.default },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  content: { paddingHorizontal: 20, paddingTop: 16 },
-  pageTitle: { fontSize: FontSize.xxxl, fontWeight: '900', color: Colors.text.primary, marginBottom: 20, letterSpacing: -0.5 },
-  
-  // Header Card
-  headerCard: { borderRadius: Radius.lg, padding: 24, alignItems: 'center', marginBottom: 20 },
-  avatarContainer: { position: 'relative', marginBottom: 12 },
-  profilePhoto: { width: 80, height: 80, borderRadius: 40 },
-  bigAvatar: { width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.brand.primary, justifyContent: 'center', alignItems: 'center' },
-  bigAvatarText: { color: Colors.text.primary, fontSize: 32, fontWeight: '800' },
-  photoOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 40, justifyContent: 'center', alignItems: 'center' },
-  cameraIcon: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.brand.secondary, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.bg.default },
-  displayName: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '700' },
-  companyName: { color: Colors.text.secondary, fontSize: FontSize.base, marginTop: 4 },
-  email: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 4 },
-  profileActions: { flexDirection: 'row', gap: 8, marginTop: 16 },
-  editProfileBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.brand.primary, borderRadius: Radius.md },
-  notificationBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.bg.card, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border.default },
-  editProfileText: { color: Colors.text.primary, fontSize: FontSize.sm, fontWeight: '600' },
-  
-  // Cards
-  card: { backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border.default },
-  cardIcon: { marginBottom: 8, width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.brand.primary + '20', justifyContent: 'center', alignItems: 'center' },
-  cardLabel: { color: Colors.text.tertiary, fontSize: FontSize.sm, fontWeight: '600', marginBottom: 4 },
-  cardValue: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '600' },
-  cardDesc: { color: Colors.text.secondary, fontSize: FontSize.sm, marginTop: 4 },
-  sectionLabel: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '700', marginBottom: 12 },
-  
-  // Info Row
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  infoText: { color: Colors.brand.accent, fontSize: FontSize.sm },
-  
-  // Chips
-  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { backgroundColor: Colors.brand.primary + '20', paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.sm },
-  chipText: { color: Colors.brand.primary, fontSize: FontSize.sm, textTransform: 'capitalize' },
-  
-  // Connection
-  connectionLabel: { color: Colors.text.tertiary, fontSize: FontSize.xs, fontWeight: '600', marginTop: 8, marginBottom: 2 },
-  connectionText: { color: Colors.text.primary, fontSize: FontSize.sm },
-  
-  // Buttons
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: Colors.bg.card, borderRadius: Radius.lg, padding: 16, marginTop: 20, borderWidth: 1, borderColor: Colors.border.default },
-  logoutText: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: Radius.lg, padding: 16, marginTop: 12, borderWidth: 1, borderColor: Colors.status.error },
-  deleteBtnText: { color: Colors.status.error, fontSize: FontSize.base, fontWeight: '600' },
-  
-  // Modal
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalWrap: { maxHeight: '90%' },
-  modal: { backgroundColor: Colors.bg.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, padding: 24, maxHeight: '90%' },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  modalTitle: { color: Colors.text.primary, fontSize: FontSize.xxl, fontWeight: '800' },
-  
-  // Form
-  formSection: { color: Colors.brand.primary, fontSize: FontSize.sm, fontWeight: '700', marginTop: 20, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 },
-  input: { backgroundColor: Colors.bg.input, borderRadius: Radius.md, padding: 14, color: Colors.text.primary, fontSize: FontSize.base, borderWidth: 1, borderColor: Colors.border.default, marginBottom: 12 },
-  socialRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  chipSelectRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chipSelect: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: Colors.bg.input, borderWidth: 1, borderColor: Colors.border.default },
-  chipSelectActive: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
-  chipSelectText: { color: Colors.text.secondary, fontSize: FontSize.sm, textTransform: 'capitalize' },
-  chipSelectTextActive: { color: Colors.text.primary },
-  saveBtn: { backgroundColor: Colors.brand.primary, borderRadius: Radius.md, padding: 16, alignItems: 'center', marginTop: 24 },
-  saveBtnDisabled: { opacity: 0.5 },
-  saveBtnText: { color: Colors.text.primary, fontSize: FontSize.lg, fontWeight: '700' },
-
-  // Notification Settings
-  settingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
-  settingInfo: { flex: 1, marginRight: 16 },
-  settingLabel: { color: Colors.text.primary, fontSize: FontSize.base, fontWeight: '600' },
-  settingDesc: { color: Colors.text.tertiary, fontSize: FontSize.sm, marginTop: 2 },
-  toggle: { width: 50, height: 30, borderRadius: 15, backgroundColor: Colors.bg.input, padding: 3, borderWidth: 1, borderColor: Colors.border.default },
-  toggleOn: { backgroundColor: Colors.brand.primary, borderColor: Colors.brand.primary },
-  toggleKnob: { width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.text.tertiary },
-  toggleKnobOn: { backgroundColor: Colors.text.primary, transform: [{ translateX: 20 }] },
-  timeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
-  timeLabel: { color: Colors.text.secondary, fontSize: FontSize.sm },
-  timeInput: { backgroundColor: Colors.bg.input, borderRadius: Radius.sm, paddingHorizontal: 14, paddingVertical: 8, color: Colors.text.primary, fontSize: FontSize.base, width: 80, textAlign: 'center' },
-  
-  // Goal card styles
-  goalCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  goalIconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.brand.primary + '20', justifyContent: 'center', alignItems: 'center' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  editGoalBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: Colors.bg.input, borderRadius: Radius.sm, borderWidth: 1, borderColor: Colors.border.default },
-  editGoalBtnText: { color: Colors.brand.accent, fontSize: FontSize.sm, fontWeight: '600' },
-  
-  goalProgressContainer: { marginTop: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border.default },
-  goalProgressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  goalProgressLabel: { color: Colors.text.secondary, fontSize: FontSize.sm, fontWeight: '600' },
-  goalProgressNumbers: { color: Colors.brand.primary, fontSize: FontSize.base, fontWeight: '700' },
-  goalProgressBarBg: { height: 8, backgroundColor: Colors.bg.input, borderRadius: 4, overflow: 'hidden' },
-  goalProgressBarFill: { height: '100%', backgroundColor: Colors.brand.primary, borderRadius: 4 },
-  goalDeadlineRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8 },
-  goalDeadlineText: { color: Colors.text.tertiary, fontSize: FontSize.sm },
-  
-  goalNumberRow: { flexDirection: 'row', gap: 16 },
-  goalNumberField: { flex: 1 },
+  container: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  scrollContent: {
+    paddingBottom: Spacing.xxxl,
+  },
+  coverContainer: {
+    height: 160,
+    width: '100%',
+    position: 'relative',
+  },
+  coverImage: {
+    width: '100%',
+    height: '100%',
+  } as any,
+  coverEditBtn: {
+    position: 'absolute',
+    bottom: 10,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  avatarContainer: {
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.lg,
+    alignItems: 'center',
+    marginTop: -50,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.background.card,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarPlaceholder: {
+    backgroundColor: Colors.background.elevated,
+  },
+  avatarEmoji: {
+    fontSize: 60,
+  },
+  editBadge: {
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.brand.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background.primary,
+  },
+  editBadgeText: {
+    color: Colors.text.primary,
+    fontSize: 16,
+    fontWeight: 'bold',
+    lineHeight: 18,
+  },
+  displayName: {
+    ...Typography.h2,
+    color: Colors.text.primary,
+    marginTop: Spacing.lg,
+  },
+  title: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    marginTop: Spacing.sm,
+  },
+  company: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+    marginTop: Spacing.xs,
+  },
+  section: {
+    paddingHorizontal: Spacing.lg,
+    marginVertical: Spacing.lg,
+  },
+  sectionTitle: {
+    ...Typography.h3,
+    color: Colors.text.primary,
+    marginBottom: Spacing.md,
+  },
+  goalCard: {
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  goalTitle: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  goalDescription: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    marginTop: Spacing.sm,
+  },
+  progressContainer: {
+    height: 8,
+    backgroundColor: Colors.background.elevated,
+    borderRadius: BorderRadius.full,
+    marginTop: Spacing.md,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: Colors.brand.primary,
+  },
+  progressText: {
+    ...Typography.small,
+    color: Colors.text.tertiary,
+    marginTop: Spacing.sm,
+  },
+  compoundCard: {
+    backgroundColor: Colors.background.card,
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  compoundLabel: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+  },
+  compoundValue: {
+    ...Typography.h3,
+    color: Colors.brand.primary,
+    marginTop: Spacing.xs,
+  },
+  arrowText: {
+    color: Colors.text.secondary,
+    fontSize: 24,
+  },
+  bioText: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    lineHeight: 24,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
+  infoLabel: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+  },
+  infoValue: {
+    ...Typography.body,
+    color: Colors.text.primary,
+  },
+  socialLink: {
+    ...Typography.body,
+    color: Colors.brand.primary,
+    paddingVertical: Spacing.sm,
+  },
+  primaryButton: {
+    backgroundColor: Colors.brand.primary,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: 'center',
+    marginTop: Spacing.lg,
+  },
+  primaryButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  secondaryButton: {
+    backgroundColor: Colors.background.elevated,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  secondaryButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  dangerButton: {
+    backgroundColor: Colors.background.elevated,
+    paddingVertical: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    alignItems: 'center',
+    marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.status.error,
+  },
+  dangerButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.status.error,
+  },
+  modal: {
+    flex: 1,
+    backgroundColor: Colors.background.primary,
+  },
+  modalContent: {
+    paddingBottom: Spacing.xxxl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.lg,
+    paddingBottom: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
+  modalCloseText: {
+    ...Typography.body,
+    color: Colors.text.tertiary,
+  },
+  modalTitle: {
+    ...Typography.h3,
+    color: Colors.text.primary,
+  },
+  modalSaveText: {
+    ...Typography.bodyBold,
+    color: Colors.brand.primary,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+  formGroup: {
+    paddingHorizontal: Spacing.lg,
+    marginTop: Spacing.lg,
+  },
+  formLabel: {
+    ...Typography.caption,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.sm,
+  },
+  textInput: {
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    ...Typography.body,
+  },
+  multilineInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  compoundModal: {
+    backgroundColor: Colors.background.primary,
+    borderRadius: BorderRadius.xl,
+    padding: Spacing.xl,
+    width: '80%',
+    alignItems: 'center',
+  },
+  compoundModalTitle: {
+    ...Typography.h2,
+    color: Colors.text.primary,
+    marginBottom: Spacing.sm,
+  },
+  compoundModalSubtitle: {
+    ...Typography.body,
+    color: Colors.text.secondary,
+    marginBottom: Spacing.lg,
+  },
+  compoundInput: {
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    width: '100%',
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    ...Typography.h2,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  compoundSaveButton: {
+    backgroundColor: Colors.brand.primary,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  compoundSaveButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  compoundCancelButton: {
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.lg,
+    width: '100%',
+    alignItems: 'center',
+  },
+  compoundCancelButtonText: {
+    ...Typography.bodyBold,
+    color: Colors.text.secondary,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
+  settingLabel: {
+    ...Typography.bodyBold,
+    color: Colors.text.primary,
+  },
+  settingDescription: {
+    ...Typography.caption,
+    color: Colors.text.tertiary,
+    marginTop: Spacing.xs,
+  },
+  toggle: {
+    width: 52,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: Colors.background.elevated,
+    borderWidth: 2,
+    borderColor: Colors.border.default,
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.xs,
+  },
+  toggleActive: {
+    backgroundColor: Colors.brand.primary,
+    borderColor: Colors.brand.primary,
+  },
+  toggleDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.background.primary,
+    alignSelf: 'flex-start',
+  },
+  toggleDotActive: {
+    alignSelf: 'flex-end',
+  },
+  goalFormLabel: {
+    color: Colors.text.secondary,
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  goalFormInput: {
+    backgroundColor: Colors.background.input,
+    borderRadius: BorderRadius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    width: '100%',
+    color: Colors.text.primary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    fontSize: 15,
+    marginBottom: 12,
+  },
+  goalTypeBtn: {
+    flex: 1,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.background.input,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    alignItems: 'center',
+  },
+  goalTypeBtnActive: {
+    backgroundColor: Colors.brand.primary + '30',
+    borderColor: Colors.brand.primary,
+  },
+  goalTypeBtnText: {
+    color: Colors.text.primary,
+    fontWeight: '700',
+    fontSize: 15,
+  },
+  goalTypeBtnTextActive: {
+    color: Colors.brand.primary,
+  },
 });
