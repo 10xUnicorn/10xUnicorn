@@ -1,8 +1,8 @@
 {
-  "buildCommand": "cd frontend && npm install --legacy-peer-deps && npx expo export --platform web",
-  "outputDirectory": "frontend/dist",
+  "buildCommand": "npm install --legacy-peer-deps && npx expo export --platform web",
+  "outputDirectory": "dist",
   "framework": null,
-  "installCommand": "echo skip",
+  "installCommand": "echo 'skip'",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
